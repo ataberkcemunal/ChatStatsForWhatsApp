@@ -1,5 +1,7 @@
 # WhatsApp Chat Statistics Analyzer
 
+> **Note:** This script currently works only for WhatsApp chat exports in Turkish. Support for other languages is coming soon!
+
 A Python script that analyzes WhatsApp chat exports and generates comprehensive statistics about the conversation.
 
 ## Features

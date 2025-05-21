@@ -2,7 +2,6 @@ import re
 from datetime import datetime
 from collections import Counter
 import pandas as pd
-import matplotlib.pyplot as plt
 import emoji
 
 # Patterns to detect media placeholders in chat
@@ -235,16 +234,6 @@ def compute_stats(df):
             for em, cnt in user_emojis.most_common(5):
                 f.write(f"  • {em} : {cnt}\n")
 
-# Plotting helper
-def plot_bar(series, title, xlabel=None, ylabel='Count', figsize=(10,6)):
-    plt.figure(figsize=figsize)
-    series.plot(kind='bar')
-    plt.title(title)
-    plt.xlabel(xlabel if xlabel else series.index.name)
-    plt.ylabel(ylabel)
-    plt.tight_layout()
-    plt.show()
-
 if __name__ == '__main__':
     import argparse
     parser = argparse.ArgumentParser(description='WhatsApp chat statistics')
@@ -253,6 +242,3 @@ if __name__ == '__main__':
 
     df = parse_chat(args.chat_file)
     compute_stats(df)
-    # Example plotting:
-    # plot_bar(df['user'].value_counts().sort_values(ascending=False), 'Messages per user')
-    # plot_bar(df['user'].value_counts().sort_values(ascending=False), 'Words per user')

@@ -94,15 +94,15 @@ def parse_chat(filepath):
     df = pd.DataFrame(records)
     # add additional columns if not already present
     if 'date' not in df.columns:
-        df['date'] = df['datetime'].dt.date
+            df['date'] = df['datetime'].dt.date
     if 'time' not in df.columns:
-        df['time'] = df['datetime'].dt.time
+            df['time'] = df['datetime'].dt.time
     if 'weekday' not in df.columns:
-        df['weekday'] = df['datetime'].dt.day_name()
+            df['weekday'] = df['datetime'].dt.day_name()
     if 'month' not in df.columns:
-        df['month'] = df['datetime'].dt.to_period('M').astype(str)
+            df['month'] = df['datetime'].dt.to_period('M').astype(str)
     if 'hour' not in df.columns:
-        df['hour'] = df['datetime'].dt.hour
+            df['hour'] = df['datetime'].dt.hour
     return df
 
 # Compute and print statistics
@@ -207,7 +207,11 @@ def compute_stats(df):
 
         write_header('MOST USED WORDS (>3 letters)')
         all_words = []
-        for msg in df['message']:
+        # Only process non-media messages
+        non_media_messages = df[df['media']==0]['message']
+        for msg in non_media_messages:
+            # Remove links from the message before processing
+            msg = re.sub(LINK_REGEX, '', msg)
             words = re.findall(r"\b\w+\b", msg.lower())
             all_words.extend([w for w in words if len(w) > 3])
         wc = Counter(all_words)
@@ -218,7 +222,11 @@ def compute_stats(df):
         for user in df['user'].unique():
             f.write(f"\n{user}:\n")
             user_words = []
-            for msg in df[df['user']==user]['message']:
+            # Only process non-media messages
+            user_messages = df[(df['user']==user) & (df['media']==0)]['message']
+            for msg in user_messages:
+                # Remove links from the message before processing
+                msg = re.sub(LINK_REGEX, '', msg)
                 words = re.findall(r"\b\w+\b", msg.lower())
                 user_words.extend([w for w in words if len(w) > 3])
             wc = Counter(user_words)

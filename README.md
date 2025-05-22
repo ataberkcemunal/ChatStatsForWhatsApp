@@ -29,9 +29,8 @@ A Python script that analyzes WhatsApp chat exports and generates comprehensive 
   - Messages by month
   - First and last messages
 
-## Screenshots
 
-### Complete Output Example
+## Complete Output Example
 ```
 ========================================
 CHAT SUMMARY

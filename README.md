@@ -1,279 +1,134 @@
 # WhatsApp Chat Statistics Analyzer
 
-> **Note:** This script currently works only for WhatsApp chat exports in Turkish. Support for other languages is coming soon!
+> **Note:** This script works for WhatsApp chat exports in both English and Turkish languages.
 
-A Python script that analyzes WhatsApp chat exports and generates comprehensive statistics about the conversation.
+A Python script that analyzes WhatsApp chat exports and generates comprehensive statistics about the conversation in a beautiful Markdown format.
 
 ## Features
 
-- Message Statistics
+### 📊 Comprehensive Statistics
+- **Message Statistics**
   - Total messages per user
-  - Most used words
-  - Most used emojis
-  - Longest messages
-  - Message lengths
+  - Word and letter counts
+  - Media usage (images, videos, stickers, etc.)
+  - Emoji usage
+  - Link sharing
 
-- Media Statistics
-  - Stickers
-  - Images
-  - Videos
-  - Voice messages
-  - Documents
-  - Location shares
-  - Video calls
-  - Voice calls
+- **📱 Detailed Media Statistics**
+  - Stickers, Images, Videos, Audio
+  - Documents, GIFs, Locations
+  - Total media count per user
 
-- Temporal Statistics
+- **⏰ Temporal Statistics**
   - Messages by day of week
-  - Messages by hour
+  - Messages by hour of day
   - Messages by month
-  - First and last messages
+  - Most active days
+  - Chat timeline (first and last messages)
 
-## Screenshots
+- **👥 User Activity Timeline**
+  - Days active per user
+  - Participation rate
+  - Messages per active day
+  - User engagement metrics
 
-### Complete Output Example
-```
-========================================
-CHAT SUMMARY
-========================================
-Date Range    : 2023-01-01 00:01:23  →  2023-12-31 23:59:59
-Total Messages:    35781
-Total Words   :   145679
-Total Letters :   905247
-Total Media   :     5961
-Total Emojis  :     1157
-Total Links   :      428
+- **📝 Word Analysis**
+  - Most used words overall
+  - Most used words by user
+  - Word frequency analysis
 
-========================================
-USER STATISTICS
-========================================
+- **😊 Emoji Analysis**
+  - Most used emojis by user
+  - Emoji frequency statistics
 
--- Message Count --
-  Alice : 21436
-  Bob   : 14345
+## Output Format
 
--- Word Count --
-  Alice : 87644
-  Bob   : 58035
+The script generates a beautiful Markdown report (`chat_stats.md`) with:
 
--- Letter Count --
-  Alice : 545572
-  Bob   : 359675
+- **Emoji-enhanced headers** for easy navigation
+- **Clean table formatting** for all statistics
+- **Organized sections** with visual hierarchy
+- **Comprehensive data** in an easy-to-read format
 
--- Media --
-  Alice : 3137
-  Bob   : 2824
+### Example Output Structure
 
--- Emoji --
-  Alice : 935
-  Bob   : 222
+```markdown
+# WhatsApp Chat Statistics
 
--- Link --
-  Bob   : 259
-  Alice : 169
+## 📅 Chat Timeline
+**First Message:** 2023-01-01 00:01:23
+**Last Message:** 2023-12-31 23:59:59
 
-========================================
-DETAILED MEDIA STATISTICS
-========================================
+## 👥 User Statistics
+| User | Messages | Words | Letters | Media | Emojis | Links |
+|------|----------|-------|---------|-------|--------|-------|
+| Alice | 21,436 | 87,644 | 545,572 | 3,137 | 935 | 169 |
+| Bob | 14,345 | 58,035 | 359,675 | 2,824 | 222 | 259 |
 
-Alice:
-  • Sticker count: 1128
-  • Image count: 1544
-  • Video count: 151
-  • Audio count: 361
-  • Document count: 60
-  • Location count: 5
-  • Video Call count: 671
-  • Voice Call count: 713
+## 📱 Detailed Media Statistics
+| User | Stickers | Images | Videos | Audio | Documents | GIFs | Locations | Total |
+|------|----------|--------|--------|-------|-----------|------|-----------|-------|
+| Alice | 1,128 | 1,544 | 151 | 361 | 60 | 0 | 5 | 3,137 |
+| Bob | 454 | 1,363 | 132 | 4 | 64 | 0 | 4 | 2,824 |
 
-Bob:
-  • Sticker count: 454
-  • Image count: 1363
-  • Video count: 132
-  • Audio count: 4
-  • Document count: 64
-  • Location count: 4
-  • Video Call count: 446
-  • Voice Call count: 357
+## ⏰ Temporal Statistics
 
-========================================
-TEMPORAL STATISTICS
-========================================
+### 📅 Messages by Day of Week
+| Day | Messages |
+|-----|----------|
+| Monday | 7,970 |
+| Tuesday | 7,842 |
+| Wednesday | 8,687 |
+...
 
--- Messages by Day of Week --
-  Monday    : 7970
-  Tuesday   : 7842
-  Wednesday : 8687
-  Thursday  : 7691
-  Friday    : 7357
-  Saturday  : 7607
-  Sunday    : 6993
+### 🕐 Messages by Hour
+| Hour | Messages |
+|------|----------|
+| 00:00 - 00:59 | 3,496 |
+| 01:00 - 01:59 | 3,616 |
+...
 
--- Messages by Hour --
-  00:00 - 00:59 : 3496
-  01:00 - 01:59 : 3616
-  02:00 - 02:59 : 1917
-  03:00 - 03:59 : 1568
-  04:00 - 04:59 : 792
-  05:00 - 05:59 : 239
-  06:00 - 06:59 : 51
-  07:00 - 07:59 : 173
-  08:00 - 08:59 : 411
-  09:00 - 09:59 : 512
-  10:00 - 10:59 : 712
-  11:00 - 11:59 : 857
-  12:00 - 12:59 : 1515
-  13:00 - 13:59 : 2093
-  14:00 - 14:59 : 3403
-  15:00 - 15:59 : 3845
-  16:00 - 16:59 : 4211
-  17:00 - 17:59 : 4311
-  18:00 - 18:59 : 3737
-  19:00 - 19:59 : 3147
-  20:00 - 20:59 : 3635
-  21:00 - 21:59 : 3380
-  22:00 - 22:59 : 3133
-  23:00 - 23:59 : 3393
+### 📆 Messages by Month
+| Month | Messages |
+|-------|----------|
+| 2023-01 | 1,574 |
+| 2023-02 | 5,513 |
+...
 
--- Messages by Month --
-  2023-01: 1574
-  2023-02: 5513
-  2023-03: 3390
-  2023-04: 2626
-  2023-05: 2923
-  2023-06: 3846
-  2023-07: 6675
-  2023-08: 5299
-  2023-09: 4537
-  2023-10: 3574
-  2023-11: 3692
-  2023-12: 4596
+## 📊 User Activity Timeline
+| User | Days Active | Participation Rate | Messages per Active Day |
+|------|-------------|-------------------|------------------------|
+| Alice | 365/365 | 100.0% | 58.7 |
+| Bob | 364/365 | 99.7% | 39.4 |
 
--- Most Active 10 Days --
-  2023-07-30: 797
-  2023-02-08: 768
-  2023-06-18: 754
-  2023-02-07: 617
-  2023-08-27: 602
-  2023-09-01: 598
-  2023-06-21: 507
-  2023-02-06: 450
-  2023-06-23: 418
-  2023-05-28: 408
+## 🔥 Most Active 10 Days
+| Date | Messages |
+|------|----------|
+| 2023-07-30 | 797 |
+| 2023-02-08 | 768 |
+...
 
--- Users First Message --
-  Bob  : 2023-01-01 00:01:23
-  Alice: 2023-01-01 00:02:45
+## 📝 Most Used Words
+| Word | Count |
+|------|-------|
+| hello | 5,270 |
+| world | 5,261 |
+...
 
--- Users Last Message --
-  Bob  : 2023-12-31 23:58:12
-  Alice: 2023-12-31 23:59:59
-
-========================================
-MOST USED WORDS (>3 letters)
-========================================
-  • hello: 5270
-  • world: 5261
-  • thank: 2910
-  • great: 2738
-  • happy: 1624
-  • smile: 1585
-  • music: 1373
-  • video: 1340
-  • photo: 1118
-  • today: 1048
-  • night: 986
-  • morning: 964
-  • friend: 845
-  • family: 844
-  • coffee: 843
-  • movie: 787
-  • book: 778
-  • music: 747
-  • dance: 697
-  • laugh: 657
-  • dream: 649
-  • peace: 647
-  • love: 624
-  • hope: 588
-  • time: 578
-  • life: 575
-  • home: 565
-  • food: 553
-  • work: 517
-  • play: 510
-
-========================================
-MOST USED WORDS BY USER
-========================================
-
-Alice:
-  • hello: 3249
-  • world: 3244
-  • thank: 1912
-  • great: 1546
-  • happy: 1328
-  • smile: 1129
-  • photo: 1081
-  • music: 1016
-  • video: 887
-  • today: 757
-  • night: 676
-  • coffee: 651
-  • friend: 624
-  • morning: 602
-  • book: 585
-  • dance: 574
-  • family: 569
-  • movie: 556
-  • food: 538
-  • music: 518
-
-Bob:
-  • hello: 2021
-  • world: 2017
-  • thank: 1364
-  • great: 826
-  • smile: 456
-  • video: 453
-  • photo: 410
-  • life: 391
-  • time: 372
-  • morning: 362
-  • music: 357
-  • night: 310
-  • happy: 296
-  • today: 291
-  • movie: 288
-  • hope: 263
-  • https: 263
-  • work: 263
-  • time: 257
-  • play: 257
-
-========================================
-MOST USED EMOJIS BY USER
-========================================
-
-Alice:
-  • 😊 : 146
-  • ❤️ : 103
-  • 👍 : 45
-  • 😂 : 44
-  • 🎉 : 36
-
-Bob:
-  • 😄 : 15
-  • 🙏 : 15
-  • 🎯 : 14
-  • 🌟 : 10
-  • 💪 : 9
+## 😊 Most Used Emojis by User
+### Alice
+| Emoji | Count |
+|-------|-------|
+| 😊 | 146 |
+| ❤️ | 103 |
+...
 ```
 
 ## Requirements
 
 - Python 3.6+
 - Required packages (install using `pip install -r requirements.txt`):
+  - pandas
   - emoji
   - collections
   - datetime
@@ -306,17 +161,29 @@ pip install -r requirements.txt
 python ChatStatsForWhatsApp.py _chat.txt
 ```
 
-3. View the results in `chat_stats.txt`
+3. View the results in `chat_stats.md`
 
-## Output Format
+## Features
 
-The script generates a detailed report in `chat_stats.txt` containing:
-- Message counts and statistics for each user
-- Media usage statistics
-- Temporal analysis of the conversation
-- Most used words and emojis
-- Longest messages
-- Message length statistics
+### ✨ Recent Improvements
+- **Markdown Output**: Beautiful, formatted output with emoji headers
+- **Enhanced Statistics**: More detailed user activity analysis
+- **Improved Formatting**: Clean tables and organized sections
+- **Visual Appeal**: Emoji-enhanced headers for easy navigation
+- **Comprehensive Data**: Detailed breakdown of all chat activities
+
+### 📈 What You Get
+- **User Engagement**: See who's most active and when
+- **Media Usage**: Track how much each user shares media
+- **Temporal Patterns**: Understand when the chat is most active
+- **Word Analysis**: Discover most used words and phrases
+- **Emoji Insights**: See which emojis are most popular
+- **Activity Timeline**: Track user participation over time
+
+## Output Files
+
+- `chat_stats.md` - Main statistics report in Markdown format
+- `_chat.txt` - Your WhatsApp chat export (input file)
 
 ## License
 
@@ -336,3 +203,6 @@ Contributions are welcome! Please read our [Contributing Guidelines](CONTRIBUTIN
 - text-analysis
 - social-media
 - data-visualization
+- markdown
+- emoji-analysis
+ 

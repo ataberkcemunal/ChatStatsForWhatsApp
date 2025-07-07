@@ -3,9 +3,11 @@ from datetime import datetime
 from collections import Counter
 import pandas as pd
 import emoji
+import unicodedata
 
 # Patterns to detect media placeholders in chat
 MEDIA_PATTERNS = [
+    # Turkish
     'Çıkartma dahil edilmedi',
     'görüntü dahil edilmedi',
     'video dahil edilmedi',
@@ -21,11 +23,30 @@ MEDIA_PATTERNS = [
     'Görüntülü arama. Cevaplanmadı',
     'Sesli arama. Cevaplanmadı',
     'Görüntülü arama. Geri aramak için dokunun',
-    'Sesli arama. Geri aramak için dokunun'
+    'Sesli arama. Geri aramak için dokunun',
+    # English
+    'sticker omitted',
+    'image omitted',
+    'video omitted',
+    'audio omitted',
+    'document omitted',
+    'GIF omitted',
+    'location: https://maps.google.com',
+    'Contact card omitted',
+    'Missed voice call',
+    'Missed video call',
+    'Incoming voice call',
+    'Incoming video call',
+    'Outgoing voice call',
+    'Outgoing video call'
 ]
 
 # Regex for links
 LINK_REGEX = r'https?://\S+'
+
+def clean_message(text):
+    # Remove all invisible and control characters, normalize whitespace, and lowercase
+    return ''.join(c for c in text if not unicodedata.category(c).startswith('C')).strip().lower()
 
 # Parse chat file into DataFrame
 def parse_chat(filepath):
@@ -33,12 +54,15 @@ def parse_chat(filepath):
     current = None
     with open(filepath, encoding='utf-8') as f:
         for raw in f:
-            line = raw.strip('\n')
+            # Remove all invisible/control characters from the start of the line
+            line = raw.lstrip().lstrip(''.join(chr(i) for i in range(0,32)) + '\u200e\u200f').strip('\n')
+            # Also remove U+200E from anywhere in the line
+            line = line.replace('\u200E', '').replace('\u200F', '')
             # If line contains U+200E, only count for media if it matches a media pattern
             if '\u200E' in line:
                 m = re.match(r"^\[(\d{1,2}\.\d{1,2}\.\d{4} \d{2}:\d{2}:\d{2})\] (.*?): (.*)", line.replace('\u200E', ''))
                 if m and any(pat in m.group(3) for pat in MEDIA_PATTERNS):
-                    ts = datetime.strptime(m.group(1), '%d.%m.%Y %H:%M:%S')
+                    ts = datetime.strptime(m.group(1), '%d.%m.%Y, %H:%M:%S')
                     user = m.group(2)
                     entry = {
                         'datetime': ts,
@@ -53,19 +77,30 @@ def parse_chat(filepath):
                     }
                     records.append(entry)
                 continue
-            # Message line: [DD.MM.YYYY HH:MM:SS] User: message
-            m = re.match(r"^\[(\d{1,2}\.\d{1,2}\.\d{4} \d{2}:\d{2}:\d{2})\] (.*?): (.*)", line)
+            # Message line: [DD.MM.YYYY, HH:MM:SS] User: message
+            m = re.match(r"^\[(\d{1,2}\.\d{1,2}\.\d{4}, \d{2}:\d{2}:\d{2})\] (.*?): (.*)", line)
             if m:
-                ts = datetime.strptime(m.group(1), '%d.%m.%Y %H:%M:%S')
+                ts = datetime.strptime(m.group(1), '%d.%m.%Y, %H:%M:%S')
                 user = m.group(2)
                 text = m.group(3)
+                cleaned_text = clean_message(text)
+                
+                # Skip edited message indicators
+                if '<this message was edited>' in cleaned_text:
+                    continue
+                # Debug: print suspected media lines
+                if ('omitted' in cleaned_text or 'dahil edilmedi' in cleaned_text or 'arama' in cleaned_text or 'konum' in cleaned_text or 'location:' in cleaned_text):
+                    print(f"DEBUG: user={user}, original='{text}', cleaned='{cleaned_text}'")
+                    for pat in [p.lower() for p in MEDIA_PATTERNS]:
+                        if pat in cleaned_text:
+                            print(f"  MATCH: pattern='{pat}'")
                 # Calculate stats for normal messages
                 word_count = len(text.split())
                 letter_count = len(text.replace(' ', ''))
                 links = len(re.findall(LINK_REGEX, text))
                 emojis = [em['emoji'] for em in emoji.emoji_list(text)]
                 emoji_count = len(emojis)
-                media = 1 if any(pat in text.replace('\u200E', '') for pat in MEDIA_PATTERNS) else 0
+                media = 1 if any(pat in cleaned_text for pat in [p.lower() for p in MEDIA_PATTERNS]) else 0
                 entry = {
                     'datetime': ts,
                     'user': user,
@@ -83,14 +118,14 @@ def parse_chat(filepath):
                 # Continuation of previous message
                 if current:
                     current['message'] += ' ' + line
-                    # Recalculate stats for the updated message
                     text = current['message']
+                    cleaned_text = clean_message(text)
                     current['word_count'] = len(text.split())
                     current['letter_count'] = len(text.replace(' ', ''))
                     current['links'] = len(re.findall(LINK_REGEX, text))
                     current['emojis'] = [em['emoji'] for em in emoji.emoji_list(text)]
                     current['emoji_count'] = len(current['emojis'])
-                    current['media'] = 1 if any(pat in text.replace('\u200E', '') for pat in MEDIA_PATTERNS) else 0
+                    current['media'] = 1 if any(pat in cleaned_text for pat in [p.lower() for p in MEDIA_PATTERNS]) else 0
     df = pd.DataFrame(records)
     # add additional columns if not already present
     if 'date' not in df.columns:
@@ -107,105 +142,157 @@ def parse_chat(filepath):
 
 # Compute and print statistics
 def compute_stats(df):
-    with open('chat_stats.txt', 'w', encoding='utf-8') as f:
+    with open('chat_stats.md', 'w', encoding='utf-8') as f:
         def write_header(title):
-            f.write(f"\n{'='*40}\n{title}\n{'='*40}\n")
+            f.write(f"# {title}\n")
         def write_subheader(title):
-            f.write(f"\n-- {title} --\n")
-        write_header('CHAT SUMMARY')
-        f.write(f"Date Range    : {df['datetime'].min()}  →  {df['datetime'].max()}\n")
-        f.write(f"Total Messages: {len(df):>8}\n")
-        f.write(f"Total Words   : {df['word_count'].sum():>8}\n")
-        f.write(f"Total Letters : {df['letter_count'].sum():>8}\n")
-        f.write(f"Total Media   : {df['media'].sum():>8}\n")
-        f.write(f"Total Emojis  : {df['emoji_count'].sum():>8}\n")
-        f.write(f"Total Links   : {df['links'].sum():>8}\n")
+            f.write(f"\n## {title}\n")
+        
+        write_header('WhatsApp Chat Statistics')
+        
+        # Chat Summary
+        write_subheader('📅 Chat Timeline')
+        f.write(f"**First Message:** {df['datetime'].min()}\n")
+        f.write(f"**Last Message:** {df['datetime'].max()}\n\n")
 
-        write_header('USER STATISTICS')
-        for stat, col in [
-            ("Message Count", 'user'),
-            ("Word Count", 'word_count'),
-            ("Letter Count", 'letter_count'),
-            ("Media", 'media'),
-            ("Emoji", 'emoji_count'),
-            ("Link", 'links')
-        ]:
-            write_subheader(stat)
-            if col == 'user':
-                counts = df['user'].value_counts()
-            else:
-                counts = df.groupby('user')[col].sum().sort_values(ascending=False)
-            maxlen = max(len(str(u)) for u in counts.index)
-            for u, v in counts.items():
-                f.write(f"  {u:<{maxlen}} : {v}\n")
-
-        # Add detailed media type statistics
-        write_header('DETAILED MEDIA STATISTICS')
+        # User Statistics
+        write_subheader('👥 User Statistics')
+        
+        # Create comprehensive user stats table
+        user_stats = []
         for user in df['user'].unique():
-            f.write(f"\n{user}:\n")
             user_df = df[df['user'] == user]
-            # Map full patterns to shorter names
-            media_names = {
-                'Çıkartma dahil edilmedi': 'Sticker',
-                'görüntü dahil edilmedi': 'Image',
-                'video dahil edilmedi': 'Video',
-                'ses dahil edilmedi': 'Audio',
-                'belge dahil edilmedi': 'Document',
-                'Konum: https://maps.google.com': 'Location',
-                'Görüntülü arama.': 'Video Call',
-                'Sesli arama.': 'Voice Call',
-                'Cevapsız görüntülü arama.': 'Missed Video Call',
-                'Cevapsız sesli arama.': 'Missed Voice Call',
-                'Görüntülü arama. Başka bir cihazda cevaplandı': 'Video Call (Other Device)',
-                'Sesli arama. Başka bir cihazda cevaplandı': 'Voice Call (Other Device)',
-                'Görüntülü arama. Cevaplanmadı': 'Missed Video Call',
-                'Sesli arama. Cevaplanmadı': 'Missed Voice Call',
-                'Görüntülü arama. Geri aramak için dokunun': 'Video Call (Call Back)',
-                'Sesli arama. Geri aramak için dokunun': 'Voice Call (Call Back)'
-            }
+            user_stats.append({
+                'User': user,
+                'Messages': len(user_df),
+                'Words': user_df['word_count'].sum(),
+                'Letters': user_df['letter_count'].sum(),
+                'Media': user_df['media'].sum(),
+                'Emojis': user_df['emoji_count'].sum(),
+                'Links': user_df['links'].sum()
+            })
+        
+        # Sort by message count
+        user_stats.sort(key=lambda x: x['Messages'], reverse=True)
+        
+        f.write("| User | Messages | Words | Letters | Media | Emojis | Links |\n")
+        f.write("|------|----------|-------|---------|-------|--------|-------|\n")
+        for stat in user_stats:
+            f.write(f"| {stat['User']} | {stat['Messages']:,} | {stat['Words']:,} | {stat['Letters']:,} | {stat['Media']:,} | {stat['Emojis']:,} | {stat['Links']:,} |\n")
+        f.write("\n")
 
-            # First write normal media stats
-            normal_media = {
-                'Çıkartma dahil edilmedi': 'Sticker',
-                'görüntü dahil edilmedi': 'Image',
-                'video dahil edilmedi': 'Video',
-                'ses dahil edilmedi': 'Audio',
-                'belge dahil edilmedi': 'Document',
-                'Konum: https://maps.google.com': 'Location'
-            }
+        # Detailed Media Statistics
+        write_subheader('📱 Detailed Media Statistics')
+        
+        # Create media stats table
+        media_stats = []
+        for user in df['user'].unique():
+            user_df = df[df['user'] == user]
             
-            for pattern, name in normal_media.items():
-                count = user_df[user_df['message'].str.replace('\u200E', '', regex=False).str.contains(pattern, na=False)].shape[0]
-                f.write(f"  • {name} count: {count}\n")
+            # Count different media types
+            sticker_count = user_df[user_df['message'].str.replace('\u200E', '', regex=False).str.lower().str.contains('sticker omitted', na=False)].shape[0]
+            image_count = user_df[user_df['message'].str.replace('\u200E', '', regex=False).str.lower().str.contains('image omitted', na=False)].shape[0]
+            video_count = user_df[user_df['message'].str.replace('\u200E', '', regex=False).str.lower().str.contains('video omitted', na=False)].shape[0]
+            audio_count = user_df[user_df['message'].str.replace('\u200E', '', regex=False).str.lower().str.contains('audio omitted', na=False)].shape[0]
+            document_count = user_df[user_df['message'].str.replace('\u200E', '', regex=False).str.lower().str.contains('document omitted', na=False)].shape[0]
+            gif_count = user_df[user_df['message'].str.replace('\u200E', '', regex=False).str.lower().str.contains('gif omitted', na=False)].shape[0]
+            location_count = user_df[user_df['message'].str.replace('\u200E', '', regex=False).str.lower().str.contains('location:', na=False)].shape[0]
+            
+            media_stats.append({
+                'User': user,
+                'Stickers': sticker_count,
+                'Images': image_count,
+                'Videos': video_count,
+                'Audio': audio_count,
+                'Documents': document_count,
+                'GIFs': gif_count,
+                'Locations': location_count,
+                'Total Media': sticker_count + image_count + video_count + audio_count + document_count + gif_count + location_count
+            })
+        
+        # Sort by total media
+        media_stats.sort(key=lambda x: x['Total Media'], reverse=True)
+        
+        f.write("| User | Stickers | Images | Videos | Audio | Documents | GIFs | Locations | Total |\n")
+        f.write("|------|----------|--------|--------|-------|-----------|------|-----------|-------|\n")
+        for stat in media_stats:
+            f.write(f"| {stat['User']} | {stat['Stickers']} | {stat['Images']} | {stat['Videos']} | {stat['Audio']} | {stat['Documents']} | {stat['GIFs']} | {stat['Locations']} | **{stat['Total Media']}** |\n")
+        f.write("\n")
 
-            # Then write call stats in a consistent format
-            f.write(f"  • Video Call count: {user_df[user_df['message'].str.replace('\u200E', '', regex=False).str.contains('Görüntülü arama.', na=False)].shape[0]}\n")
-            f.write(f"  • Voice Call count: {user_df[user_df['message'].str.replace('\u200E', '', regex=False).str.contains('Sesli arama.', na=False)].shape[0]}\n")
-
-        write_header('TEMPORAL STATISTICS')
-        write_subheader('Messages by Day of Week')
+        # Temporal Statistics
+        write_subheader('⏰ Temporal Statistics')
+        
+        # Messages by Day of Week
+        f.write("#### 📅 Messages by Day of Week\n")
         days = df['weekday'].value_counts().reindex(
             ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday']
         )
+        f.write("| Day | Messages |\n")
+        f.write("|-----|----------|\n")
         for d, v in days.items():
-            f.write(f"  {d:<10}: {v}\n")
-        write_subheader('Messages by Hour')
-        for h, v in df['hour'].value_counts().sort_index().items():
-            f.write(f"  {h:02d}:00 - {h:02d}:59 : {v}\n")
-        write_subheader('Messages by Month')
-        for m, v in df['month'].value_counts().sort_index().items():
-            f.write(f"  {m}: {v}\n")
-        write_subheader('Most Active 10 Days')
-        for d, v in df['date'].value_counts().head(10).items():
-            f.write(f"  {d}: {v}\n")
-        write_subheader('Users First Message')
-        for u, v in df.groupby('user')['datetime'].min().items():
-            f.write(f"  {u}: {v}\n")
-        write_subheader('Users Last Message')
-        for u, v in df.groupby('user')['datetime'].max().items():
-            f.write(f"  {u}: {v}\n")
+            f.write(f"| {d} | {v:,} |\n")
+        f.write("\n")
+        
+        # Messages by Hour
+        f.write("#### 🕐 Messages by Hour\n")
+        hour_stats = df['hour'].value_counts().sort_index()
+        f.write("| Hour | Messages |\n")
+        f.write("|------|----------|\n")
+        for h, v in hour_stats.items():
+            f.write(f"| {h:02d}:00 - {h:02d}:59 | {v:,} |\n")
+        f.write("\n")
+        
+        # Messages by Month
+        f.write("#### 📆 Messages by Month\n")
+        month_stats = df['month'].value_counts().sort_index()
+        f.write("| Month | Messages |\n")
+        f.write("|-------|----------|\n")
+        for m, v in month_stats.items():
+            f.write(f"| {m} | {v:,} |\n")
+        f.write("\n")
+        
+        # Most Active Days
+        f.write("#### 🔥 Most Active 10 Days\n")
+        day_stats = df['date'].value_counts().head(10)
+        f.write("| Date | Messages |\n")
+        f.write("|------|----------|\n")
+        for d, v in day_stats.items():
+            f.write(f"| {d} | {v:,} |\n")
+        f.write("\n")
+        
+        # Users First and Last Message
+        f.write("#### 📊 User Activity Timeline\n")
+        
+        # Calculate total days the chat has been active
+        total_chat_days = df['date'].nunique()
+        f.write(f"**Total Chat Days: {total_chat_days}**\n\n")
+        
+        user_timeline = []
+        for user in df['user'].unique():
+            user_df = df[df['user'] == user]
+            first_msg = user_df['datetime'].min()
+            last_msg = user_df['datetime'].max()
+            # Count unique days when user sent messages
+            active_days = user_df['date'].nunique()
+            user_timeline.append({
+                'User': user,
+                'First Message': first_msg,
+                'Last Message': last_msg,
+                'Days Active': active_days
+            })
+        
+        user_timeline.sort(key=lambda x: x['Days Active'], reverse=True)
+        f.write("| User | Days Active | Participation Rate | Messages per Active Day |\n")
+        f.write("|------|-------------|-------------------|------------------------|\n")
+        for timeline in user_timeline:
+            participation_rate = (timeline['Days Active'] / total_chat_days) * 100
+            user_messages = df[df['user'] == timeline['User']].shape[0]
+            messages_per_day = user_messages / timeline['Days Active'] if timeline['Days Active'] > 0 else 0
+            f.write(f"| {timeline['User']} | {timeline['Days Active']} / {total_chat_days} | {participation_rate:.1f}% | {messages_per_day:.1f} |\n")
+        f.write("\n")
 
-        write_header('MOST USED WORDS (>3 letters)')
+        # Most Used Words
+        write_subheader('📝 Most Used Words (>3 letters)')
         all_words = []
         # Only process non-media messages
         non_media_messages = df[df['media']==0]['message']
@@ -215,12 +302,17 @@ def compute_stats(df):
             words = re.findall(r"\b\w+\b", msg.lower())
             all_words.extend([w for w in words if len(w) > 3])
         wc = Counter(all_words)
+        
+        f.write("| Word | Count |\n")
+        f.write("|------|-------|\n")
         for word, count in wc.most_common(30):
-            f.write(f"  • {word}: {count}\n")
+            f.write(f"| {word} | {count:,} |\n")
+        f.write("\n")
 
-        write_header('MOST USED WORDS BY USER')
+        # Most Used Words by User
+        write_subheader('🗣️ Most Used Words by User')
         for user in df['user'].unique():
-            f.write(f"\n{user}:\n")
+            f.write(f"\n#### {user}\n")
             user_words = []
             # Only process non-media messages
             user_messages = df[(df['user']==user) & (df['media']==0)]['message']
@@ -230,17 +322,27 @@ def compute_stats(df):
                 words = re.findall(r"\b\w+\b", msg.lower())
                 user_words.extend([w for w in words if len(w) > 3])
             wc = Counter(user_words)
+            
+            f.write("| Word | Count |\n")
+            f.write("|------|-------|\n")
             for word, count in wc.most_common(20):
-                f.write(f"  • {word}: {count}\n")
+                f.write(f"| {word} | {count:,} |\n")
+            f.write("\n")
 
-        write_header('MOST USED EMOJIS BY USER')
+        # Most Used Emojis by User
+        write_subheader('😊 Most Used Emojis by User')
         for user in df['user'].unique():
-            f.write(f"\n{user}:\n")
             user_emojis = Counter()
             for em_list in df[df['user']==user]['emojis']:
                 user_emojis.update(em_list)
-            for em, cnt in user_emojis.most_common(5):
-                f.write(f"  • {em} : {cnt}\n")
+            
+            # Only include users who have emojis
+            if user_emojis:
+                f.write(f"\n#### {user}\n")
+                f.write("| Emoji | Count |\n")
+                f.write("|-------|-------|\n")
+                for em, cnt in user_emojis.most_common(5):
+                    f.write(f"| {em} | {cnt:,} |\n")
 
 if __name__ == '__main__':
     import argparse

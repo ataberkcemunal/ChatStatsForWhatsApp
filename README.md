@@ -28,7 +28,7 @@ The script generates a PDF report (`chat_stats.pdf`) with:
 - Emoji-enhanced headers for easy navigation
 - Clean, styled tables for all statistics
 - Organized sections with visual hierarchy
-- Timeline (First Message and Last Message) on separate lines for clarity
+- Timeline (First Message and Last Message date)
 - Comprehensive data in an easy-to-read format
 
 ### Example Output Structure

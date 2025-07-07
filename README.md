@@ -12,7 +12,7 @@ A Python script that analyzes WhatsApp chat exports and generates a comprehensiv
   - Stickers, images, videos, audio, documents, GIFs, locations, and total media per user
 - **Temporal Statistics:**
   - Messages by day of week, hour, month, and most active days
-  - Chat timeline (first and last messages shown on separate lines)
+  - Chat timeline
 - **User Activity Timeline:**
   - Days active, participation rate, messages per active day
 - **Word Analysis:**

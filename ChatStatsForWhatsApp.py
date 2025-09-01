@@ -65,7 +65,7 @@ def parse_chat(filepath):
             if '\u200E' in line:
                 m = re.match(r"^\[(\d{1,2}\.\d{1,2}\.\d{4} \d{2}:\d{2}:\d{2})\] (.*?): (.*)", line.replace('\u200E', ''))
                 if m and any(pat in m.group(3) for pat in MEDIA_PATTERNS):
-                    ts = datetime.strptime(m.group(1), '%d.%m.%Y, %H:%M:%S')
+                    ts = datetime.strptime(m.group(1), '%d.%m.%Y %H:%M:%S')
                     user = m.group(2)
                     entry = {
                         'datetime': ts,
@@ -81,9 +81,9 @@ def parse_chat(filepath):
                     records.append(entry)
                 continue
             # Message line: [DD.MM.YYYY, HH:MM:SS] User: message
-            m = re.match(r"^\[(\d{1,2}\.\d{1,2}\.\d{4}, \d{2}:\d{2}:\d{2})\] (.*?): (.*)", line)
+            m = re.match(r"^\[(\d{1,2}\.\d{1,2}\.\d{4} \d{2}:\d{2}:\d{2})\] (.*?): (.*)", line)
             if m:
-                ts = datetime.strptime(m.group(1), '%d.%m.%Y, %H:%M:%S')
+                ts = datetime.strptime(m.group(1), '%d.%m.%Y %H:%M:%S')
                 user = m.group(2)
                 text = m.group(3)
                 cleaned_text = clean_message(text)
@@ -199,13 +199,13 @@ def compute_stats(df):
         user_df = df[df['user'] == user]
         
         # Count different media types
-        sticker_count = user_df[user_df['message'].str.replace('\u200E', '', regex=False).str.lower().str.contains('sticker omitted', na=False)].shape[0]
-        image_count = user_df[user_df['message'].str.replace('\u200E', '', regex=False).str.lower().str.contains('image omitted', na=False)].shape[0]
-        video_count = user_df[user_df['message'].str.replace('\u200E', '', regex=False).str.lower().str.contains('video omitted', na=False)].shape[0]
-        audio_count = user_df[user_df['message'].str.replace('\u200E', '', regex=False).str.lower().str.contains('audio omitted', na=False)].shape[0]
-        document_count = user_df[user_df['message'].str.replace('\u200E', '', regex=False).str.lower().str.contains('document omitted', na=False)].shape[0]
-        gif_count = user_df[user_df['message'].str.replace('\u200E', '', regex=False).str.lower().str.contains('gif omitted', na=False)].shape[0]
-        location_count = user_df[user_df['message'].str.replace('\u200E', '', regex=False).str.lower().str.contains('location:', na=False)].shape[0]
+        sticker_count = user_df[user_df['message'].str.replace('\u200E', '', regex=False).str.lower().str.contains('sticker omitted|çıkartma dahil edilmedi', na=False, regex=True)].shape[0]
+        image_count = user_df[user_df['message'].str.replace('\u200E', '', regex=False).str.lower().str.contains('image omitted|görüntü dahil edilmedi', na=False, regex=True)].shape[0]
+        video_count = user_df[user_df['message'].str.replace('\u200E', '', regex=False).str.lower().str.contains('video omitted|video dahil edilmedi', na=False, regex=True)].shape[0]
+        audio_count = user_df[user_df['message'].str.replace('\u200E', '', regex=False).str.lower().str.contains('audio omitted|ses dahil edilmedi', na=False, regex=True)].shape[0]
+        document_count = user_df[user_df['message'].str.replace('\u200E', '', regex=False).str.lower().str.contains('document omitted|belge dahil edilmedi', na=False, regex=True)].shape[0]
+        gif_count = user_df[user_df['message'].str.replace('\u200E', '', regex=False).str.lower().str.contains('gif omitted|gif dahil edilmedi', na=False, regex=True)].shape[0]
+        location_count = user_df[user_df['message'].str.replace('\u200E', '', regex=False).str.lower().str.contains('location:|konum:', na=False, regex=True)].shape[0]
         
         media_stats.append({
             'User': user,

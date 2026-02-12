@@ -124,6 +124,10 @@ def clean_media_placeholders(text):
     """Removes U+200E, media placeholders, and poll system text to extract pure user content"""
     if not text:
         return ""
+    # Check for System Poll Marker (\u200e followed by ANKET:)
+    # We must do this BEFORE stripping markers
+    is_system_poll = bool(re.search(r'\u200e\s*ANKET:', text, re.IGNORECASE))
+
     # Remove markers
     res = text.replace('\u200e', '').replace('\u200f', '').replace('\u200E', '').replace('\u200F', '')
     
@@ -132,18 +136,15 @@ def clean_media_placeholders(text):
         res = re.sub(re.escape(pat), '', res, flags=re.IGNORECASE)
         
     # Remove Poll system text
-    # ONLY if the message starts with "ANKET:" (ignoring case and leading whitespace/markers)
-    # This prevents false positives in normal user messages (e.g., "Benim başka bir seçenek hakkım var")
-    
-    # Check if it looks like a poll system message
-    # We use re.match to check the start of the cleaned string
-    if re.match(r'(?:^|\s)ANKET:', res, flags=re.IGNORECASE):
+    # ONLY if it was identified as a system poll (with the invisible marker)
+    if is_system_poll:
+        flags = re.IGNORECASE
         # 1. Remove "ANKET:" prefix (start of string or after space)
-        res = re.sub(r'(?:^|\s)ANKET:\s*', ' ', res, flags=re.IGNORECASE)
+        res = re.sub(r'(?:^|\s)ANKET:\s*', ' ', res, flags=flags)
         # 2. Remove "SEÇENEK:" globally
-        res = re.sub(r'(?:^|\s)SEÇENEK:\s*', ' ', res, flags=re.IGNORECASE)
+        res = re.sub(r'(?:^|\s)SEÇENEK:\s*', ' ', res, flags=flags)
         # 3. Remove vote counts "(X oy)" globally
-        res = re.sub(r'\s*\(\d+\s+oy\)', '', res, flags=re.IGNORECASE)
+        res = re.sub(r'\s*\(\d+\s+oy\)', '', res, flags=flags)
     
     return res.strip()
 

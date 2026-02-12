@@ -330,6 +330,7 @@ def compute_stats(df):
     
     # Sort by message count
     user_stats.sort(key=lambda x: x['Messages'], reverse=True)
+    sorted_users = [s['User'] for s in user_stats]
     
     write_line("| Kullanıcı | Mesajlar | Kelimeler | Harfler | Medya | Emojiler | Linkler |")
     write_line("|-----------|----------|-----------|---------|-------|----------|---------|")
@@ -340,7 +341,7 @@ def compute_stats(df):
     write_line("")
 
     call_stats = []
-    for user in df['user'].unique():
+    for user in sorted_users:
         user_df = df[df['user'] == user]
         
         # We need to look at raw messages (including those marked as media)
@@ -385,7 +386,7 @@ def compute_stats(df):
 
     # Create media stats table
     media_stats = []
-    for user in df['user'].unique():
+    for user in sorted_users:
         user_df = df[df['user'] == user]
         
         user_df = df[df['user'] == user]
@@ -451,7 +452,7 @@ def compute_stats(df):
     # Most Used Words by User
 
     write_subheader('🗣️ Kullanıcılara Göre En Çok Kullanılan Kelimeler')
-    for user in df['user'].unique():
+    for user in sorted_users:
         write_line(f"\n#### {user}")
         user_words = []
         # Process user messages, cleaning placeholders
@@ -472,7 +473,7 @@ def compute_stats(df):
     # Most Used Word Combinations by User
     write_subheader('🔗 Kullanıcı Bazlı En Çok Kullanılan Kelime Kombinasyonları')
     
-    for user in df['user'].unique():
+    for user in sorted_users:
         write_line(f"\n#### {user}")
         # Process messages, cleaning placeholders
         user_messages_raw = df[df['user']==user]['message']
@@ -508,7 +509,7 @@ def compute_stats(df):
 
     # Most Used Emojis by User
     emoji_data = {}
-    for user in df['user'].unique():
+    for user in sorted_users:
         user_emojis = Counter()
         for em_list in df[df['user']==user]['emojis']:
             user_emojis.update(em_list)
@@ -581,7 +582,7 @@ def compute_stats(df):
     write_line("")
     
     user_timeline = []
-    for user in df['user'].unique():
+    for user in sorted_users:
         user_df = df[df['user'] == user]
         first_msg = user_df['datetime'].min()
         last_msg = user_df['datetime'].max()

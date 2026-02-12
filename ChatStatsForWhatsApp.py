@@ -127,12 +127,12 @@ LINK_REGEX = r'https?://\S+'
 TAG_REGEX = r'@\u2068(.*?)\u2069'
 CLEANUP_REGEX = re.compile(r'\u200e?<.*?(?:mesaj düzenlendi|message was edited)>|\u200e?Bu mesajı sildiniz\.|\u200e?Bu mesaj silindi\.', re.IGNORECASE)
 
-def clean_media_placeholders(text):
-    """Removes U+200E, media placeholders, and poll system text to extract pure user content"""
+def is_poll(text):
+    """Check if a message is a poll based on marker or heuristic"""
     if not text:
-        return ""
+        return False
+        
     # Check for System Poll Marker (\u200e followed by ANKET:)
-    # We must do this BEFORE stripping markers
     has_marker = bool(re.search(r'\u200e\s*ANKET:', text, re.IGNORECASE))
     
     # Check for heuristic: Contains both "ANKET:" and "SEÇENEK:" (ignoring case)
@@ -140,7 +140,15 @@ def clean_media_placeholders(text):
     upper_text = str(text).upper()
     has_heuristic = "ANKET:" in upper_text and "SEÇENEK:" in upper_text
     
-    is_system_poll = has_marker or has_heuristic
+    return has_marker or has_heuristic
+
+def clean_media_placeholders(text):
+    """Removes U+200E, media placeholders, and poll system text to extract pure user content"""
+    if not text:
+        return ""
+        
+    # Identify if it's a poll using the helper
+    is_system_poll = is_poll(text)
 
     # Remove markers
     res = text.replace('\u200e', '').replace('\u200f', '').replace('\u200E', '').replace('\u200F', '')
@@ -267,11 +275,13 @@ def parse_chat(filepath):
                 emoji_count = len(emojis)
                 emoji_count = len(emojis)
                 media = 1 if any(pat in cleaned_text for pat in [turkish_lower(p) for p in MEDIA_PATTERNS]) else 0
+                poll = 1 if is_poll(text) else 0
                 entry = {
                     'datetime': ts,
                     'user': user,
                     'message': text,
                     'media': media,
+                    'poll': poll,
                     'word_count': word_count,
                     'letter_count': letter_count,
                     'links': links,
@@ -294,6 +304,7 @@ def parse_chat(filepath):
                     current['emojis'] = [em['emoji'] for em in emoji.emoji_list(text)]
                     current['emoji_count'] = len(current['emojis'])
                     current['media'] = 1 if any(pat in cleaned_text for pat in [turkish_lower(p) for p in MEDIA_PATTERNS]) else 0
+                    current['poll'] = 1 if is_poll(text) else 0
     df = pd.DataFrame(records)
     # add additional columns if not already present
     if 'date' not in df.columns:
@@ -356,17 +367,18 @@ def compute_stats(df):
             'Letters': user_df['letter_count'].sum(),
             'Media': user_df['media'].sum(),
             'Emojis': user_df['emoji_count'].sum(),
-            'Links': user_df['links'].sum()
+            'Links': user_df['links'].sum(),
+            'Polls': user_df['poll'].sum() if 'poll' in user_df.columns else 0
         })
     
     # Sort by message count
     user_stats.sort(key=lambda x: x['Messages'], reverse=True)
     sorted_users = [s['User'] for s in user_stats]
     
-    write_line("| Kullanıcı | Mesajlar | Kelimeler | Harfler | Medya | Emojiler | Linkler |")
-    write_line("|-----------|----------|-----------|---------|-------|----------|---------|")
+    write_line("| Kullanıcı | Mesajlar | Kelimeler | Harfler | Medya | Emojiler | Linkler | Anketler |")
+    write_line("|-----------|----------|-----------|---------|-------|----------|---------|----------|")
     for stat in user_stats:
-        write_line(f"| {stat['User']} | {format_number(stat['Messages'])} | {format_number(stat['Words'])} | {format_number(stat['Letters'])} | {format_number(stat['Media'])} | {format_number(stat['Emojis'])} | {format_number(stat['Links'])} |")
+        write_line(f"| {stat['User']} | {format_number(stat['Messages'])} | {format_number(stat['Words'])} | {format_number(stat['Letters'])} | {format_number(stat['Media'])} | {format_number(stat['Emojis'])} | {format_number(stat['Links'])} | {format_number(stat.get('Polls', 0))} |")
     write_line("")
 
     write_line("")

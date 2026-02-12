@@ -419,7 +419,9 @@ def compute_stats(df):
     write_line("|-----------|----------|-----------|-------|----------|---------|----------|---------|")
     for stat in user_stats:
         avg_letters_str = f"{stat['AvgLetters']:.1f}".replace('.', ',')
-        write_line(f"| {stat['User']} | {format_number(stat['Messages'])} | {avg_letters_str} | {format_number(stat['Media'])} | {format_number(stat['Emojis'])} | {format_number(stat['Links'])} | {format_number(stat.get('Polls', 0))} | {format_number(stat.get('Deleted', 0))} |")
+        # Wrap message count in span with red color
+        msg_count_str = f'<span style="color: red;">{format_number(stat["Messages"])}</span>'
+        write_line(f"| {stat['User']} | {msg_count_str} | {avg_letters_str} | {format_number(stat['Media'])} | {format_number(stat['Emojis'])} | {format_number(stat['Links'])} | {format_number(stat.get('Polls', 0))} | {format_number(stat.get('Deleted', 0))} |")
     write_line("")
 
     write_line("")

@@ -104,6 +104,45 @@ def clean_message(text):
 def clean_message_lower(text):
     return turkish_lower(clean_message(text))
 
+def _get_tokens(text, min_len=2):
+    """Helper to tokenize text while preserving tags as single units"""
+    placeholders = {}
+    def repl(m):
+        # Extract name, remove all spaces and control characters
+        raw_name = m.group(1)
+        # Remove invisible/control characters and spaces
+        clean_name = ''.join(c for c in raw_name if not unicodedata.category(c).startswith('C'))
+        clean_name = clean_name.replace(' ', '')
+        
+        token = f"ZXTG{len(placeholders)}TX"
+        formatted_name = f"@{clean_name}"
+        # Store with standard lower() since our token is ascii-safe
+        placeholders[token.lower()] = formatted_name
+        return token
+    
+    # Remove links and system indicators
+    text = re.sub(LINK_REGEX, '', text)
+    text = CLEANUP_REGEX.sub('', text)
+    
+    # Replace tags with placeholders BEFORE tokenization
+    text = re.sub(TAG_REGEX, repl, text)
+    
+    # Tokenize (keeping alphanumeric and underscores)
+    # Note: we use words and placeholders as tokens
+    words = re.findall(r"\b\w+\b", turkish_lower(text))
+    
+    # Restore placeholders and filter by min_len
+    tokens = []
+    for w in words:
+        # We use standard .lower() for the lookup because our placeholder is ASCII
+        lookup_w = w.lower()
+        if lookup_w in placeholders:
+            tokens.append(placeholders[lookup_w])
+        elif len(w) >= min_len:
+            tokens.append(w)
+            
+    return tokens
+
 # Parse chat file into DataFrame
 def parse_chat(filepath):
     records = []
@@ -259,43 +298,7 @@ def compute_stats(df):
     
     write_header('WhatsApp Sohbet İstatistikleri')
     
-    def _get_tokens(text, min_len=2):
-        """Helper to tokenize text while preserving tags as single units"""
-        placeholders = {}
-        def repl(m):
-            # Extract name, remove all spaces and control characters
-            raw_name = m.group(1)
-            # Remove invisible/control characters and spaces
-            clean_name = ''.join(c for c in raw_name if not unicodedata.category(c).startswith('C'))
-            clean_name = clean_name.replace(' ', '')
-            
-            token = f"ZXTG{len(placeholders)}TX"
-            formatted_name = f"@{clean_name}"
-            # Store with standard lower() since our token is ascii-safe
-            placeholders[token.lower()] = formatted_name
-            return token
-        
-        # Remove links and system indicators
-        text = re.sub(LINK_REGEX, '', text)
-        text = CLEANUP_REGEX.sub('', text)
-        
-        # Replace tags with placeholders BEFORE tokenization
-        text = re.sub(TAG_REGEX, repl, text)
-        
-        # Tokenize (keeping alphanumeric and underscores)
-        # Note: we use words and placeholders as tokens
-        words = re.findall(r"\b\w+\b", turkish_lower(text))
-        
-        # Restore placeholders and filter by min_len
-        tokens = []
-        for w in words:
-            # We use standard .lower() for the lookup because our placeholder is ASCII
-            lookup_w = w.lower()
-            if lookup_w in placeholders:
-                tokens.append(placeholders[lookup_w])
-            elif len(w) >= min_len:
-                tokens.append(w)
-        return tokens
+    # _get_tokens moved to top level
 
     
     # Chat Summary
@@ -433,7 +436,7 @@ def compute_stats(df):
     
     write_line("| Kelime | Sayı |")
     write_line("|--------|------|")
-    for word, count in wc.most_common(30):
+    for word, count in wc.most_common(100):
         write_line(f"| {word} | {format_number(count)} |")
     write_line("")
 

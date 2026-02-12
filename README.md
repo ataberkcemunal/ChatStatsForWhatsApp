@@ -4,8 +4,9 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Language: Turkish](https://img.shields.io/badge/Language-Turkish_Only-blue.svg)](https://github.com/ataberkcemunal/ChatStatsForWhatsApp)
 
-**Önemli Not:** Bu araç sadece **Türkçe** dilinde dışa aktarılmış WhatsApp sohbetleri için optimize edilmiştir.
-[Türkçe README için tıklayın](README_TR.md)
+> [!IMPORTANT]
+> This tool is specifically optimized for WhatsApp chats exported in **Turkish**.
+> [Click here for the Turkish README / Türkçe README için tıklayın](README_TR.md)
 
 A comprehensive Python-based analyzer for WhatsApp chat exports. Transform your raw chat logs into professional, insightful PDF reports featuring detailed statistics, temporal analysis, and natural language insights.
 

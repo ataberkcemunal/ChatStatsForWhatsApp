@@ -132,16 +132,18 @@ def clean_media_placeholders(text):
         res = re.sub(re.escape(pat), '', res, flags=re.IGNORECASE)
         
     # Remove Poll system text
-    # Since messages are joined by SPACE, not newline, we cannot use ^ anchors heavily
-    # We use (?:^|\s) to match start of string or whitespace before the tag
-    flags = re.IGNORECASE
+    # ONLY if the message starts with "ANKET:" (ignoring case and leading whitespace/markers)
+    # This prevents false positives in normal user messages (e.g., "Benim başka bir seçenek hakkım var")
     
-    # 1. Remove "ANKET:" prefix (start of string or after space)
-    res = re.sub(r'(?:^|\s)ANKET:\s*', ' ', res, flags=flags)
-    # 2. Remove "SEÇENEK:" globally
-    res = re.sub(r'(?:^|\s)SEÇENEK:\s*', ' ', res, flags=flags)
-    # 3. Remove vote counts "(X oy)" globally
-    res = re.sub(r'\s*\(\d+\s+oy\)', '', res, flags=flags)
+    # Check if it looks like a poll system message
+    # We use re.match to check the start of the cleaned string
+    if re.match(r'(?:^|\s)ANKET:', res, flags=re.IGNORECASE):
+        # 1. Remove "ANKET:" prefix (start of string or after space)
+        res = re.sub(r'(?:^|\s)ANKET:\s*', ' ', res, flags=re.IGNORECASE)
+        # 2. Remove "SEÇENEK:" globally
+        res = re.sub(r'(?:^|\s)SEÇENEK:\s*', ' ', res, flags=re.IGNORECASE)
+        # 3. Remove vote counts "(X oy)" globally
+        res = re.sub(r'\s*\(\d+\s+oy\)', '', res, flags=re.IGNORECASE)
     
     return res.strip()
 

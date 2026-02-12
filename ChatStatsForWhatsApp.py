@@ -339,9 +339,6 @@ def compute_stats(df):
 
     write_line("")
 
-    # Call Statistics
-    write_subheader('📞 Arama İstatistikleri')
-    
     call_stats = []
     for user in df['user'].unique():
         user_df = df[df['user'] == user]
@@ -377,6 +374,8 @@ def compute_stats(df):
             })
     
     if call_stats:
+        write_line("")
+        write_subheader('📞 Arama İstatistikleri')
         call_stats.sort(key=lambda x: x['Total'], reverse=True)
         write_line("| Kullanıcı | Sesli Arama | Görüntülü Arama | Cevaplanan | Cevapsız | Toplam |")
         write_line("|-----------|-------------|-----------------|------------|----------|--------|")

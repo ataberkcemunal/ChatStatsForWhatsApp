@@ -383,9 +383,6 @@ def compute_stats(df):
             write_line(f"| {stat['User']} | {format_number(stat['Voice'])} | {format_number(stat['Video'])} | {format_number(stat['Answered'])} | {format_number(stat['Missed'])} | **{format_number(stat['Total'])}** |")
         write_line("")
 
-    # Detailed Media Statistics
-    write_subheader('📱 Detaylı Medya İstatistikleri')
-    
     # Create media stats table
     media_stats = []
     for user in df['user'].unique():
@@ -418,13 +415,16 @@ def compute_stats(df):
         })
     
     # Sort by total media
-    media_stats.sort(key=lambda x: x['Total Media'], reverse=True)
-    
-    write_line("| Kullanıcı | Çıkartmalar | Resimler | Videolar | Sesler | Belgeler | GIFler | Konumlar | Toplam |")
-    write_line("|-----------|-------------|----------|----------|--------|----------|--------|----------|--------|")
-    for stat in media_stats:
-        write_line(f"| {stat['User']} | {stat['Stickers']} | {stat['Images']} | {stat['Videos']} | {stat['Audio']} | {stat['Documents']} | {stat['GIFs']} | {stat['Locations']} | **{format_number(stat['Total Media'])}** |")
-    write_line("")
+    if media_stats and any(s['Total Media'] > 0 for s in media_stats):
+        write_line("")
+        write_subheader('📱 Detaylı Medya İstatistikleri')
+        media_stats.sort(key=lambda x: x['Total Media'], reverse=True)
+        
+        write_line("| Kullanıcı | Çıkartmalar | Resimler | Videolar | Sesler | Belgeler | GIFler | Konumlar | Toplam |")
+        write_line("|-----------|-------------|----------|----------|--------|----------|--------|----------|--------|")
+        for stat in media_stats:
+            write_line(f"| {stat['User']} | {stat['Stickers']} | {stat['Images']} | {stat['Videos']} | {stat['Audio']} | {stat['Documents']} | {stat['GIFs']} | {stat['Locations']} | **{format_number(stat['Total Media'])}** |")
+        write_line("")
 
 
 
@@ -507,14 +507,17 @@ def compute_stats(df):
         write_line("")
 
     # Most Used Emojis by User
-    write_subheader('😊 Kullanıcılara Göre En Çok Kullanılan Emojiler')
+    emoji_data = {}
     for user in df['user'].unique():
         user_emojis = Counter()
         for em_list in df[df['user']==user]['emojis']:
             user_emojis.update(em_list)
-        
-        # Only include users who have emojis
         if user_emojis:
+            emoji_data[user] = user_emojis
+            
+    if emoji_data:
+        write_subheader('😊 Kullanıcılara Göre En Çok Kullanılan Emojiler')
+        for user, user_emojis in emoji_data.items():
             write_line(f"\n#### {user}")
             write_line("| Emoji | Sayı |")
             write_line("|-------|------|")

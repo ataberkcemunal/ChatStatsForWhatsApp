@@ -132,12 +132,15 @@ def clean_media_placeholders(text):
         res = re.sub(re.escape(pat), '', res, flags=re.IGNORECASE)
         
     # Remove Poll system text
-    # 1. Remove "ANKET:" prefix (case-insensitive)
-    res = re.sub(r'^ANKET:\s*', '', res, flags=re.IGNORECASE)
-    # 2. Remove "SEÇENEK:" prefix (case-insensitive)
-    res = re.sub(r'^SEÇENEK:\s*', '', res, flags=re.IGNORECASE)
+    # Use re.MULTILINE to match start/end of each line
+    flags = re.IGNORECASE | re.MULTILINE
+    
+    # 1. Remove "ANKET:" prefix
+    res = re.sub(r'^ANKET:\s*', '', res, flags=flags)
+    # 2. Remove "SEÇENEK:" prefix
+    res = re.sub(r'^SEÇENEK:\s*', '', res, flags=flags)
     # 3. Remove vote counts at the end (e.g., "(1 oy)")
-    res = re.sub(r'\(\d+\s+oy\)$', '', res.strip(), flags=re.IGNORECASE)
+    res = re.sub(r'\s*\(\d+\s+oy\)\s*$', '', res, flags=flags)
     
     return res.strip()
 

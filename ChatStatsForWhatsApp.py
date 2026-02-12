@@ -12,7 +12,7 @@ def turkish_lower(text):
     """Turkish-aware lowercasing for 'İ' and 'I'"""
     if not text:
         return ""
-    return text.replace('İ', 'i').replace('I', 'ı').lower()
+    return text.replace('İ', 'i').replace('I', 'i').lower()
 
 # Patterns to detect media placeholders in chat
 MEDIA_PATTERNS = [

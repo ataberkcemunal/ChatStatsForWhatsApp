@@ -100,6 +100,17 @@ LINK_REGEX = r'https?://\S+'
 TAG_REGEX = r'@\u2068(.*?)\u2069'
 CLEANUP_REGEX = re.compile(r'\u200e?<.*?(?:mesaj düzenlendi|message was edited)>|\u200e?Bu mesajı sildiniz\.|\u200e?Bu mesaj silindi\.', re.IGNORECASE)
 
+def clean_media_placeholders(text):
+    """Removes U+200E and media placeholders to extract pure captions"""
+    if not text:
+        return ""
+    # Remove markers
+    res = text.replace('\u200e', '').replace('\u200f', '').replace('\u200E', '').replace('\u200F', '')
+    # Remove standard placeholders
+    for pat in MEDIA_PATTERNS:
+        res = re.sub(re.escape(pat), '', res, flags=re.IGNORECASE)
+    return res.strip()
+
 def clean_message(text):
     # Remove all invisible and control characters, normalize whitespace, and lowercase
     return ''.join(c for c in text if not unicodedata.category(c).startswith('C')).strip()
@@ -402,11 +413,12 @@ def compute_stats(df):
     # Most Used Words
     write_subheader('📝 En Çok Kullanılan Kelimeler (>3 harf)')
     all_words = []
-    # Only process non-media messages AND exclude messages containing U+200E (noise)
-    non_media_messages = df[(df['media']==0) & (~df['message'].str.contains('\u200e', na=False))]['message']
-    for msg in non_media_messages:
-        tokens = _get_tokens(msg, min_len=4)
-        all_words.extend(tokens)
+    # Process all messages, cleaning out media placeholders to keep only captions
+    for msg in df['message']:
+        cleaned = clean_media_placeholders(msg)
+        if cleaned:
+            tokens = _get_tokens(cleaned, min_len=4)
+            all_words.extend(tokens)
     wc = Counter(all_words)
     
     write_line("| Kelime | Sayı |")
@@ -423,11 +435,13 @@ def compute_stats(df):
     for user in df['user'].unique():
         write_line(f"\n#### {user}")
         user_words = []
-        # Only process non-media messages
-        user_messages = df[(df['user']==user) & (df['media']==0)]['message']
-        for msg in user_messages:
-            tokens = _get_tokens(msg, min_len=4)
-            user_words.extend(tokens)
+        # Process user messages, cleaning placeholders
+        user_messages_raw = df[df['user']==user]['message']
+        for msg in user_messages_raw:
+            cleaned = clean_media_placeholders(msg)
+            if cleaned:
+                tokens = _get_tokens(cleaned, min_len=4)
+                user_words.extend(tokens)
         wc = Counter(user_words)
         
         write_line("| Kelime | Sayı |")
@@ -441,18 +455,20 @@ def compute_stats(df):
     
     for user in df['user'].unique():
         write_line(f"\n#### {user}")
-        # Only process non-media messages AND exclude messages containing U+200E (noise)
-        user_messages = df[(df['user']==user) & (df['media']==0) & (~df['message'].str.contains('\u200e', na=False))]['message']
+        # Process messages, cleaning placeholders
+        user_messages_raw = df[df['user']==user]['message']
         all_bigrams = []
         all_trigrams = []
         
-        for msg in user_messages:
-            words = _get_tokens(msg, min_len=2)
-            
-            if len(words) >= 2:
-                all_bigrams.extend(zip(words, words[1:]))
-            if len(words) >= 3:
-                all_trigrams.extend(zip(words, words[1:], words[2:]))
+        for msg in user_messages_raw:
+            cleaned = clean_media_placeholders(msg)
+            if cleaned:
+                words = _get_tokens(cleaned, min_len=2)
+                
+                if len(words) >= 2:
+                    all_bigrams.extend(zip(words, words[1:]))
+                if len(words) >= 3:
+                    all_trigrams.extend(zip(words, words[1:], words[2:]))
         
         write_line("\n**İkili Kombinasyonlar**")
         write_line("")

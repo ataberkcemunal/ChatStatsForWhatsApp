@@ -50,17 +50,31 @@ def is_group_user(user):
 
 def is_group_message(text, user, is_system_hint=False):
     """Check if a message is a group/system message that should be excluded"""
+    if not text:
+        return True
+
     # First check if the user is a group/system user
     if is_group_user(user):
+        return True
+    
+    text_lower = turkish_lower(text)
+
+    # High-confidence system patterns that should be skipped regardless of is_system_hint
+    # (These often appear in exports as if a user sent them)
+    system_patterns = [
+        'grubun adını değiştirdi', 'grubun simgesini değiştirdi', 
+        'grubun açıklamasını değiştirdi', 'grubun konusunu değiştirdi',
+        'grubun adını değiştirdiniz', 'grubun simgesini değiştirdiniz',
+        'bu grubun simgesini', 'bu grubun adını'
+    ]
+    if any(p in text_lower for p in system_patterns):
         return True
     
     # If it's not a group user and no system hint is provided, it's likely a user message
     if not is_system_hint:
         return False
     
-    text_lower = turkish_lower(text)
-    
-    # Common group-related patterns in message content
+    # Common group-related patterns in message content (checked only if hinted as system)
     group_patterns = [
         'grubu oluşturdu', 'gruba katıldı', 'gruptan ayrıldı',
         'grup açıklamasını değiştirdi', 'grup ayarlarını değiştirdi',
@@ -71,7 +85,7 @@ def is_group_message(text, user, is_system_hint=False):
         'grup bağlantısını kapatıp açtı', 'grup bağlantısını kapattı',
         'grup bağlantısını sildi', 'grup bağlantısını yeniledi',
         'sistem mesajı', 'grup mesajı', 'grup bildirimi',
-        'grup güncellemesi', 'mesajlar ve aramalar uçtan uca şifrelidir', 'grubun simgesini değiştirdiniz',
+        'grup güncellemesi', 'mesajlar ve aramalar uçtan uca şifrelidir', 
         'bir mesajı sabitlediniz', 'sizi ekledi', 'artık yöneticisiniz',
         'tarafından okunabilir', 'uçtan uca şifrelenmeye devam ettiği için',
         'kişisini ekledi', 'kişisini çıkardı', 'güvenlik kodu değişti'

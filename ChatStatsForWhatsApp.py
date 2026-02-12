@@ -264,8 +264,8 @@ def compute_stats(df):
         placeholders = {}
         def repl(m):
             name = m.group(1).replace(' ', '')
-            token = f"MENTION{len(placeholders)}TOKEN"
-            placeholders[token.lower()] = f"@{name}"
+            token = f"TAG{len(placeholders)}TOKEN"
+            placeholders[turkish_lower(token)] = f"@{name}"
             return token
         
         # Remove links, system indicators and replace tags with placeholders

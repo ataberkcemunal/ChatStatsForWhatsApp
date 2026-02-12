@@ -16,11 +16,12 @@ A comprehensive Python-based analyzer for WhatsApp chat exports. Transform your 
 
 ### 👥 User Insights
 - **Message Metrics**: Total messages, word counts, and letter counts per participant.
+- **Poll Statistics**: Track how many polls each user has created.
 - **Engagement Analysis**: Participation rates and average messages per active day.
 - **Media Tracking**: Detailed breakdown of Stickers, Images, Videos, Audio, Documents, GIFs, and Locations.
 
 ### 📝 Textual Analysis
-- **Advanced Tokenization**: Smart handling of WhatsApp @mentions as single units (e.g., `@User`).
+- **Advanced Tokenization**: Smart handling of WhatsApp @mentions and context-aware apostrophe handling (keeps "word's" for n-grams, splits for counts).
 - **N-Gram Analysis**: Discover frequently used Bigrams and Trigrams to identify common catchphrases.
 - **Emoji Stats**: See each user's favorite and most frequent emojis.
 - **Word Frequency**: Top words used overall and per user (filtered for meaningful results).

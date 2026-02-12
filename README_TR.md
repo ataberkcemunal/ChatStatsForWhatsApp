@@ -12,11 +12,12 @@ WhatsApp sohbet dışa aktarımları için kapsamlı bir analiz aracı. Ham sohb
 
 ### 👥 Kullanıcı Analizleri
 - **Mesaj Metrikleri**: Katılımcı başına toplam mesaj, kelime ve harf sayıları.
+- **Anket İstatistikleri**: Her kullanıcının başlattığı anket sayılarını takip edin.
 - **Etkileşim Analizi**: Katılım oranları ve aktif gün başına ortalama mesaj sayısı.
 - **Medya Takibi**: Çıkartma, Resim, Video, Ses, Belge, GIF ve Konum bazlı detaylı kırılım.
 
 ### 📝 Metin Analizi
-- **Gelişmiş Belirteçleme**: WhatsApp @etiketlerinin (mentions) tek bir birim olarak (örn: `@Kullanıcı`) akıllıca işlenmesi.
+- **Gelişmiş Belirteçleme**: @Etiketleri (mentions) ve **kesme işaretiyle ayrılan kelimeleri** bağlama duyarlı olarak işleme (kombinasyonlarda birleştir, sayımlarda ayır).
 - **N-Gram Analizi**: En sık kullanılan ikili ve üçlü kelime kombinasyonlarını keşfederek ortak kalıpları belirleme.
 - **Emoji İstatistikleri**: Her kullanıcının en favori ve en sık kullandığı emojiler.
 - **Kelime Frekansı**: Genel ve kullanıcı bazlı en çok kullanılan kelimeler (anlamlı sonuçlar için filtrelenmiş).

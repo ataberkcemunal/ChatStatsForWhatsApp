@@ -397,7 +397,7 @@ def compute_stats(df):
         user_stats.append({
             'User': user,
             'Messages': len(user_df),
-            'Words': user_df['word_count'].sum(),
+            'Letters': user_df['letter_count'].sum(),
             'Media': user_df['media'].sum(),
             'Emojis': user_df['emoji_count'].sum(),
             'Links': user_df['links'].sum(),
@@ -405,21 +405,21 @@ def compute_stats(df):
             'Deleted': user_df['deleted'].sum() if 'deleted' in user_df.columns else 0
         })
         
-        # Calculate average words per message
+        # Calculate average letters per message
         if user_stats[-1]['Messages'] > 0:
-            user_stats[-1]['AvgWords'] = user_stats[-1]['Words'] / user_stats[-1]['Messages']
+            user_stats[-1]['AvgLetters'] = user_stats[-1]['Letters'] / user_stats[-1]['Messages']
         else:
-            user_stats[-1]['AvgWords'] = 0
+            user_stats[-1]['AvgLetters'] = 0
     
     # Sort by message count
     user_stats.sort(key=lambda x: x['Messages'], reverse=True)
     sorted_users = [s['User'] for s in user_stats]
     
-    write_line("| Kullanıcı | Mesajlar | Ort. Kelime | Medya | Emojiler | Linkler | Anketler | Silinen |")
-    write_line("|-----------|----------|-------------|-------|----------|---------|----------|---------|")
+    write_line("| Kullanıcı | Mesajlar | Ort. Harf | Medya | Emojiler | Linkler | Anketler | Silinen |")
+    write_line("|-----------|----------|-----------|-------|----------|---------|----------|---------|")
     for stat in user_stats:
-        avg_words_str = f"{stat['AvgWords']:.1f}".replace('.', ',')
-        write_line(f"| {stat['User']} | {format_number(stat['Messages'])} | {avg_words_str} | {format_number(stat['Media'])} | {format_number(stat['Emojis'])} | {format_number(stat['Links'])} | {format_number(stat.get('Polls', 0))} | {format_number(stat.get('Deleted', 0))} |")
+        avg_letters_str = f"{stat['AvgLetters']:.1f}".replace('.', ',')
+        write_line(f"| {stat['User']} | {format_number(stat['Messages'])} | {avg_letters_str} | {format_number(stat['Media'])} | {format_number(stat['Emojis'])} | {format_number(stat['Links'])} | {format_number(stat.get('Polls', 0))} | {format_number(stat.get('Deleted', 0))} |")
     write_line("")
 
     write_line("")

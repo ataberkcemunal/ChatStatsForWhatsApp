@@ -177,7 +177,7 @@ def clean_message(text):
 def clean_message_lower(text):
     return turkish_lower(clean_message(text))
 
-def _get_tokens(text, min_len=2):
+def _get_tokens(text, min_len=2, keep_apostrophes=False):
     """Helper to tokenize text while preserving tags as single units"""
     placeholders = {}
     def repl(m):
@@ -202,7 +202,13 @@ def _get_tokens(text, min_len=2):
     
     # Tokenize (keeping alphanumeric and underscores)
     # Note: we use words and placeholders as tokens
-    words = re.findall(r"\b\w+\b", turkish_lower(text))
+    lower_text = turkish_lower(text)
+    if keep_apostrophes:
+        # Match words potentially containing apostrophes (e.g. "ankara'da")
+        words = re.findall(r"\b\w+(?:'\w+)*\b", lower_text)
+    else:
+        # Match only word characters, splitting at apostrophes
+        words = re.findall(r"\b\w+\b", lower_text)
     
     # Restore placeholders and filter by min_len
     tokens = []
@@ -526,7 +532,8 @@ def compute_stats(df):
         for msg in user_messages_raw:
             cleaned = clean_media_placeholders(msg)
             if cleaned:
-                words = _get_tokens(cleaned, min_len=2)
+                # Use keep_apostrophes=True for n-grams to get meaningful phrases like "Ankara'da hava"
+                words = _get_tokens(cleaned, min_len=2, keep_apostrophes=True)
                 
                 if len(words) >= 2:
                     all_bigrams.extend(zip(words, words[1:]))

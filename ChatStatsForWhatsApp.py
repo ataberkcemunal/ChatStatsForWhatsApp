@@ -164,15 +164,11 @@ def parse_chat(filepath):
 
     with open(filepath, encoding='utf-8') as f:
         for raw in f:
-            # User requested: Exclude any line containing U+200E (Left-to-Right Mark)
-            # This includes media placeholders, polls, and many system messages.
-            if '\u200e' in raw or '\u200f' in raw:
-                continue
-
-            # Remove all invisible/control characters from the start of the line
-            line = raw.lstrip().lstrip(''.join(chr(i) for i in range(0,32))).strip('\n')
+            # Check for system message hint (U+200E at the start or in the message)
+            is_system_hint = '\u200e' in raw or '\u200f' in raw
             
-            is_system_hint = False
+            # Remove all invisible/control characters from the start of the line
+            line = raw.lstrip().lstrip(''.join(chr(i) for i in range(0,32)) + '\u200e\u200f').strip('\n')
 
             # Message line: [DD.MM.YYYY, HH:MM:SS] User: message
             # Improved regex to handle cases with no space after colon or no content
@@ -400,8 +396,8 @@ def compute_stats(df):
     # Most Used Words
     write_subheader('📝 En Çok Kullanılan Kelimeler (>3 harf)')
     all_words = []
-    # Only process non-media messages
-    non_media_messages = df[df['media']==0]['message']
+    # Only process non-media messages AND exclude messages containing U+200E (noise)
+    non_media_messages = df[(df['media']==0) & (~df['message'].str.contains('\u200e', na=False))]['message']
     for msg in non_media_messages:
         tokens = _get_tokens(msg, min_len=4)
         all_words.extend(tokens)
@@ -439,7 +435,8 @@ def compute_stats(df):
     
     for user in df['user'].unique():
         write_line(f"\n#### {user}")
-        user_messages = df[(df['user']==user) & (df['media']==0)]['message']
+        # Only process non-media messages AND exclude messages containing U+200E (noise)
+        user_messages = df[(df['user']==user) & (df['media']==0) & (~df['message'].str.contains('\u200e', na=False))]['message']
         all_bigrams = []
         all_trigrams = []
         

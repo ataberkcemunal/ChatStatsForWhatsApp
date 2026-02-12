@@ -56,6 +56,13 @@ def is_group_message(text, user, is_system_hint=False):
     # First check if the user is a group/system user
     if is_group_user(user):
         return True
+        
+    # Explicitly keep poll messages (even if they look like system messages)
+    # Check for ANKET: at start or \u200eANKET:
+    if "ANKET:" in text.upper():
+        # Double check it's likely a poll header
+        if re.search(r'(?:^|\s|\u200e)ANKET:', text, re.IGNORECASE):
+            return False
     
     text_lower = turkish_lower(text)
 
@@ -126,7 +133,14 @@ def clean_media_placeholders(text):
         return ""
     # Check for System Poll Marker (\u200e followed by ANKET:)
     # We must do this BEFORE stripping markers
-    is_system_poll = bool(re.search(r'\u200e\s*ANKET:', text, re.IGNORECASE))
+    has_marker = bool(re.search(r'\u200e\s*ANKET:', text, re.IGNORECASE))
+    
+    # Check for heuristic: Contains both "ANKET:" and "SEÇENEK:" (ignoring case)
+    # This covers cases where marker is lost but structure is clear
+    upper_text = str(text).upper()
+    has_heuristic = "ANKET:" in upper_text and "SEÇENEK:" in upper_text
+    
+    is_system_poll = has_marker or has_heuristic
 
     # Remove markers
     res = text.replace('\u200e', '').replace('\u200f', '').replace('\u200E', '').replace('\u200F', '')
@@ -136,7 +150,7 @@ def clean_media_placeholders(text):
         res = re.sub(re.escape(pat), '', res, flags=re.IGNORECASE)
         
     # Remove Poll system text
-    # ONLY if it was identified as a system poll (with the invisible marker)
+    # ONLY if it was identified as a system poll (either by marker or heuristic)
     if is_system_poll:
         flags = re.IGNORECASE
         # 1. Remove "ANKET:" prefix (start of string or after space)

@@ -61,13 +61,21 @@ def is_group_message(text, user, is_system_hint=False):
 
     # High-confidence system patterns that should be skipped regardless of is_system_hint
     # (These often appear in exports as if a user sent them)
+    # Using regex to handle variations like "grubun adını", "grup adını", "grubun simgesini" etc.
     system_patterns = [
-        'grubun adını değiştirdi', 'grubun simgesini değiştirdi', 
-        'grubun açıklamasını değiştirdi', 'grubun konusunu değiştirdi',
-        'grubun adını değiştirdiniz', 'grubun simgesini değiştirdiniz',
-        'bu grubun simgesini', 'bu grubun adını'
+        r'grubun adını değiştirdi', r'grup adını değiştirdi',
+        r'grubun simgesini değiştirdi', r'grup simgesini değiştirdi',
+        r'grubun açıklamasını değiştirdi', r'grup açıklamasını değiştirdi',
+        r'grubun konusunu değiştirdi', r'grup konusunu değiştirdi',
+        r'grubun adını değiştirdiniz', r'grup adını değiştirdiniz',
+        r'grubun simgesini değiştirdiniz', r'grup simgesini değiştirdiniz',
+        r'bu grubun simgesini', r'bu grubun adını',
+        r'grup adını [“"](.*?)[”"] olarak değiştirdi',
+        r'grup adını [“"](.*?)[”"] olarak değiştirdiniz',
+        r'adını [“"](.*?)[”"] olarak değiştirdi',
+        r'adını [“"](.*?)[”"] olarak değiştirdiniz'
     ]
-    if any(p in text_lower for p in system_patterns):
+    if any(re.search(p, text_lower, re.IGNORECASE) for p in system_patterns):
         return True
     
     # If it's not a group user and no system hint is provided, it's likely a user message
@@ -76,24 +84,22 @@ def is_group_message(text, user, is_system_hint=False):
     
     # Common group-related patterns in message content (checked only if hinted as system)
     group_patterns = [
-        'grubu oluşturdu', 'gruba katıldı', 'gruptan ayrıldı',
-        'grup açıklamasını değiştirdi', 'grup ayarlarını değiştirdi',
-        'grup fotoğrafını değiştirdi', 'grup adını değiştirdi',
-        'grup adını [“"](.*?)[”"] olarak değiştirdi',
-        'grup adını [“"](.*?)[”"] olarak değiştirdiniz',
-        'grup bağlantısını değiştirdi', 'grup bağlantısını sıfırladı',
-        'grup bağlantısını kapatıp açtı', 'grup bağlantısını kapattı',
-        'grup bağlantısını sildi', 'grup bağlantısını yeniledi',
-        'sistem mesajı', 'grup mesajı', 'grup bildirimi',
-        'grup güncellemesi', 'mesajlar ve aramalar uçtan uca şifrelidir', 
-        'bir mesajı sabitlediniz', 'sizi ekledi', 'artık yöneticisiniz',
-        'tarafından okunabilir', 'uçtan uca şifrelenmeye devam ettiği için',
-        'kişisini ekledi', 'kişisini çıkardı', 'güvenlik kodu değişti'
+        r'grubu oluşturdu', r'gruba katıldı', r'gruptan ayrıldı',
+        r'grup açıklamasını değiştirdi', r'grup ayarlarını değiştirdi',
+        r'grup fotoğrafını değiştirdi', r'grup adını değiştirdi',
+        r'grup bağlantısını değiştirdi', r'grup bağlantısını sıfırladı',
+        r'grup bağlantısını kapatıp açtı', r'grup bağlantısını kapattı',
+        r'grup bağlantısını sildi', r'grup bağlantısını yeniledi',
+        r'sistem mesajı', r'grup mesajı', r'grup bildirimi',
+        r'grup güncellemesi', r'mesajlar ve aramalar uçtan uca şifrelidir', 
+        r'bir mesajı sabitlediniz', r'sizi ekledi', r'artık yöneticisiniz',
+        r'tarafından okunabilir', r'uçtan uca şifrelenmeye devam ettiği için',
+        r'kişisini ekledi', r'kişisini çıkardı', r'güvenlik kodu değişti'
     ]
     
-    # Check for exact matches with group patterns
+    # Check for matches with group patterns
     for pattern in group_patterns:
-        if pattern in text_lower:
+        if re.search(pattern, text_lower, re.IGNORECASE):
             return True
     
     # Check for messages that are just group names (usually short, all caps, or contain specific keywords)

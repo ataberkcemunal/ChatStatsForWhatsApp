@@ -39,11 +39,15 @@ def is_group_user(user):
             return True
     return False
 
-def is_group_message(text, user):
+def is_group_message(text, user, is_system_hint=False):
     """Check if a message is a group/system message that should be excluded"""
     # First check if the user is a group/system user
     if is_group_user(user):
         return True
+    
+    # If it's not a group user and no system hint is provided, it's likely a user message
+    if not is_system_hint:
+        return False
     
     text_lower = text.lower()
     
@@ -52,12 +56,16 @@ def is_group_message(text, user):
         'grubu oluşturdu', 'gruba katıldı', 'gruptan ayrıldı',
         'grup açıklamasını değiştirdi', 'grup ayarlarını değiştirdi',
         'grup fotoğrafını değiştirdi', 'grup adını değiştirdi',
+        'grup adını [“"](.*?)[”"] olarak değiştirdi',
+        'grup adını [“"](.*?)[”"] olarak değiştirdiniz',
         'grup bağlantısını değiştirdi', 'grup bağlantısını sıfırladı',
         'grup bağlantısını kapatıp açtı', 'grup bağlantısını kapattı',
         'grup bağlantısını sildi', 'grup bağlantısını yeniledi',
         'sistem mesajı', 'grup mesajı', 'grup bildirimi',
         'grup güncellemesi', 'mesajlar ve aramalar uçtan uca şifrelidir', 'grubun simgesini değiştirdiniz',
-        'bir mesajı sabitlediniz'
+        'bir mesajı sabitlediniz', 'sizi ekledi', 'artık yöneticisiniz',
+        'tarafından okunabilir', 'uçtan uca şifrelenmeye devam ettiği için',
+        'kişisini ekledi', 'kişisini çıkardı'
     ]
     
     # Check for exact matches with group patterns
@@ -99,7 +107,11 @@ def parse_chat(filepath):
         r'[“"](.*?)[”"] grubunu oluşturdu',
         r'[“"](.*?)[”"] grubunu oluşturdunuz',
         r'grubunun konusunu "(.*?)" olarak değiştirdi',
-        r'grubunun konusunu [“"](.*?)[”"] olarak değiştirdi'
+        r'grubunun konusunu [“"](.*?)[”"] olarak değiştirdi',
+        r'Grup adını "(.*?)" olarak değiştirdiniz',
+        r'Grup adını [“"](.*?)[”"] olarak değiştirdiniz',
+        r'Grup adını "(.*?)" olarak değiştirdi',
+        r'Grup adını [“"](.*?)[”"] olarak değiştirdi'
     ]
 
     with open(filepath, encoding='utf-8') as f:
@@ -111,8 +123,9 @@ def parse_chat(filepath):
             if '\u200E' in line:
                 m_media = re.match(r"^\[(\d{1,2}\.\d{1,2}\.\d{4} \d{2}:\d{2}:\d{2})\] (.*?): (.*)", line.replace('\u200E', ''))
                 if m_media and any(pat in m_media.group(3) for pat in MEDIA_PATTERNS):
-                    # Skip group messages
-                    if is_group_message(m_media.group(3), m_media.group(2)):
+                    # For media lines, the U+200E is often present as a prefix
+                    # We'll treat media placeholders as system-ish if they match the patterns
+                    if is_group_message(m_media.group(3), m_media.group(2), is_system_hint=True):
                         continue
                     ts = datetime.strptime(m_media.group(1), '%d.%m.%Y %H:%M:%S')
                     user = m_media.group(2)
@@ -132,6 +145,14 @@ def parse_chat(filepath):
                 # If it contains U+200E but isn't a media placeholder, 
                 # we let it fall through to the normal message parsing below
                 line = line.replace('\u200E', '')
+            
+            # Check for system message hint (U+200E at the start of the message segment)
+            # We look for the pattern "...] User: \u200e"
+            is_system_hint = False
+            if '\u200e' in raw or '\u200f' in raw:
+                # If we see these characters in the raw line, it's a strong hint
+                is_system_hint = True
+
             # Message line: [DD.MM.YYYY, HH:MM:SS] User: message
             # Improved regex to handle cases with no space after colon or no content
             m = re.match(r"^\[(\d{1,2}\.\d{1,2}\.\d{4} \d{2}:\d{2}:\d{2})\] (.*?):(?: (.*))?$", line)
@@ -153,7 +174,7 @@ def parse_chat(filepath):
                         # Also add without special chars if needed, but usually exact match works
                 
                 # Skip group messages
-                if is_group_message(text, user):
+                if is_group_message(text, user, is_system_hint=is_system_hint):
                     continue
 
                 # Calculate stats for normal messages

@@ -655,7 +655,23 @@ if __name__ == '__main__':
     import argparse
     parser = argparse.ArgumentParser(description='WhatsApp chat statistics')
     parser.add_argument('chat_file', help='Path to exported chat text file')
+    parser.add_argument('--start-date', '-s', help='Filter messages from this date onwards (Format: DD.MM.YYYY)', default=None)
     args = parser.parse_args()
 
     df = parse_chat(args.chat_file)
+    
+    if args.start_date:
+        from datetime import datetime
+        try:
+            start_dt = datetime.strptime(args.start_date, '%d.%m.%Y')
+            df = df[df['datetime'] >= start_dt]
+            print(f"DEBUG: Filtered messages from {args.start_date} onwards. Remaining records: {len(df)}")
+        except ValueError:
+            print(f"Error: Invalid date format for --start-date. Please use DD.MM.YYYY (e.g., 08.08.2025)")
+            exit(1)
+
+    if df.empty:
+        print("No messages found for the given criteria.")
+        exit(0)
+
     compute_stats(df)

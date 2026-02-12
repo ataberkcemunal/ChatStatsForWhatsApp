@@ -621,32 +621,59 @@ def compute_stats(df):
     }
 
     # Messages by Day of Week
+    # Helper for creating charts
+    import matplotlib.pyplot as plt
+    import io
+    import base64
+
+    def create_chart(x_data, y_data, title, xlabel, ylabel, chart_type='bar'):
+        plt.figure(figsize=(10, 6))
+        
+        if chart_type == 'bar':
+            plt.bar(x_data, y_data, color='skyblue')
+        elif chart_type == 'line':
+            plt.plot(x_data, y_data, marker='o', linestyle='-', color='orange')
+            plt.grid(True, linestyle='--', alpha=0.7)
+            
+        plt.title(title)
+        plt.xlabel(xlabel)
+        plt.ylabel(ylabel)
+        plt.xticks(rotation=45)
+        plt.tight_layout()
+        
+        # Save to buffer
+        buf = io.BytesIO()
+        plt.savefig(buf, format='png')
+        buf.seek(0)
+        img_base64 = base64.b64encode(buf.read()).decode('utf-8')
+        plt.close()
+        
+        return f'<img src="data:image/png;base64,{img_base64}" style="width:100%; max-width:800px;" />'
+
     write_line("#### 📅 Haftanın Günlerine Göre Mesajlar")
     days = df['weekday'].map(day_translation).value_counts().reindex(
         ['Pazartesi','Salı','Çarşamba','Perşembe','Cuma','Cumartesi','Pazar']
     )
-    write_line("| Gün | Mesajlar |")
-    write_line("|-----|----------|")
-    for d, v in days.items():
-        write_line(f"| {d} | {format_number(v)} |")
+    # Generate Day Chart
+    day_chart = create_chart(days.index, days.values, 'Haftanın Günlerine Göre Mesaj Dağılımı', 'Günler', 'Mesaj Sayısı', 'bar')
+    write_line(day_chart)
     write_line("")
     
     # Messages by Hour
     write_line("#### 🕐 Saatlere Göre Mesajlar")
     hour_stats = df['hour'].value_counts().sort_index()
-    write_line("| Saat | Mesajlar |")
-    write_line("|------|----------|")
-    for h, v in hour_stats.items():
-        write_line(f"| {h:02d}:00 - {h:02d}:59 | {format_number(v)} |")
+    # Generate Hour Chart
+    hour_chart = create_chart(hour_stats.index, hour_stats.values, 'Saatlere Göre Mesaj Dağılımı', 'Saat', 'Mesaj Sayısı', 'line')
+    write_line(hour_chart)
     write_line("")
     
     # Messages by Month
     write_line("#### 📆 Aylara Göre Mesajlar")
     month_stats = df['month'].value_counts().sort_index()
-    write_line("| Ay | Mesajlar |")
-    write_line("|----|----------|")
-    for m, v in month_stats.items():
-        write_line(f"| {m} | {format_number(v)} |")
+    # Generate Month Chart
+    month_chart = create_chart(month_stats.index.astype(str), month_stats.values, 'Aylara Göre Mesaj Dağılımı', 'Ay', 'Mesaj Sayısı', 'bar')
+    write_line(month_chart)
+    write_line("")
     write_line("")
     
     # Most Active Days

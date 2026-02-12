@@ -142,6 +142,19 @@ def is_poll(text):
     
     return has_marker or has_heuristic
 
+def is_deleted_message(text):
+    """Check if a message is a 'This message was deleted' notification"""
+    if not text:
+        return False
+    # Patterns for deleted messages (Turkish and English)
+    # Handles invisible markers (\u200e) often present in WhatsApp exports
+    patterns = [
+        r'\u200e?Bu mesaj silindi\.',
+        r'\u200e?Bu mesajı sildiniz\.',
+        r'\u200e?This message was deleted\.'
+    ]
+    return any(re.search(p, text, re.IGNORECASE) for p in patterns)
+
 def clean_media_placeholders(text):
     """Removes U+200E, media placeholders, and poll system text to extract pure user content"""
     if not text:
@@ -281,13 +294,20 @@ def parse_chat(filepath):
                 emoji_count = len(emojis)
                 emoji_count = len(emojis)
                 media = 1 if any(pat in cleaned_text for pat in [turkish_lower(p) for p in MEDIA_PATTERNS]) else 0
-                poll = 1 if is_poll(text) else 0
+                
+                # Check for deleted message
+                is_deleted = 1 if is_deleted_message(text) else 0
+                
+                # Check for poll (only if not deleted)
+                poll = 1 if (not is_deleted and is_poll(text)) else 0
+                
                 entry = {
                     'datetime': ts,
                     'user': user,
                     'message': text,
                     'media': media,
                     'poll': poll,
+                    'deleted': is_deleted,
                     'word_count': word_count,
                     'letter_count': letter_count,
                     'links': links,
@@ -310,7 +330,11 @@ def parse_chat(filepath):
                     current['emojis'] = [em['emoji'] for em in emoji.emoji_list(text)]
                     current['emoji_count'] = len(current['emojis'])
                     current['media'] = 1 if any(pat in cleaned_text for pat in [turkish_lower(p) for p in MEDIA_PATTERNS]) else 0
-                    current['poll'] = 1 if is_poll(text) else 0
+                    
+                    # Re-check flags for continuation
+                    is_del = 1 if is_deleted_message(text) else 0
+                    current['deleted'] = is_del
+                    current['poll'] = 1 if (not is_del and is_poll(text)) else 0
     df = pd.DataFrame(records)
     # add additional columns if not already present
     if 'date' not in df.columns:
@@ -374,17 +398,18 @@ def compute_stats(df):
             'Media': user_df['media'].sum(),
             'Emojis': user_df['emoji_count'].sum(),
             'Links': user_df['links'].sum(),
-            'Polls': user_df['poll'].sum() if 'poll' in user_df.columns else 0
+            'Polls': user_df['poll'].sum() if 'poll' in user_df.columns else 0,
+            'Deleted': user_df['deleted'].sum() if 'deleted' in user_df.columns else 0
         })
     
     # Sort by message count
     user_stats.sort(key=lambda x: x['Messages'], reverse=True)
     sorted_users = [s['User'] for s in user_stats]
     
-    write_line("| Kullanıcı | Mesajlar | Kelimeler | Harfler | Medya | Emojiler | Linkler | Anketler |")
-    write_line("|-----------|----------|-----------|---------|-------|----------|---------|----------|")
+    write_line("| Kullanıcı | Mesajlar | Kelimeler | Harfler | Medya | Emojiler | Linkler | Anketler | Silinen |")
+    write_line("|-----------|----------|-----------|---------|-------|----------|---------|----------|---------|")
     for stat in user_stats:
-        write_line(f"| {stat['User']} | {format_number(stat['Messages'])} | {format_number(stat['Words'])} | {format_number(stat['Letters'])} | {format_number(stat['Media'])} | {format_number(stat['Emojis'])} | {format_number(stat['Links'])} | {format_number(stat.get('Polls', 0))} |")
+        write_line(f"| {stat['User']} | {format_number(stat['Messages'])} | {format_number(stat['Words'])} | {format_number(stat['Letters'])} | {format_number(stat['Media'])} | {format_number(stat['Emojis'])} | {format_number(stat['Links'])} | {format_number(stat.get('Polls', 0))} | {format_number(stat.get('Deleted', 0))} |")
     write_line("")
 
     write_line("")

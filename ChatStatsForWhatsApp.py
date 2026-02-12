@@ -8,6 +8,12 @@ import markdown
 from weasyprint import HTML
 from weasyprint.text.fonts import FontConfiguration
 
+def turkish_lower(text):
+    """Turkish-aware lowercasing for 'İ' and 'I'"""
+    if not text:
+        return ""
+    return text.replace('İ', 'i').replace('I', 'ı').lower()
+
 # Patterns to detect media placeholders in chat
 MEDIA_PATTERNS = [
     # Turkish
@@ -26,7 +32,7 @@ MEDIA_PATTERNS = [
 
 def is_group_user(user):
     """Check if a user is a group/system user that should be excluded"""
-    user_lower = user.lower()
+    user_lower = turkish_lower(user)
     
     # Common group/system user patterns
     group_user_patterns = [
@@ -49,7 +55,7 @@ def is_group_message(text, user, is_system_hint=False):
     if not is_system_hint:
         return False
     
-    text_lower = text.lower()
+    text_lower = turkish_lower(text)
     
     # Common group-related patterns in message content
     group_patterns = [
@@ -93,7 +99,10 @@ CLEANUP_REGEX = re.compile(r'\u200e?<.*?(?:mesaj düzenlendi|message was edited)
 
 def clean_message(text):
     # Remove all invisible and control characters, normalize whitespace, and lowercase
-    return ''.join(c for c in text if not unicodedata.category(c).startswith('C')).strip().lower()
+    return ''.join(c for c in text if not unicodedata.category(c).startswith('C')).strip()
+
+def clean_message_lower(text):
+    return turkish_lower(clean_message(text))
 
 # Parse chat file into DataFrame
 def parse_chat(filepath):
@@ -160,11 +169,11 @@ def parse_chat(filepath):
                 ts = datetime.strptime(m.group(1), '%d.%m.%Y %H:%M:%S')
                 user = m.group(2)
                 text = m.group(3) if m.group(3) else ""
-                cleaned_text = clean_message(text)
+                cleaned_text = clean_message_lower(text)
                 
                 # Remove system indicators (edited/deleted) instead of skipping the message
                 text = CLEANUP_REGEX.sub('', text).strip()
-                cleaned_text = clean_message(text)
+                cleaned_text = clean_message_lower(text)
 
                 # Check for group name in system messages (before they are skipped)
                 for pattern in group_name_patterns:
@@ -183,7 +192,8 @@ def parse_chat(filepath):
                 links = len(re.findall(LINK_REGEX, text))
                 emojis = [em['emoji'] for em in emoji.emoji_list(text)]
                 emoji_count = len(emojis)
-                media = 1 if any(pat in cleaned_text for pat in [p.lower() for p in MEDIA_PATTERNS]) else 0
+                emoji_count = len(emojis)
+                media = 1 if any(pat in cleaned_text for pat in [turkish_lower(p) for p in MEDIA_PATTERNS]) else 0
                 entry = {
                     'datetime': ts,
                     'user': user,
@@ -202,13 +212,15 @@ def parse_chat(filepath):
                 if current:
                     current['message'] += ' ' + line
                     text = current['message']
-                    cleaned_text = clean_message(text)
+                    cleaned_text = clean_message_lower(text)
                     current['word_count'] = len(text.split())
                     current['letter_count'] = len(text.replace(' ', ''))
                     current['links'] = len(re.findall(LINK_REGEX, text))
                     current['emojis'] = [em['emoji'] for em in emoji.emoji_list(text)]
                     current['emoji_count'] = len(current['emojis'])
-                    current['media'] = 1 if any(pat in cleaned_text for pat in [p.lower() for p in MEDIA_PATTERNS]) else 0
+                    current['emojis'] = [em['emoji'] for em in emoji.emoji_list(text)]
+                    current['emoji_count'] = len(current['emojis'])
+                    current['media'] = 1 if any(pat in cleaned_text for pat in [turkish_lower(p) for p in MEDIA_PATTERNS]) else 0
     df = pd.DataFrame(records)
     # add additional columns if not already present
     if 'date' not in df.columns:
@@ -263,7 +275,7 @@ def compute_stats(df):
         
         # Tokenize (keeping alphanumeric and underscores)
         # Note: we use words and placeholders as tokens
-        words = re.findall(r"\b\w+\b", text.lower())
+        words = re.findall(r"\b\w+\b", turkish_lower(text))
         
         # Restore placeholders and filter by min_len
         tokens = []
@@ -363,14 +375,16 @@ def compute_stats(df):
     for user in df['user'].unique():
         user_df = df[df['user'] == user]
         
+        user_df = df[df['user'] == user]
+        
         # Count different media types
-        sticker_count = user_df[user_df['message'].str.replace('\u200E', '', regex=False).str.lower().str.contains('çıkartma dahil edilmedi', na=False, regex=True)].shape[0]
-        image_count = user_df[user_df['message'].str.replace('\u200E', '', regex=False).str.lower().str.contains('görüntü dahil edilmedi', na=False, regex=True)].shape[0]
-        video_count = user_df[user_df['message'].str.replace('\u200E', '', regex=False).str.lower().str.contains('video dahil edilmedi', na=False, regex=True)].shape[0]
-        audio_count = user_df[user_df['message'].str.replace('\u200E', '', regex=False).str.lower().str.contains('ses dahil edilmedi', na=False, regex=True)].shape[0]
-        document_count = user_df[user_df['message'].str.replace('\u200E', '', regex=False).str.lower().str.contains('belge dahil edilmedi', na=False, regex=True)].shape[0]
-        gif_count = user_df[user_df['message'].str.replace('\u200E', '', regex=False).str.lower().str.contains('gif dahil edilmedi', na=False, regex=True)].shape[0]
-        location_count = user_df[user_df['message'].str.replace('\u200E', '', regex=False).str.lower().str.contains('konum:', na=False, regex=True)].shape[0]
+        sticker_count = user_df[user_df['message'].str.replace('\u200E', '', regex=False).apply(turkish_lower).str.contains('çıkartma dahil edilmedi', na=False, regex=True)].shape[0]
+        image_count = user_df[user_df['message'].str.replace('\u200E', '', regex=False).apply(turkish_lower).str.contains('görüntü dahil edilmedi', na=False, regex=True)].shape[0]
+        video_count = user_df[user_df['message'].str.replace('\u200E', '', regex=False).apply(turkish_lower).str.contains('video dahil edilmedi', na=False, regex=True)].shape[0]
+        audio_count = user_df[user_df['message'].str.replace('\u200E', '', regex=False).apply(turkish_lower).str.contains('ses dahil edilmedi', na=False, regex=True)].shape[0]
+        document_count = user_df[user_df['message'].str.replace('\u200E', '', regex=False).apply(turkish_lower).str.contains('belge dahil edilmedi', na=False, regex=True)].shape[0]
+        gif_count = user_df[user_df['message'].str.replace('\u200E', '', regex=False).apply(turkish_lower).str.contains('gif dahil edilmedi', na=False, regex=True)].shape[0]
+        location_count = user_df[user_df['message'].str.replace('\u200E', '', regex=False).apply(turkish_lower).str.contains('konum:', na=False, regex=True)].shape[0]
         
         media_stats.append({
             'User': user,

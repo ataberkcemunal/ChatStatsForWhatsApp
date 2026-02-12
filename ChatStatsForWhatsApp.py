@@ -408,7 +408,7 @@ def compute_stats(df):
     
     write_line("| Kelime | Sayı |")
     write_line("|--------|------|")
-    for word, count in wc.most_common(100):
+    for word, count in wc.most_common(50):
         write_line(f"| {word} | {format_number(count)} |")
     write_line("")
 

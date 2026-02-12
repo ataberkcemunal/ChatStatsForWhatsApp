@@ -132,15 +132,16 @@ def clean_media_placeholders(text):
         res = re.sub(re.escape(pat), '', res, flags=re.IGNORECASE)
         
     # Remove Poll system text
-    # Use re.MULTILINE to match start/end of each line
-    flags = re.IGNORECASE | re.MULTILINE
+    # Since messages are joined by SPACE, not newline, we cannot use ^ anchors heavily
+    # We use (?:^|\s) to match start of string or whitespace before the tag
+    flags = re.IGNORECASE
     
-    # 1. Remove "ANKET:" prefix
-    res = re.sub(r'^ANKET:\s*', '', res, flags=flags)
-    # 2. Remove "SEÇENEK:" prefix
-    res = re.sub(r'^SEÇENEK:\s*', '', res, flags=flags)
-    # 3. Remove vote counts at the end (e.g., "(1 oy)")
-    res = re.sub(r'\s*\(\d+\s+oy\)\s*$', '', res, flags=flags)
+    # 1. Remove "ANKET:" prefix (start of string or after space)
+    res = re.sub(r'(?:^|\s)ANKET:\s*', ' ', res, flags=flags)
+    # 2. Remove "SEÇENEK:" globally
+    res = re.sub(r'(?:^|\s)SEÇENEK:\s*', ' ', res, flags=flags)
+    # 3. Remove vote counts "(X oy)" globally
+    res = re.sub(r'\s*\(\d+\s+oy\)', '', res, flags=flags)
     
     return res.strip()
 

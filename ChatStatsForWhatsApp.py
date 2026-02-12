@@ -65,7 +65,7 @@ def is_group_message(text, user, is_system_hint=False):
         'grup güncellemesi', 'mesajlar ve aramalar uçtan uca şifrelidir', 'grubun simgesini değiştirdiniz',
         'bir mesajı sabitlediniz', 'sizi ekledi', 'artık yöneticisiniz',
         'tarafından okunabilir', 'uçtan uca şifrelenmeye devam ettiği için',
-        'kişisini ekledi', 'kişisini çıkardı'
+        'kişisini ekledi', 'kişisini çıkardı', 'güvenlik kodu değişti'
     ]
     
     # Check for exact matches with group patterns

@@ -398,22 +398,28 @@ def compute_stats(df):
             'User': user,
             'Messages': len(user_df),
             'Words': user_df['word_count'].sum(),
-            'Letters': user_df['letter_count'].sum(),
             'Media': user_df['media'].sum(),
             'Emojis': user_df['emoji_count'].sum(),
             'Links': user_df['links'].sum(),
             'Polls': user_df['poll'].sum() if 'poll' in user_df.columns else 0,
             'Deleted': user_df['deleted'].sum() if 'deleted' in user_df.columns else 0
         })
+        
+        # Calculate average words per message
+        if user_stats[-1]['Messages'] > 0:
+            user_stats[-1]['AvgWords'] = user_stats[-1]['Words'] / user_stats[-1]['Messages']
+        else:
+            user_stats[-1]['AvgWords'] = 0
     
     # Sort by message count
     user_stats.sort(key=lambda x: x['Messages'], reverse=True)
     sorted_users = [s['User'] for s in user_stats]
     
-    write_line("| Kullanıcı | Mesajlar | Kelimeler | Harfler | Medya | Emojiler | Linkler | Anketler | Silinen |")
-    write_line("|-----------|----------|-----------|---------|-------|----------|---------|----------|---------|")
+    write_line("| Kullanıcı | Mesajlar | Ort. Kelime | Medya | Emojiler | Linkler | Anketler | Silinen |")
+    write_line("|-----------|----------|-------------|-------|----------|---------|----------|---------|")
     for stat in user_stats:
-        write_line(f"| {stat['User']} | {format_number(stat['Messages'])} | {format_number(stat['Words'])} | {format_number(stat['Letters'])} | {format_number(stat['Media'])} | {format_number(stat['Emojis'])} | {format_number(stat['Links'])} | {format_number(stat.get('Polls', 0))} | {format_number(stat.get('Deleted', 0))} |")
+        avg_words_str = f"{stat['AvgWords']:.1f}".replace('.', ',')
+        write_line(f"| {stat['User']} | {format_number(stat['Messages'])} | {avg_words_str} | {format_number(stat['Media'])} | {format_number(stat['Emojis'])} | {format_number(stat['Links'])} | {format_number(stat.get('Polls', 0))} | {format_number(stat.get('Deleted', 0))} |")
     write_line("")
 
     write_line("")

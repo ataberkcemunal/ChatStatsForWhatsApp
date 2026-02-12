@@ -164,42 +164,15 @@ def parse_chat(filepath):
 
     with open(filepath, encoding='utf-8') as f:
         for raw in f:
-            # Remove all invisible/control characters from the start of the line
-            line = raw.lstrip().lstrip(''.join(chr(i) for i in range(0,32)) + '\u200e\u200f').strip('\n')
-
-            # If line contains U+200E, check for media first
-            if '\u200E' in line:
-                m_media = re.match(r"^\[(\d{1,2}\.\d{1,2}\.\d{4} \d{2}:\d{2}:\d{2})\] (.*?): (.*)", line.replace('\u200E', ''))
-                if m_media and any(pat in m_media.group(3) for pat in MEDIA_PATTERNS):
-                    # For media lines, the U+200E is often present as a prefix
-                    # We'll treat media placeholders as system-ish if they match the patterns
-                    if is_group_message(m_media.group(3), m_media.group(2), is_system_hint=True):
-                        continue
-                    ts = datetime.strptime(m_media.group(1), '%d.%m.%Y %H:%M:%S')
-                    user = m_media.group(2)
-                    entry = {
-                        'datetime': ts,
-                        'user': user,
-                        'message': m_media.group(3),
-                        'media': 1,
-                        'word_count': 0,
-                        'letter_count': 0,
-                        'links': 0,
-                        'emojis': [],
-                        'emoji_count': 0
-                    }
-                    records.append(entry)
-                    continue
-                # If it contains U+200E but isn't a media placeholder, 
-                # we let it fall through to the normal message parsing below
-                line = line.replace('\u200E', '')
-            
-            # Check for system message hint (U+200E at the start of the message segment)
-            # We look for the pattern "...] User: \u200e"
-            is_system_hint = False
+            # User requested: Exclude any line containing U+200E (Left-to-Right Mark)
+            # This includes media placeholders, polls, and many system messages.
             if '\u200e' in raw or '\u200f' in raw:
-                # If we see these characters in the raw line, it's a strong hint
-                is_system_hint = True
+                continue
+
+            # Remove all invisible/control characters from the start of the line
+            line = raw.lstrip().lstrip(''.join(chr(i) for i in range(0,32))).strip('\n')
+            
+            is_system_hint = False
 
             # Message line: [DD.MM.YYYY, HH:MM:SS] User: message
             # Improved regex to handle cases with no space after colon or no content

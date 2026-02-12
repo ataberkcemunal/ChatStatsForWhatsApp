@@ -12,11 +12,10 @@ def turkish_lower(text):
     """Turkish-aware lowercasing for 'İ' and 'I'"""
     if not text:
         return ""
-    # User specifically requested: 
-    # 1. Map uppercase 'I' to lowercase 'i'
-    # 2. Keep lowercase 'ı' as 'ı'
-    # 3. Standard 'İ' to 'i' is already implied by 'both I and İ should be i'
-    return text.replace('İ', 'i').replace('I', 'i').lower()
+    # Standard Turkish rules for lingual accuracy:
+    # 1. Map uppercase 'İ' to lowercase 'i'
+    # 2. Map uppercase 'I' to lowercase 'ı'
+    return text.replace('İ', 'i').replace('I', 'ı').lower()
 
 # Patterns to detect media placeholders in chat
 MEDIA_PATTERNS = [

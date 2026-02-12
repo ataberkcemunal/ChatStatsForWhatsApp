@@ -1,6 +1,8 @@
 # Input/Output files
 _chat.txt
 chat_stats.txt
+chat_stats.pdf
+debug_output.html
 
 # Python
 __pycache__/

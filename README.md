@@ -1,188 +1,108 @@
-# WhatsApp Chat Statistics Analyzer
+# WhatsApp Chat Stats 📊
 
-> **Note:** This script works for WhatsApp chat exports in both English and Turkish languages.
+[![Python Version](https://img.shields.io/badge/python-3.8%2B-blue.svg)](https://www.python.org/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Language: Turkish](https://img.shields.io/badge/Language-Turkish_Only-blue.svg)](https://github.com/ataberkcemunal/ChatStatsForWhatsApp)
 
-A Python script that analyzes WhatsApp chat exports and generates a comprehensive, visually enhanced PDF report (`chat_stats.pdf`) with detailed statistics, emoji-enhanced headers, and clean tables.
+**Önemli Not:** Bu araç sadece **Türkçe** dilinde dışa aktarılmış WhatsApp sohbetleri için optimize edilmiştir.
+[Türkçe README için tıklayın](README_TR.md)
 
-## Features
-
-- **User Statistics:**
-  - Total messages, words, letters, media, emojis, and links per user
-- **Detailed Media Statistics:**
-  - Stickers, images, videos, audio, documents, GIFs, locations, and total media per user
-- **Temporal Statistics:**
-  - Messages by day of week, hour, month, and most active days
-  - Chat timeline
-- **User Activity Timeline:**
-  - Days active, participation rate, messages per active day
-- **Word Analysis:**
-  - Most used words overall and by user
-- **Emoji Analysis:**
-  - Most used emojis by user
-- **Beautiful PDF Output:**
-  - Emoji-enhanced headers, Markdown-style tables, and modern styling
-
-## Output Format
-
-The script generates a PDF report (`chat_stats.pdf`) with:
-- Emoji-enhanced headers for easy navigation
-- Clean, styled tables for all statistics
-- Organized sections with visual hierarchy
-- Timeline (First Message and Last Message date)
-- Comprehensive data in an easy-to-read format
-
-### Example Output Structure
-
----
-# WhatsApp Chat Statistics
-
-## 📅 Chat Timeline
-**First Message:** 2023-01-01 00:01:23
-
-**Last Message:** 2023-12-31 23:59:59
-
----
-## 👥 User Statistics
-User           | Messages | Words   | Letters | Media | Emojis | Links
---------------|----------|---------|---------|-------|--------|------
-Alice          | 21,436   | 87,644  | 545,572 | 3,137 | 935    | 169  
-Bob            | 14,345   | 58,035  | 359,675 | 2,824 | 222    | 259  
-
----
-## 📱 Detailed Media Statistics
-User           | Stickers | Images | Videos | Audio | Documents | GIFs | Locations | Total
---------------|----------|--------|--------|-------|-----------|------|-----------|------
-Alice          | 1,128    | 1,544  | 151    | 361   | 60        | 0    | 5         | 3,137
-Bob            | 454      | 1,363  | 132    | 4     | 64        | 0    | 4         | 2,824
-
----
-## ⏰ Temporal Statistics
-### 📅 Messages by Day of Week
-Day        | Messages
------------|---------
-Monday     | 7,970
-Tuesday    | 7,842
-Wednesday  | 8,687
-...
-
-### 🕐 Messages by Hour
-Hour           | Messages
----------------|---------
-00:00 - 00:59  | 3,496
-01:00 - 01:59  | 3,616
-...
-
-### 📆 Messages by Month
-Month    | Messages
----------|---------
-2023-01  | 1,574
-2023-02  | 5,513
-...
-
----
-## 📊 User Activity Timeline
-User   | Days Active | Participation Rate | Messages per Active Day
--------|-------------|-------------------|------------------------
-Alice  | 365/365     | 100.0%            | 58.7
-Bob    | 364/365     | 99.7%             | 39.4
-
----
-## 🔥 Most Active 10 Days
-Date        | Messages
-------------|---------
-2023-07-30  | 797
-2023-02-08  | 768
-...
-
----
-## 📝 Most Used Words
-Word   | Count
--------|------
-hello  | 5,270
-world  | 5,261
-...
-
----
-## 😊 Most Used Emojis by User
-### Alice
-Emoji | Count
-------|------
-😊    | 146
-❤️    | 103
-...
+A comprehensive Python-based analyzer for WhatsApp chat exports. Transform your raw chat logs into professional, insightful PDF reports featuring detailed statistics, temporal analysis, and natural language insights.
 
 ---
 
-## Requirements
+## ✨ Key Features
 
-- Python 3.6+
-- Required packages (install using `pip install -r requirements.txt`):
-  - pandas
-  - emoji
-  - weasyprint
-  - markdown
-  - collections
-  - datetime
-  - re
+### 👥 User Insights
+- **Message Metrics**: Total messages, word counts, and letter counts per participant.
+- **Engagement Analysis**: Participation rates and average messages per active day.
+- **Media Tracking**: Detailed breakdown of Stickers, Images, Videos, Audio, Documents, GIFs, and Locations.
 
-## Installation
+### 📝 Textual Analysis
+- **Advanced Tokenization**: Smart handling of WhatsApp @mentions as single units (e.g., `@User`).
+- **N-Gram Analysis**: Discover frequently used Bigrams and Trigrams to identify common catchphrases.
+- **Emoji Stats**: See each user's favorite and most frequent emojis.
+- **Word Frequency**: Top words used overall and per user (filtered for meaningful results).
 
-1. Clone the repository:
-```bash
-git clone https://github.com/ataberkcemunal/Chat-Stats-for-WhatsApp.git
-cd Chat-Stats-for-WhatsApp
-```
+### ⏰ Temporal Statistics
+- **Activity Heatmap**: Analysis of message volume by hour of the day and day of the week.
+- **Monthly Trends**: Track how your conversation has evolved over months.
+- **Peak Days**: Identify the top 10 most active days in your chat history.
 
-2. Install required packages:
-```bash
-pip install -r requirements.txt
-```
+### 🛡️ Smart Parsing & Cleanup
+- **Robust Regex**: Automatically filters out "edited" and "deleted" message indicators from statistics.
+- **System Message Detection**: intelligently excludes group formation, name changes, and system notifications.
+- **Call Statistics**: Accurate counts for Voice, Video, Answered, and Missed calls.
 
-## Usage
+---
 
-1. Export your WhatsApp chat:
-   - Open the chat in WhatsApp
-   - Click on the three dots menu
-   - Select "More" > "Export chat"
-   - Choose "Without media"
-   - Save the file as `_chat.txt`
+## 🚀 Getting Started
 
-2. Run the script:
-```bash
-python ChatStatsForWhatsApp.py _chat.txt
-```
+### Prerequisites
+- Python 3.8 or higher
+- [GTK+3](https://www.gtk.org/docs/installations/macos/) (Required by WeasyPrint for PDF generation)
 
-3. View the results in `chat_stats.pdf`
+### Installation
 
-## Output Files
+1. **Clone the Repository**
+   ```bash
+   git clone https://github.com/ataberkcemunal/ChatStatsForWhatsApp.git
+   cd ChatStatsForWhatsApp
+   ```
 
-- `chat_stats.pdf` - Main statistics report in PDF format
-- `_chat.txt` - Your WhatsApp chat export (input file)
+2. **Setup Virtual Environment (Recommended)**
+   ```bash
+   python3 -m venv venv
+   source venv/bin/activate  # On macOS/Linux
+   ```
 
-## License
+3. **Install Dependencies**
+   ```bash
+   pip install -r requirements.txt
+   ```
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+### Usage
 
-## Contributing
+1. **Export your WhatsApp chat**:
+   - Open the desired chat on your mobile device.
+   - Go to **More** > **Export Chat**.
+   - Select **Without Media**.
+   - Save the exported `.txt` file to the project directory (e.g., as `_chat.txt`).
 
-Contributions are welcome! Please read our [Contributing Guidelines](CONTRIBUTING.md) for details on our code of conduct and the process for submitting pull requests.
+2. **Generate Report**:
+   ```bash
+   python ChatStatsForWhatsApp.py _chat.txt
+   ```
 
-## Topics
+3. **View Results**:
+   Open the newly generated `chat_stats.pdf` to explore your statistics.
 
-- whatsapp
-- chat-analysis
-- statistics
-- data-analysis
-- python
-- text-analysis
-- social-media
-- data-visualization
-- emoji-analysis
-- pdf-report
-- natural-language-processing
-- pandas
-- weasyprint
-- word-frequency
-- temporal-analysis
-- user-engagement
- 
+---
+
+## 🎨 Design Aesthetics
+The generated PDF report features:
+- **Rich Typography**: Optimized for readability using modern sans-serif fonts.
+- **Structured Layout**: Organized with emoji-enhanced headers and clean Markdown-style tables.
+- **Turkish Support**: Fully optimized for Turkish language exports and character sets.
+
+---
+
+## 🛠️ Configuration
+The script is designed to be plug-and-play, but you can easily modify `MEDIA_PATTERNS` or `group_patterns` within `ChatStatsForWhatsApp.py` to adapt to different WhatsApp localized versions if needed.
+
+---
+
+## 📄 License
+Distributed under the MIT License. See `LICENSE` for more information.
+
+## 🤝 Contributing
+Contributions are what make the open source community such an amazing place to learn, inspire, and create. Any contributions you make are **greatly appreciated**.
+
+1. Fork the Project
+2. Create your Feature Branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your Changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the Branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
+
+---
+Created with ❤️ by [Ataberk Cem Ünal](https://github.com/ataberkcemunal)

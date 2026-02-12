@@ -81,11 +81,11 @@ A comprehensive Python-based analyzer for WhatsApp chat exports. Transform your 
 ---
 
 ## 📂 Examples
-You can find example files in the [examples/](examples/) directory:
-- [sample_chat.txt](examples/sample_chat.txt): A sample WhatsApp chat export in Turkish.
-- [sample_stats.pdf](examples/sample_stats.pdf): The generated PDF report for the sample chat.
+You can find an example report in the [examples/](examples/) directory:
+- [sample_stats.pdf](examples/sample_stats.pdf): A comprehensive PDF report generated from a simulated chat dataset (Turkish).
 
 ---
+
 
 ## 🎨 Design Aesthetics
 The generated PDF report features:

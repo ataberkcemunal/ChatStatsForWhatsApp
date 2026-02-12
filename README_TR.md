@@ -77,11 +77,11 @@ WhatsApp sohbet dışa aktarımları için kapsamlı bir analiz aracı. Ham sohb
 ---
 
 ## 📂 Örnekler
-[examples/](examples/) dizini altında örnek dosyaları bulabilirsiniz:
-- [sample_chat.txt](examples/sample_chat.txt): Örnek bir Türkçe WhatsApp sohbet dışa aktarımı.
-- [sample_stats.pdf](examples/sample_stats.pdf): Örnek sohbet için oluşturulmuş PDF raporu.
+[examples/](examples/) dizini altında örnek raporu bulabilirsiniz:
+- [sample_stats.pdf](examples/sample_stats.pdf): Örnek bir veri seti üzerinden oluşturulmuş kapsamlı analiz raporu.
 
 ---
+
 
 ## 🎨 Tasarım Estetiği
 Oluşturulan PDF raporunun özellikleri:

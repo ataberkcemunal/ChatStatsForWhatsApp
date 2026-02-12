@@ -287,7 +287,8 @@ def parse_chat(filepath):
                         # Also add without special chars if needed, but usually exact match works
                 
                 # Skip group messages
-                if is_group_message(text, user, is_system_hint=is_system_hint):
+                # Only skip if NOT a deleted message (deleted messages become empty after cleanup)
+                if not is_deleted and is_group_message(text, user, is_system_hint=is_system_hint):
                     continue
 
                 # Calculate stats for normal messages

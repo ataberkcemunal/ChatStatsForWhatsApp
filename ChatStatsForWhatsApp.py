@@ -363,14 +363,17 @@ def compute_stats(df):
         
         user_df = df[df['user'] == user]
         
-        # Count different media types
-        sticker_count = user_df[user_df['message'].str.replace('\u200E', '', regex=False).apply(turkish_lower).str.contains('çıkartma dahil edilmedi', na=False, regex=True)].shape[0]
-        image_count = user_df[user_df['message'].str.replace('\u200E', '', regex=False).apply(turkish_lower).str.contains('görüntü dahil edilmedi', na=False, regex=True)].shape[0]
-        video_count = user_df[user_df['message'].str.replace('\u200E', '', regex=False).apply(turkish_lower).str.contains('video dahil edilmedi', na=False, regex=True)].shape[0]
-        audio_count = user_df[user_df['message'].str.replace('\u200E', '', regex=False).apply(turkish_lower).str.contains('ses dahil edilmedi', na=False, regex=True)].shape[0]
-        document_count = user_df[user_df['message'].str.replace('\u200E', '', regex=False).apply(turkish_lower).str.contains('belge dahil edilmedi', na=False, regex=True)].shape[0]
-        gif_count = user_df[user_df['message'].str.replace('\u200E', '', regex=False).apply(turkish_lower).str.contains('gıf dahil edilmedi', na=False, regex=True)].shape[0]
-        location_count = user_df[user_df['message'].str.replace('\u200E', '', regex=False).apply(turkish_lower).str.contains('konum:', na=False, regex=True)].shape[0]
+        # Count different media types using standard case-insensitive matching
+        # (Avoids Turkish-specific I/ı issues for these fixed system placeholders)
+        msgs_clean = user_df['message'].str.replace('\u200E', '', regex=False)
+        
+        sticker_count = msgs_clean[msgs_clean.str.contains('çıkartma dahil edilmedi', case=False, na=False)].shape[0]
+        image_count = msgs_clean[msgs_clean.str.contains('görüntü dahil edilmedi', case=False, na=False)].shape[0]
+        video_count = msgs_clean[msgs_clean.str.contains('video dahil edilmedi', case=False, na=False)].shape[0]
+        audio_count = msgs_clean[msgs_clean.str.contains('ses dahil edilmedi', case=False, na=False)].shape[0]
+        document_count = msgs_clean[msgs_clean.str.contains('belge dahil edilmedi', case=False, na=False)].shape[0]
+        gif_count = msgs_clean[msgs_clean.str.contains('GIF dahil edilmedi', case=False, na=False)].shape[0]
+        location_count = msgs_clean[msgs_clean.str.contains('konum:', case=False, na=False)].shape[0]
         
         media_stats.append({
             'User': user,

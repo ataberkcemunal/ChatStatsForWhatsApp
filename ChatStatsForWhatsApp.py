@@ -269,6 +269,10 @@ def parse_chat(filepath):
                 ts = datetime.strptime(m.group(1), '%d.%m.%Y %H:%M:%S')
                 user = m.group(2)
                 text = m.group(3) if m.group(3) else ""
+                
+                # Check for deleted message BEFORE cleanup (as CLEANUP_REGEX removes the text)
+                is_deleted = 1 if is_deleted_message(text) else 0
+                
                 cleaned_text = clean_message_lower(text)
                 
                 # Remove system indicators (edited/deleted) instead of skipping the message
@@ -294,9 +298,6 @@ def parse_chat(filepath):
                 emoji_count = len(emojis)
                 emoji_count = len(emojis)
                 media = 1 if any(pat in cleaned_text for pat in [turkish_lower(p) for p in MEDIA_PATTERNS]) else 0
-                
-                # Check for deleted message
-                is_deleted = 1 if is_deleted_message(text) else 0
                 
                 # Check for poll (only if not deleted)
                 poll = 1 if (not is_deleted and is_poll(text)) else 0
@@ -331,8 +332,10 @@ def parse_chat(filepath):
                     current['emoji_count'] = len(current['emojis'])
                     current['media'] = 1 if any(pat in cleaned_text for pat in [turkish_lower(p) for p in MEDIA_PATTERNS]) else 0
                     
+                    
                     # Re-check flags for continuation
-                    is_del = 1 if is_deleted_message(text) else 0
+                    # Be careful not to overwrite deleted flag if it was already set (since text might be stripped)
+                    is_del = 1 if (current.get('deleted') or is_deleted_message(text)) else 0
                     current['deleted'] = is_del
                     current['poll'] = 1 if (not is_del and is_poll(text)) else 0
     df = pd.DataFrame(records)

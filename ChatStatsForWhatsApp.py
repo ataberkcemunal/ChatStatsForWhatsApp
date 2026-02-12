@@ -263,14 +263,23 @@ def compute_stats(df):
         """Helper to tokenize text while preserving tags as single units"""
         placeholders = {}
         def repl(m):
-            name = m.group(1).replace(' ', '')
-            token = f"TAG{len(placeholders)}TOKEN"
-            placeholders[turkish_lower(token)] = f"@{name}"
+            # Extract name, remove all spaces and control characters
+            raw_name = m.group(1)
+            # Remove invisible/control characters and spaces
+            clean_name = ''.join(c for c in raw_name if not unicodedata.category(c).startswith('C'))
+            clean_name = clean_name.replace(' ', '')
+            
+            token = f"ZXTG{len(placeholders)}TX"
+            formatted_name = f"@{clean_name}"
+            # Store with standard lower() since our token is ascii-safe
+            placeholders[token.lower()] = formatted_name
             return token
         
-        # Remove links, system indicators and replace tags with placeholders
+        # Remove links and system indicators
         text = re.sub(LINK_REGEX, '', text)
         text = CLEANUP_REGEX.sub('', text)
+        
+        # Replace tags with placeholders BEFORE tokenization
         text = re.sub(TAG_REGEX, repl, text)
         
         # Tokenize (keeping alphanumeric and underscores)
@@ -280,8 +289,10 @@ def compute_stats(df):
         # Restore placeholders and filter by min_len
         tokens = []
         for w in words:
-            if w in placeholders:
-                tokens.append(placeholders[w])
+            # We use standard .lower() for the lookup because our placeholder is ASCII
+            lookup_w = w.lower()
+            if lookup_w in placeholders:
+                tokens.append(placeholders[lookup_w])
             elif len(w) >= min_len:
                 tokens.append(w)
         return tokens

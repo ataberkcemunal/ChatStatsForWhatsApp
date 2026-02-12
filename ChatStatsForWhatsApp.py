@@ -121,14 +121,24 @@ TAG_REGEX = r'@\u2068(.*?)\u2069'
 CLEANUP_REGEX = re.compile(r'\u200e?<.*?(?:mesaj düzenlendi|message was edited)>|\u200e?Bu mesajı sildiniz\.|\u200e?Bu mesaj silindi\.', re.IGNORECASE)
 
 def clean_media_placeholders(text):
-    """Removes U+200E and media placeholders to extract pure captions"""
+    """Removes U+200E, media placeholders, and poll system text to extract pure user content"""
     if not text:
         return ""
     # Remove markers
     res = text.replace('\u200e', '').replace('\u200f', '').replace('\u200E', '').replace('\u200F', '')
-    # Remove standard placeholders
+    
+    # Remove standard media placeholders
     for pat in MEDIA_PATTERNS:
         res = re.sub(re.escape(pat), '', res, flags=re.IGNORECASE)
+        
+    # Remove Poll system text
+    # 1. Remove "ANKET:" prefix (case-insensitive)
+    res = re.sub(r'^ANKET:\s*', '', res, flags=re.IGNORECASE)
+    # 2. Remove "SEÇENEK:" prefix (case-insensitive)
+    res = re.sub(r'^SEÇENEK:\s*', '', res, flags=re.IGNORECASE)
+    # 3. Remove vote counts at the end (e.g., "(1 oy)")
+    res = re.sub(r'\(\d+\s+oy\)$', '', res.strip(), flags=re.IGNORECASE)
+    
     return res.strip()
 
 def clean_message(text):

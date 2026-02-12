@@ -661,9 +661,10 @@ def compute_stats(df):
     
     # Messages by Hour
     write_line("#### 🕐 Saatlere Göre Mesajlar")
-    hour_stats = df['hour'].value_counts().sort_index()
-    # Generate Hour Chart
-    hour_chart = create_chart(hour_stats.index, hour_stats.values, 'Saatlere Göre Mesaj Dağılımı', 'Saat', 'Mesaj Sayısı', 'line')
+    hour_stats = df['hour'].value_counts().reindex(range(24), fill_value=0).sort_index()
+    # Generate Hour Chart with all 24 hours on x-axis
+    hour_labels = [f"{h:02d}" for h in range(24)]
+    hour_chart = create_chart(hour_labels, hour_stats.values, 'Saatlere Göre Mesaj Dağılımı', 'Saat', 'Mesaj Sayısı', 'line')
     write_line(hour_chart)
     write_line("")
     

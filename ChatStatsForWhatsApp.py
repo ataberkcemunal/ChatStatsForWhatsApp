@@ -369,7 +369,7 @@ def compute_stats(df):
         video_count = user_df[user_df['message'].str.replace('\u200E', '', regex=False).apply(turkish_lower).str.contains('video dahil edilmedi', na=False, regex=True)].shape[0]
         audio_count = user_df[user_df['message'].str.replace('\u200E', '', regex=False).apply(turkish_lower).str.contains('ses dahil edilmedi', na=False, regex=True)].shape[0]
         document_count = user_df[user_df['message'].str.replace('\u200E', '', regex=False).apply(turkish_lower).str.contains('belge dahil edilmedi', na=False, regex=True)].shape[0]
-        gif_count = user_df[user_df['message'].str.replace('\u200E', '', regex=False).apply(turkish_lower).str.contains('gif dahil edilmedi', na=False, regex=True)].shape[0]
+        gif_count = user_df[user_df['message'].str.replace('\u200E', '', regex=False).apply(turkish_lower).str.contains('gıf dahil edilmedi', na=False, regex=True)].shape[0]
         location_count = user_df[user_df['message'].str.replace('\u200E', '', regex=False).apply(turkish_lower).str.contains('konum:', na=False, regex=True)].shape[0]
         
         media_stats.append({

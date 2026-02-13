@@ -1,54 +1,64 @@
 # WhatsApp Sohbet İstatistikleri
 
 ## 📅 Sohbet Zaman Çizelgesi
-**İlk Mesaj:** 2025-01-01 09:38:00
+**İlk Mesaj:** 2023-05-15 14:22:00
 **Son Mesaj:** 2026-02-12 21:35:00
 
 ## 👥 Kullanıcı İstatistikleri
 | Kullanıcı | Mesajlar | Ort. Harf | Medya | Emojiler | Linkler | Anketler | Silinen |
 |-----------|----------|-----------|-------|----------|---------|----------|---------|
-| Cem | **256** | 12,4 | 42 | 84 | 12 | 2 | 5 |
-| Ayşe | **212** | 14,2 | 38 | 92 | 8 | 1 | 3 |
-| Burak | **198** | 11,8 | 45 | 76 | 15 | 3 | 8 |
+| Cem | **12.452** | 18,4 | 1.245 | 4.852 | 452 | 24 | 156 |
+| Ayşe | **11.210** | 16,2 | 986 | 5.120 | 381 | 18 | 112 |
+| Burak | **8.432** | 14,8 | 1.150 | 3.420 | 512 | 32 | 245 |
+| **Toplam** | **32.094** | **16,5** | **3.381** | **13.392** | **1.345** | **74** | **513** |
 
 ## 📞 Arama İstatistikleri
 | Kullanıcı | Sesli Arama | Görüntülü Arama | Cevaplanan | Cevapsız | Toplam |
 |-----------|-------------|-----------------|------------|----------|--------|
-| Burak | 12 | 5 | 14 | 3 | **17** |
-| Cem | 8 | 4 | 9 | 3 | **12** |
-| Ayşe | 5 | 2 | 6 | 1 | **7** |
+| Cem | 245 | 82 | 284 | 43 | **327** |
+| Ayşe | 198 | 65 | 224 | 39 | **263** |
+| Burak | 156 | 42 | 165 | 33 | **198** |
 
 ## 📱 Detaylı Medya İstatistikleri
 | Kullanıcı | Çıkartmalar | Resimler | Videolar | Sesler | Belgeler | GIFler | Konumlar | Toplam |
 |-----------|-------------|----------|----------|--------|----------|--------|----------|--------|
-| Cem | 15 | 12 | 5 | 4 | 3 | 2 | 1 | **42** |
-| Ayşe | 12 | 10 | 4 | 6 | 2 | 3 | 1 | **38** |
-| Burak | 20 | 8 | 6 | 5 | 2 | 2 | 2 | **45** |
+| Cem | 452 | 381 | 124 | 156 | 82 | 42 | 8 | **1.245** |
+| Ayşe | 312 | 284 | 98 | 186 | 45 | 52 | 9 | **986** |
+| Burak | 524 | 210 | 118 | 142 | 68 | 76 | 12 | **1.150** |
 
 ## 📝 En Çok Kullanılan Kelimeler (>3 harf)
 | Kelime | Sayı |
 |--------|------|
-| tamam | 42 |
-| geliyorum | 35 |
-| naber | 28 |
-| görüşürüz | 24 |
-| selam | 22 |
+| tamam | 1.842 |
+| geliyorum | 1.245 |
+| naber | 952 |
+| görüşürüz | 842 |
+| selam | 756 |
+| evet | 684 |
+| hayır | 524 |
+| bence | 496 |
+| yarın | 412 |
+| bugün | 385 |
 
 ## 🗣️ Kullanıcılara Göre En Çok Kullanılan Kelimeler
 
 #### Cem
 | Kelime | Sayı |
 |--------|------|
-| tamam | 18 |
-| naber | 12 |
-| geliyorum | 10 |
+| tamam | 842 |
+| naber | 412 |
+| geliyorum | 385 |
+| bence | 312 |
+| süper | 245 |
 
 #### Ayşe
 | Kelime | Sayı |
 |--------|------|
-| evet | 15 |
-| harika | 12 |
-| selam | 10 |
+| evet | 512 |
+| harika | 384 |
+| selam | 342 |
+| kesinlikle | 296 |
+| canım | 284 |
 
 ## 🔗 Kullanıcı Bazlı En Çok Kullanılan Kelime Kombinasyonları
 
@@ -56,27 +66,35 @@
 **İkili Kombinasyonlar**
 | İfade | Sayı |
 |-------|------|
-| tamam geliyorum | 8 |
-| naber nasılsın | 5 |
+| tamam geliyorum | 245 |
+| naber nasılsın | 182 |
+| bence de | 156 |
+| görüşürüz o | 142 |
 
 **Üçlü Kombinasyonlar**
 | İfade | Sayı |
 |-------|------|
-| tamam hemen geliyorum | 3 |
+| tamam hemen geliyorum | 84 |
+| görüşürüz kendine iyi | 72 |
+| yarın sabah görüşürüz | 56 |
 
 ## 😊 Kullanıcılara Göre En Çok Kullanılan Emojiler
 
 #### Ayşe
 | Emoji | Sayı |
 |-------|------|
-| ❤️ | 45 |
-| 😂 | 32 |
+| ❤️ | 1.245 |
+| 😂 | 956 |
+| 🙏 | 412 |
+| ✨ | 385 |
 
 #### Cem
 | Emoji | Sayı |
 |-------|------|
-| 👍 | 28 |
-| 🔥 | 15 |
+| 👍 | 842 |
+| 🔥 | 524 |
+| ✅ | 312 |
+| 😎 | 245 |
 
 ## ⏰ Zamansal İstatistikler
 
@@ -92,17 +110,25 @@
 #### 🔥 En Aktif 10 Gün
 | Tarih | Mesajlar |
 |-------|----------|
-| 2026-02-12 | 145 |
-| 2026-01-01 | 112 |
+| 2026-02-12 | 1.452 |
+| 2026-01-01 | 1.120 |
+| 2025-12-31 | 985 |
+| 2025-10-29 | 842 |
+| 2025-08-30 | 756 |
+| 2025-07-15 | 684 |
+| 2025-05-19 | 642 |
+| 2025-04-23 | 598 |
+| 2024-12-31 | 542 |
+| 2024-01-01 | 512 |
 
 #### 📊 Kullanıcı Etkinlik Zaman Çizelgesi
-**Toplam Sohbet Günü: 408**
+**Toplam Sohbet Günü: 1.005**
 
 | Kullanıcı | Aktif Günler | Katılım Oranı | Aktif Gün Başına Mesaj |
 |-----------|--------------|---------------|------------------------|
-| Cem | 312 / 408 | 76,5% | 0,8 |
-| Ayşe | 245 / 408 | 60,0% | 0,9 |
-| Burak | 210 / 408 | 51,5% | 0,9 |
+| Cem | 942 / 1.005 | 93,7% | 13,2 |
+| Ayşe | 812 / 1.005 | 80,8% | 13,8 |
+| Burak | 654 / 1.005 | 65,1% | 12,9 |
 
 ---
 > 💡 **Not:** Bu rapor [Chat Stats for WhatsApp](https://github.com/ataberkcemunal/ChatStatsForWhatsApp) aracı kullanılarak otomatik olarak üretilmiştir.

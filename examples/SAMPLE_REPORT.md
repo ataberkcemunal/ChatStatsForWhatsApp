@@ -10,7 +10,7 @@
 | Cem | **12.452** | 18,4 | 1.245 | 4.852 | 452 | 24 | 156 |
 | Ayşe | **11.210** | 16,2 | 986 | 5.120 | 381 | 18 | 112 |
 | Burak | **8.432** | 14,8 | 1.150 | 3.420 | 512 | 32 | 245 |
-| **Toplam** | **32.094** | **16,5** | **3.381** | **13.392** | **1.345** | **74** | **513** |
+| Deniz | **4.215** | 12,5 | 542 | 1.284 | 124 | 12 | 84 |
 
 ## 📞 Arama İstatistikleri
 | Kullanıcı | Sesli Arama | Görüntülü Arama | Cevaplanan | Cevapsız | Toplam |
@@ -18,6 +18,7 @@
 | Cem | 245 | 82 | 284 | 43 | **327** |
 | Ayşe | 198 | 65 | 224 | 39 | **263** |
 | Burak | 156 | 42 | 165 | 33 | **198** |
+| Deniz | 84 | 28 | 92 | 20 | **112** |
 
 ## 📱 Detaylı Medya İstatistikleri
 | Kullanıcı | Çıkartmalar | Resimler | Videolar | Sesler | Belgeler | GIFler | Konumlar | Toplam |
@@ -25,6 +26,7 @@
 | Cem | 452 | 381 | 124 | 156 | 82 | 42 | 8 | **1.245** |
 | Ayşe | 312 | 284 | 98 | 186 | 45 | 52 | 9 | **986** |
 | Burak | 524 | 210 | 118 | 142 | 68 | 76 | 12 | **1.150** |
+| Deniz | 184 | 156 | 64 | 72 | 34 | 24 | 8 | **542** |
 
 ## 📝 En Çok Kullanılan Kelimeler (>3 harf)
 | Kelime | Sayı |
@@ -64,6 +66,7 @@
 
 #### Cem
 **İkili Kombinasyonlar**
+
 | İfade | Sayı |
 |-------|------|
 | tamam geliyorum | 245 |
@@ -72,6 +75,7 @@
 | görüşürüz o | 142 |
 
 **Üçlü Kombinasyonlar**
+
 | İfade | Sayı |
 |-------|------|
 | tamam hemen geliyorum | 84 |
@@ -87,6 +91,7 @@
 | 😂 | 956 |
 | 🙏 | 412 |
 | ✨ | 385 |
+| 😍 | 312 |
 
 #### Cem
 | Emoji | Sayı |
@@ -95,17 +100,18 @@
 | 🔥 | 524 |
 | ✅ | 312 |
 | 😎 | 245 |
+| 👊 | 156 |
 
 ## ⏰ Zamansal İstatistikler
 
 #### 📅 Haftanın Günlerine Göre Mesajlar
-*(Grafik burada yer almaktadır)*
+*(Bu bölümde gerçek raporda dikey sütun grafiği yer almaktadır)*
 
 #### 🕐 Saatlere Göre Mesajlar
-*(Grafik burada yer almaktadır)*
+*(Bu bölümde gerçek raporda 24 saatlik çizgi grafiği yer almaktadır)*
 
 #### 📆 Aylara Göre Mesajlar
-*(Grafik burada yer almaktadır)*
+*(Bu bölümde gerçek raporda aylık gelişim grafiği yer almaktadır)*
 
 #### 🔥 En Aktif 10 Gün
 | Tarih | Mesajlar |
@@ -129,6 +135,7 @@
 | Cem | 942 / 1.005 | 93,7% | 13,2 |
 | Ayşe | 812 / 1.005 | 80,8% | 13,8 |
 | Burak | 654 / 1.005 | 65,1% | 12,9 |
+| Deniz | 425 / 1.005 | 42,3% | 9,9 |
 
 ---
 > 💡 **Not:** Bu rapor [Chat Stats for WhatsApp](https://github.com/ataberkcemunal/ChatStatsForWhatsApp) aracı kullanılarak otomatik olarak üretilmiştir.

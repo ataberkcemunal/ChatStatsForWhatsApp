@@ -213,6 +213,9 @@ def _get_tokens(text, min_len=2, keep_apostrophes=False):
     # Replace tags with placeholders BEFORE tokenization
     text = re.sub(TAG_REGEX, repl, text)
     
+    # Normalize apostrophes (curly to straight) for consistent processing
+    text = text.replace('’', "'").replace('‘', "'")
+    
     # Tokenize (keeping alphanumeric and underscores)
     # Note: we use words and placeholders as tokens
     lower_text = turkish_lower(text)
@@ -521,7 +524,7 @@ def compute_stats(df):
     for msg in df['message']:
         cleaned = clean_media_placeholders(msg)
         if cleaned:
-            tokens = _get_tokens(cleaned, min_len=4)
+            tokens = _get_tokens(cleaned, min_len=4, keep_apostrophes=True)
             all_words.extend(tokens)
     wc = Counter(all_words)
     
@@ -544,7 +547,7 @@ def compute_stats(df):
         for msg in user_messages_raw:
             cleaned = clean_media_placeholders(msg)
             if cleaned:
-                tokens = _get_tokens(cleaned, min_len=4)
+                tokens = _get_tokens(cleaned, min_len=4, keep_apostrophes=True)
                 user_words.extend(tokens)
         wc = Counter(user_words)
         
@@ -811,20 +814,25 @@ if __name__ == '__main__':
     import argparse
     parser = argparse.ArgumentParser(description='WhatsApp chat statistics')
     parser.add_argument('chat_file', help='Path to exported chat text file')
-    parser.add_argument('--start-date', '-s', help='Filter messages from this date onwards (Format: DD.MM.YYYY)', default=None)
+    parser.add_argument('--start-date', '-s', help='Filter messages from this date/time onwards (Format: DD.MM.YYYY or DD.MM.YYYY HH:MM:SS)', default=None)
     args = parser.parse_args()
 
     df = parse_chat(args.chat_file)
     
     if args.start_date:
         from datetime import datetime
-        try:
-            start_dt = datetime.strptime(args.start_date, '%d.%m.%Y')
-            df = df[df['datetime'] >= start_dt]
-            print(f"DEBUG: Filtered messages from {args.start_date} onwards. Remaining records: {len(df)}")
-        except ValueError:
-            print(f"Error: Invalid date format for --start-date. Please use DD.MM.YYYY (e.g., 08.08.2025)")
+        start_dt = None
+        for fmt in ('%d.%m.%Y %H:%M:%S', '%d.%m.%Y'):
+            try:
+                start_dt = datetime.strptime(args.start_date, fmt)
+                break
+            except ValueError:
+                continue
+        if start_dt is None:
+            print(f"Error: Invalid date format for --start-date. Please use DD.MM.YYYY or 'DD.MM.YYYY HH:MM:SS'")
             exit(1)
+        df = df[df['datetime'] >= start_dt]
+        print(f"DEBUG: Filtered messages from {args.start_date} onwards. Remaining records: {len(df)}")
 
     if df.empty:
         print("No messages found for the given criteria.")

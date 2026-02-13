@@ -82,8 +82,8 @@ A comprehensive Python-based analyzer for WhatsApp chat exports. Transform your 
 ---
 
 ## 📂 Examples
-You can find an example report in the [examples/](examples/) directory:
-- [SAMPLE_REPORT.md](examples/SAMPLE_REPORT.md): A comprehensive Markdown report generated from a simulated chat dataset (Turkish).
+You can find an example report in the root directory:
+- [SAMPLE_REPORT.md](SAMPLE_REPORT.md): A comprehensive Markdown report generated from a simulated chat dataset (Turkish).
 
 ---
 

@@ -79,7 +79,7 @@ WhatsApp sohbet dışa aktarımları için kapsamlı bir analiz aracı. Ham sohb
 
 ## 📂 Örnekler
 [examples/](examples/) dizini altında örnek raporu bulabilirsiniz:
-- [sample_stats.pdf](examples/sample_stats.pdf): Örnek bir veri seti üzerinden oluşturulmuş kapsamlı analiz raporu.
+- [SAMPLE_REPORT.md](examples/SAMPLE_REPORT.md): Örnek bir veri seti üzerinden oluşturulmuş kapsamlı analiz raporu.
 
 ---
 

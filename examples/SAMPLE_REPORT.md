@@ -1,66 +1,108 @@
-# 📊 WhatsApp Sohbet Analiz Raporu
+# WhatsApp Sohbet İstatistikleri
 
-Bu rapor, örnek bir sohbet datasının (anonimleştirilmiş) analiz edilmesiyle oluşturulmuştur.
-
----
-
-## 📈 Genel İstatistikler
-
-| Başlık | Değer |
-| :--- | :--- |
-| **Toplam Mesaj Sayısı** | 1,245 |
-| **Toplam Kelime Sayısı** | 8,432 |
-| **Toplam Medya (Foto/Video)** | 156 |
-| **Toplam Sesli Mesaj** | 42 |
-| **Analiz Edilen Gün Sayısı** | 180 |
-
----
+## 📅 Sohbet Zaman Çizelgesi
+**İlk Mesaj:** 2025-01-01 09:38:00
+**Son Mesaj:** 2026-02-12 21:35:00
 
 ## 👥 Kullanıcı İstatistikleri
-
-| Kullanıcı | Mesaj Sayısı | Kelime Ortalaması | Medya |
-| :--- | :---: | :---: | :---: |
-| **Ayşe** | 452 | 7.2 | 45 |
-| **Burak** | 412 | 6.5 | 62 |
-| **Cem** | 381 | 6.1 | 49 |
-
----
-
-## ⏰ Zaman Analizi
-
-### 📅 En Aktif Günler
-1. **12.02.2026** (142 mesaj)
-2. **01.01.2026** (118 mesaj)
-3. **14.02.2026** (95 mesaj)
-
-### 🕒 Mesajların Saate Göre Dağılımı
-*Mesajların çoğu akşam saatlerinde (20:00 - 23:00) yoğunlaşmaktadır.*
-
----
-
-## 🔤 Kelime Analizi
-
-### 🔝 En Çok Kullanılan Kelimeler
-1. **Tamam** (124 kez)
-2. **Evet** (86 kez)
-3. **Selam** (54 kez)
-4. **Geliyorum** (42 kez)
-
-### 🔗 En Çok Kullanılan İkililer
-1. **Tamamdır o zaman**
-2. **Görüşürüz kendine iyi**
-3. **Yemek yiyelim mi**
-
----
+| Kullanıcı | Mesajlar | Ort. Harf | Medya | Emojiler | Linkler | Anketler | Silinen |
+|-----------|----------|-----------|-------|----------|---------|----------|---------|
+| Cem | **256** | 12,4 | 42 | 84 | 12 | 2 | 5 |
+| Ayşe | **212** | 14,2 | 38 | 92 | 8 | 1 | 3 |
+| Burak | **198** | 11,8 | 45 | 76 | 15 | 3 | 8 |
 
 ## 📞 Arama İstatistikleri
+| Kullanıcı | Sesli Arama | Görüntülü Arama | Cevaplanan | Cevapsız | Toplam |
+|-----------|-------------|-----------------|------------|----------|--------|
+| Burak | 12 | 5 | 14 | 3 | **17** |
+| Cem | 8 | 4 | 9 | 3 | **12** |
+| Ayşe | 5 | 2 | 6 | 1 | **7** |
 
-| Tür | Toplam Sayı |
-| :--- | :---: |
-| **Cevapsız Aramalar** | 12 |
-| **Sesli Aramalar** | 24 |
-| **Görüntülü Aramalar** | 8 |
+## 📱 Detaylı Medya İstatistikleri
+| Kullanıcı | Çıkartmalar | Resimler | Videolar | Sesler | Belgeler | GIFler | Konumlar | Toplam |
+|-----------|-------------|----------|----------|--------|----------|--------|----------|--------|
+| Cem | 15 | 12 | 5 | 4 | 3 | 2 | 1 | **42** |
+| Ayşe | 12 | 10 | 4 | 6 | 2 | 3 | 1 | **38** |
+| Burak | 20 | 8 | 6 | 5 | 2 | 2 | 2 | **45** |
+
+## 📝 En Çok Kullanılan Kelimeler (>3 harf)
+| Kelime | Sayı |
+|--------|------|
+| tamam | 42 |
+| geliyorum | 35 |
+| naber | 28 |
+| görüşürüz | 24 |
+| selam | 22 |
+
+## 🗣️ Kullanıcılara Göre En Çok Kullanılan Kelimeler
+
+#### Cem
+| Kelime | Sayı |
+|--------|------|
+| tamam | 18 |
+| naber | 12 |
+| geliyorum | 10 |
+
+#### Ayşe
+| Kelime | Sayı |
+|--------|------|
+| evet | 15 |
+| harika | 12 |
+| selam | 10 |
+
+## 🔗 Kullanıcı Bazlı En Çok Kullanılan Kelime Kombinasyonları
+
+#### Cem
+**İkili Kombinasyonlar**
+| İfade | Sayı |
+|-------|------|
+| tamam geliyorum | 8 |
+| naber nasılsın | 5 |
+
+**Üçlü Kombinasyonlar**
+| İfade | Sayı |
+|-------|------|
+| tamam hemen geliyorum | 3 |
+
+## 😊 Kullanıcılara Göre En Çok Kullanılan Emojiler
+
+#### Ayşe
+| Emoji | Sayı |
+|-------|------|
+| ❤️ | 45 |
+| 😂 | 32 |
+
+#### Cem
+| Emoji | Sayı |
+|-------|------|
+| 👍 | 28 |
+| 🔥 | 15 |
+
+## ⏰ Zamansal İstatistikler
+
+#### 📅 Haftanın Günlerine Göre Mesajlar
+*(Grafik burada yer almaktadır)*
+
+#### 🕐 Saatlere Göre Mesajlar
+*(Grafik burada yer almaktadır)*
+
+#### 📆 Aylara Göre Mesajlar
+*(Grafik burada yer almaktadır)*
+
+#### 🔥 En Aktif 10 Gün
+| Tarih | Mesajlar |
+|-------|----------|
+| 2026-02-12 | 145 |
+| 2026-01-01 | 112 |
+
+#### 📊 Kullanıcı Etkinlik Zaman Çizelgesi
+**Toplam Sohbet Günü: 408**
+
+| Kullanıcı | Aktif Günler | Katılım Oranı | Aktif Gün Başına Mesaj |
+|-----------|--------------|---------------|------------------------|
+| Cem | 312 / 408 | 76,5% | 0,8 |
+| Ayşe | 245 / 408 | 60,0% | 0,9 |
+| Burak | 210 / 408 | 51,5% | 0,9 |
 
 ---
-
 > 💡 **Not:** Bu rapor [Chat Stats for WhatsApp](https://github.com/ataberkcemunal/ChatStatsForWhatsApp) aracı kullanılarak otomatik olarak üretilmiştir.

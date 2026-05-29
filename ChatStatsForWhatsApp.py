@@ -1,4 +1,6 @@
 import re
+import argparse
+import sys
 from datetime import datetime
 from collections import Counter
 import pandas as pd
@@ -17,20 +19,37 @@ def turkish_lower(text):
     # 2. Map uppercase 'I' to lowercase 'ı'
     return text.replace('İ', 'i').replace('I', 'ı').lower()
 
-# Patterns to detect media placeholders in chat
+# Patterns to detect media placeholders in chat. Calls are tracked separately,
+# so they intentionally do not live in this list.
 MEDIA_PATTERNS = [
-    # Turkish
     'Çıkartma dahil edilmedi',
     'görüntü dahil edilmedi',
     'video dahil edilmedi',
     'ses dahil edilmedi',
     'belge dahil edilmedi',
     'Konum: https://maps.google.com',
-    'Görüntülü arama',
-    'Sesli arama',
-    'Cevapsız görüntülü arama',
-    'Cevapsız sesli arama',
     'GIF dahil edilmedi'
+]
+MEDIA_PATTERNS_LOWER = [turkish_lower(pattern) for pattern in MEDIA_PATTERNS]
+MEDIA_TYPE_PATTERNS = {
+    'Stickers': 'çıkartma dahil edilmedi',
+    'Images': 'görüntü dahil edilmedi',
+    'Videos': 'video dahil edilmedi',
+    'Audio': 'ses dahil edilmedi',
+    'Documents': 'belge dahil edilmedi',
+    'GIFs': 'GIF dahil edilmedi',
+    'Locations': 'konum:',
+}
+
+SYSTEM_TEXT_PATTERNS = [
+    # WhatsApp call status text can be exported as message text. These are
+    # metadata, not chat content, so keep them out of word and n-gram stats.
+    r'\bcevapsız\s+(?:sesli|görüntülü)?\s*arama\b',
+    r'\bsesli\s+arama\b',
+    r'\bgörüntülü\s+arama\b',
+    r'\bgeri\s+aramak\s+için\s+dokunun\b',
+    r'\bbaşka\s+bir\s+cihazda\s+cevaplandı\b',
+    r'\bcevaplanmadı\b',
 ]
 
 def is_group_user(user):
@@ -77,6 +96,10 @@ def is_group_message(text, user, is_system_hint=False):
         r'grubun adını değiştirdiniz', r'grup adını değiştirdiniz',
         r'grubun simgesini değiştirdiniz', r'grup simgesini değiştirdiniz',
         r'bu grubun simgesini', r'bu grubun adını',
+        r'gelişmiş sohbet gizliliğini etkinleştirdi',
+        r'gelişmiş sohbet gizliliğini devre dışı bıraktı',
+        r'medya dosyalarını otomatik olarak kaydedemez',
+        r'okunmamış mesajları özetleyemez',
         r'grup adını [“"](.*?)[”"] olarak değiştirdi',
         r'grup adını [“"](.*?)[”"] olarak değiştirdiniz',
         r'adını [“"](.*?)[”"] olarak değiştirdi',
@@ -126,6 +149,12 @@ def is_group_message(text, user, is_system_hint=False):
 LINK_REGEX = r'https?://\S+'
 TAG_REGEX = r'@\u2068(.*?)\u2069'
 CLEANUP_REGEX = re.compile(r'\u200e?<.*?(?:mesaj düzenlendi|message was edited)>|\u200e?Bu mesajı sildiniz\.|\u200e?Bu mesaj silindi\.', re.IGNORECASE)
+CHAT_LINE_REGEX = re.compile(r"^\[(\d{1,2}\.\d{1,2}\.\d{4} \d{2}:\d{2}:\d{2})\] (.*?):(?: (.*))?$")
+QUOTED_CHAT_HEADER_REGEX = re.compile(
+    r'\[\d{1,2}\.\d{1,2}\.\d{4}\s+\d{1,2}:\d{2}(?::\d{2})?\]\s+[^:\n]{1,80}:'
+)
+LINE_PREFIX_CHARS = ''.join(chr(i) for i in range(0, 32)) + '\u200e\u200f'
+
 
 def is_poll(text):
     """Check if a message is a poll based on marker or heuristic"""
@@ -165,7 +194,14 @@ def clean_media_placeholders(text):
 
     # Remove markers
     res = text.replace('\u200e', '').replace('\u200f', '').replace('\u200E', '').replace('\u200F', '')
+
+    # Remove pasted WhatsApp headers from quoted chat snippets.
+    res = QUOTED_CHAT_HEADER_REGEX.sub(' ', res)
     
+    # Remove call/status text that WhatsApp inserts into exports.
+    for pat in SYSTEM_TEXT_PATTERNS:
+        res = re.sub(pat, '', res, flags=re.IGNORECASE)
+
     # Remove standard media placeholders
     for pat in MEDIA_PATTERNS:
         res = re.sub(re.escape(pat), '', res, flags=re.IGNORECASE)
@@ -181,7 +217,7 @@ def clean_media_placeholders(text):
         # 3. Remove vote counts "(X oy)" globally
         res = re.sub(r'\s*\(\d+\s+oy\)', '', res, flags=flags)
     
-    return res.strip()
+    return re.sub(r'\s+', ' ', res).strip()
 
 def clean_message(text):
     # Remove all invisible and control characters, normalize whitespace, and lowercase
@@ -189,6 +225,42 @@ def clean_message(text):
 
 def clean_message_lower(text):
     return turkish_lower(clean_message(text))
+
+
+def has_media_placeholder(cleaned_text):
+    return any(pattern in cleaned_text for pattern in MEDIA_PATTERNS_LOWER)
+
+
+def get_message_stats(text):
+    cleaned_text = clean_message_lower(text)
+    emojis = [em['emoji'] for em in emoji.emoji_list(text)]
+
+    return {
+        'word_count': len(text.split()),
+        'letter_count': len(text.replace(' ', '')),
+        'links': len(re.findall(LINK_REGEX, text)),
+        'emojis': emojis,
+        'emoji_count': len(emojis),
+        'media': 1 if has_media_placeholder(cleaned_text) else 0
+    }
+
+
+def update_message_stats(entry):
+    entry.update(get_message_stats(entry['message']))
+
+
+def add_time_columns(df):
+    if df.empty:
+        return df
+
+    df = df.copy()
+    df['date'] = df['datetime'].dt.date
+    df['time'] = df['datetime'].dt.time
+    df['weekday'] = df['datetime'].dt.day_name()
+    df['month'] = df['datetime'].dt.to_period('M').astype(str)
+    df['hour'] = df['datetime'].dt.hour
+    return df
+
 
 def _get_tokens(text, min_len=2, keep_apostrophes=False):
     """Helper to tokenize text while preserving tags as single units"""
@@ -233,7 +305,7 @@ def _get_tokens(text, min_len=2, keep_apostrophes=False):
         lookup_w = w.lower()
         if lookup_w in placeholders:
             tokens.append(placeholders[lookup_w])
-        elif len(w) >= min_len:
+        elif len(w) >= min_len and not w.isdigit():
             tokens.append(w)
             
     return tokens
@@ -262,12 +334,13 @@ def parse_chat(filepath):
             # Check for system message hint (U+200E at the start or in the message)
             is_system_hint = '\u200e' in raw or '\u200f' in raw
             
-            # Remove all invisible/control characters from the start of the line
-            line = raw.lstrip().lstrip(''.join(chr(i) for i in range(0,32)) + '\u200e\u200f').strip('\n')
+            # Keep normal leading spaces: pasted/quoted chat lines often start
+            # with a space and should remain part of the previous message.
+            line = raw.rstrip('\n').lstrip(LINE_PREFIX_CHARS)
 
             # Message line: [DD.MM.YYYY, HH:MM:SS] User: message
             # Improved regex to handle cases with no space after colon or no content
-            m = re.match(r"^\[(\d{1,2}\.\d{1,2}\.\d{4} \d{2}:\d{2}:\d{2})\] (.*?):(?: (.*))?$", line)
+            m = CHAT_LINE_REGEX.match(line)
             if m:
                 ts = datetime.strptime(m.group(1), '%d.%m.%Y %H:%M:%S')
                 user = m.group(2)
@@ -276,11 +349,8 @@ def parse_chat(filepath):
                 # Check for deleted message BEFORE cleanup (as CLEANUP_REGEX removes the text)
                 is_deleted = 1 if is_deleted_message(text) else 0
                 
-                cleaned_text = clean_message_lower(text)
-                
                 # Remove system indicators (edited/deleted) instead of skipping the message
                 text = CLEANUP_REGEX.sub('', text).strip()
-                cleaned_text = clean_message_lower(text)
 
                 # Check for group name in system messages (before they are skipped)
                 for pattern in group_name_patterns:
@@ -294,15 +364,6 @@ def parse_chat(filepath):
                 if not is_deleted and is_group_message(text, user, is_system_hint=is_system_hint):
                     continue
 
-                # Calculate stats for normal messages
-                word_count = len(text.split())
-                letter_count = len(text.replace(' ', ''))
-                links = len(re.findall(LINK_REGEX, text))
-                emojis = [em['emoji'] for em in emoji.emoji_list(text)]
-                emoji_count = len(emojis)
-                emoji_count = len(emojis)
-                media = 1 if any(pat in cleaned_text for pat in [turkish_lower(p) for p in MEDIA_PATTERNS]) else 0
-                
                 # Check for poll (only if not deleted)
                 poll = 1 if (not is_deleted and is_poll(text)) else 0
                 
@@ -310,15 +371,10 @@ def parse_chat(filepath):
                     'datetime': ts,
                     'user': user,
                     'message': text,
-                    'media': media,
                     'poll': poll,
                     'deleted': is_deleted,
-                    'word_count': word_count,
-                    'letter_count': letter_count,
-                    'links': links,
-                    'emojis': emojis,
-                    'emoji_count': emoji_count
                 }
+                update_message_stats(entry)
                 records.append(entry)
                 current = entry
             else:
@@ -326,62 +382,55 @@ def parse_chat(filepath):
                 if current:
                     current['message'] += ' ' + line
                     text = current['message']
-                    cleaned_text = clean_message_lower(text)
-                    current['word_count'] = len(text.split())
-                    current['letter_count'] = len(text.replace(' ', ''))
-                    current['links'] = len(re.findall(LINK_REGEX, text))
-                    current['emojis'] = [em['emoji'] for em in emoji.emoji_list(text)]
-                    current['emoji_count'] = len(current['emojis'])
-                    current['emojis'] = [em['emoji'] for em in emoji.emoji_list(text)]
-                    current['emoji_count'] = len(current['emojis'])
-                    current['media'] = 1 if any(pat in cleaned_text for pat in [turkish_lower(p) for p in MEDIA_PATTERNS]) else 0
-                    
+                    update_message_stats(current)
                     
                     # Re-check flags for continuation
                     # Be careful not to overwrite deleted flag if it was already set (since text might be stripped)
                     is_del = 1 if (current.get('deleted') or is_deleted_message(text)) else 0
                     current['deleted'] = is_del
                     current['poll'] = 1 if (not is_del and is_poll(text)) else 0
-    df = pd.DataFrame(records)
-    # add additional columns if not already present
-    if 'date' not in df.columns:
-            df['date'] = df['datetime'].dt.date
-    if 'time' not in df.columns:
-            df['time'] = df['datetime'].dt.time
-    if 'weekday' not in df.columns:
-            df['weekday'] = df['datetime'].dt.day_name()
-    if 'month' not in df.columns:
-            df['month'] = df['datetime'].dt.to_period('M').astype(str)
-    if 'hour' not in df.columns:
-            df['hour'] = df['datetime'].dt.hour
+    df = add_time_columns(pd.DataFrame(records))
             
     # Filter out users that are actually group names
     if known_group_names:
-        print(f"DEBUG: Filtering out known group names: {known_group_names}")
         df = df[~df['user'].isin(known_group_names)]
         
     return df
+
+
+def parse_start_date(value):
+    for fmt in ('%d.%m.%Y %H:%M:%S', '%d.%m.%Y'):
+        try:
+            return datetime.strptime(value, fmt)
+        except ValueError:
+            continue
+    raise ValueError("Please use DD.MM.YYYY or 'DD.MM.YYYY HH:MM:SS'")
+
 
 # Compute and print statistics
 def compute_stats(df):
     # Collect all markdown content
     markdown_content = []
-    
-    
+
     def write_header(title):
         markdown_content.append(f"# {title}\n")
+
     def write_subheader(title):
         markdown_content.append(f"\n## {title}\n")
+
     def write_line(content):
         markdown_content.append(content + "\n")
-        
+
     def format_number(n):
         return f"{n:,}".replace(',', '.')
+
+    def user_messages(user):
+        return df[df['user'] == user]
+
+    def count_contains(series, pattern, regex=False):
+        return series.str.contains(pattern, case=False, na=False, regex=regex).sum()
     
     write_header('WhatsApp Sohbet İstatistikleri')
-    
-    # _get_tokens moved to top level
-
     
     # Chat Summary
     write_subheader('📅 Sohbet Zaman Çizelgesi')
@@ -396,7 +445,7 @@ def compute_stats(df):
     # Create comprehensive user stats table
     user_stats = []
     for user in df['user'].unique():
-        user_df = df[df['user'] == user]
+        user_df = user_messages(user)
         user_stats.append({
             'User': user,
             'Messages': len(user_df),
@@ -418,35 +467,34 @@ def compute_stats(df):
     user_stats.sort(key=lambda x: x['Messages'], reverse=True)
     sorted_users = [s['User'] for s in user_stats]
     
-    write_line("| Kullanıcı | Mesajlar | Ort. Harf | Medya | Emojiler | Linkler | Anketler | Silinen |")
-    write_line("|-----------|----------|-----------|-------|----------|---------|----------|---------|")
+    write_line("| Kullanıcı | Ort. Harf | Medya | Emojiler | Linkler | Anketler | Silinen | **Mesajlar** |")
+    write_line("|-----------|-----------|-------|----------|---------|----------|---------|----------|")
     for stat in user_stats:
         avg_letters_str = f"{stat['AvgLetters']:.1f}".replace('.', ',')
-        write_line(f"| {stat['User']} | **{format_number(stat['Messages'])}** | {avg_letters_str} | {format_number(stat['Media'])} | {format_number(stat['Emojis'])} | {format_number(stat['Links'])} | {format_number(stat.get('Polls', 0))} | {format_number(stat.get('Deleted', 0))} |")
+        write_line(f"| {stat['User']} | {avg_letters_str} | {format_number(stat['Media'])} | {format_number(stat['Emojis'])} | {format_number(stat['Links'])} | {format_number(stat.get('Polls', 0))} | {format_number(stat.get('Deleted', 0))} | **{format_number(stat['Messages'])}** |")
     write_line("")
 
     write_line("")
 
     call_stats = []
     for user in sorted_users:
-        user_df = df[df['user'] == user]
+        user_df = user_messages(user)
         
         # We need to look at raw messages (including those marked as media)
         # remove U+200E for searching
         msgs = user_df['message'].str.replace('\u200E', '', regex=False)
         
         # Voice Calls (Initated)
-        voice_calls = msgs[msgs.str.contains('Sesli arama', na=False, case=False)].shape[0]
+        voice_calls = count_contains(msgs, 'Sesli arama')
         
         # Video Calls (Initated)
-        video_calls = msgs[msgs.str.contains('Görüntülü arama', na=False, case=False)].shape[0]
+        video_calls = count_contains(msgs, 'Görüntülü arama')
         
         # Missed Calls (Initiated but not answered by other party)
         # Pattern: 'Cevapsız' (Missed call) OR 'Cevaplanmadı' (Unanswered)
-        missed_calls = msgs[
-            (msgs.str.contains('Sesli arama|Görüntülü arama', na=False, case=False, regex=True)) & 
-            (msgs.str.contains('Cevapsız|Cevaplanmadı', na=False, case=False, regex=True))
-        ].shape[0]
+        call_mask = msgs.str.contains('Sesli arama|Görüntülü arama', na=False, case=False, regex=True)
+        missed_mask = msgs.str.contains('Cevapsız|Cevaplanmadı', na=False, case=False, regex=True)
+        missed_calls = (call_mask & missed_mask).sum()
         
         total_calls = voice_calls + video_calls
         answered_calls = total_calls - missed_calls
@@ -465,7 +513,7 @@ def compute_stats(df):
         write_line("")
         write_subheader('📞 Arama İstatistikleri')
         call_stats.sort(key=lambda x: x['Total'], reverse=True)
-        write_line("| Kullanıcı | Sesli Arama | Görüntülü Arama | Cevaplanan | Cevapsız | Toplam |")
+        write_line("| Kullanıcı | Sesli Arama | Görüntülü Arama | Cevaplanan | Cevapsız | **Toplam** |")
         write_line("|-----------|-------------|-----------------|------------|----------|--------|")
         for stat in call_stats:
             write_line(f"| {stat['User']} | {format_number(stat['Voice'])} | {format_number(stat['Video'])} | {format_number(stat['Answered'])} | {format_number(stat['Missed'])} | **{format_number(stat['Total'])}** |")
@@ -474,32 +522,20 @@ def compute_stats(df):
     # Create media stats table
     media_stats = []
     for user in sorted_users:
-        user_df = df[df['user'] == user]
-        
-        user_df = df[df['user'] == user]
-        
+        user_df = user_messages(user)
+
         # Count different media types using standard case-insensitive matching
         # (Avoids Turkish-specific I/ı issues for these fixed system placeholders)
         msgs_clean = user_df['message'].str.replace('\u200E', '', regex=False)
-        
-        sticker_count = msgs_clean[msgs_clean.str.contains('çıkartma dahil edilmedi', case=False, na=False)].shape[0]
-        image_count = msgs_clean[msgs_clean.str.contains('görüntü dahil edilmedi', case=False, na=False)].shape[0]
-        video_count = msgs_clean[msgs_clean.str.contains('video dahil edilmedi', case=False, na=False)].shape[0]
-        audio_count = msgs_clean[msgs_clean.str.contains('ses dahil edilmedi', case=False, na=False)].shape[0]
-        document_count = msgs_clean[msgs_clean.str.contains('belge dahil edilmedi', case=False, na=False)].shape[0]
-        gif_count = msgs_clean[msgs_clean.str.contains('GIF dahil edilmedi', case=False, na=False)].shape[0]
-        location_count = msgs_clean[msgs_clean.str.contains('konum:', case=False, na=False)].shape[0]
-        
+        media_counts = {
+            label: count_contains(msgs_clean, pattern)
+            for label, pattern in MEDIA_TYPE_PATTERNS.items()
+        }
+
         media_stats.append({
             'User': user,
-            'Stickers': sticker_count,
-            'Images': image_count,
-            'Videos': video_count,
-            'Audio': audio_count,
-            'Documents': document_count,
-            'GIFs': gif_count,
-            'Locations': location_count,
-            'Total Media': sticker_count + image_count + video_count + audio_count + document_count + gif_count + location_count
+            **media_counts,
+            'Total Media': sum(media_counts.values())
         })
     
     # Sort by total media
@@ -508,7 +544,7 @@ def compute_stats(df):
         write_subheader('📱 Detaylı Medya İstatistikleri')
         media_stats.sort(key=lambda x: x['Total Media'], reverse=True)
         
-        write_line("| Kullanıcı | Çıkartmalar | Resimler | Videolar | Sesler | Belgeler | GIFler | Konumlar | Toplam |")
+        write_line("| Kullanıcı | Çıkartmalar | Resimler | Videolar | Sesler | Belgeler | GIFler | Konumlar | **Toplam** |")
         write_line("|-----------|-------------|----------|----------|--------|----------|--------|----------|--------|")
         for stat in media_stats:
             write_line(f"| {stat['User']} | {stat['Stickers']} | {stat['Images']} | {stat['Videos']} | {stat['Audio']} | {stat['Documents']} | {stat['GIFs']} | {stat['Locations']} | **{format_number(stat['Total Media'])}** |")
@@ -535,6 +571,39 @@ def compute_stats(df):
     write_line("")
 
 
+    # Most Used Word Combinations
+    write_subheader('🔗 En Çok Kullanılan Kelime Kombinasyonları')
+    all_bigrams = []
+    all_trigrams = []
+
+    for msg in df['message']:
+        cleaned = clean_media_placeholders(msg)
+        if cleaned:
+            # Use keep_apostrophes=True for n-grams to get meaningful phrases like "Ankara'da hava"
+            words = _get_tokens(cleaned, min_len=2, keep_apostrophes=True)
+
+            if len(words) >= 2:
+                all_bigrams.extend(zip(words, words[1:]))
+            if len(words) >= 3:
+                all_trigrams.extend(zip(words, words[1:], words[2:]))
+
+    write_line("\n**İkili Kombinasyonlar**")
+    write_line("")
+    write_line("| İfade | Sayı |")
+    write_line("|-------|------|")
+    for bg, count in Counter(all_bigrams).most_common(20):
+        write_line(f"| {' '.join(bg)} | {format_number(count)} |")
+    write_line("")
+
+    write_line("**Üçlü Kombinasyonlar**")
+    write_line("")
+    write_line("| İfade | Sayı |")
+    write_line("|-------|------|")
+    for tg, count in Counter(all_trigrams).most_common(20):
+        write_line(f"| {' '.join(tg)} | {format_number(count)} |")
+    write_line("")
+
+
 
     # Most Used Words by User
 
@@ -543,7 +612,7 @@ def compute_stats(df):
         write_line(f"\n#### {user}")
         user_words = []
         # Process user messages, cleaning placeholders
-        user_messages_raw = df[df['user']==user]['message']
+        user_messages_raw = user_messages(user)['message']
         for msg in user_messages_raw:
             cleaned = clean_media_placeholders(msg)
             if cleaned:
@@ -563,7 +632,7 @@ def compute_stats(df):
     for user in sorted_users:
         write_line(f"\n#### {user}")
         # Process messages, cleaning placeholders
-        user_messages_raw = df[df['user']==user]['message']
+        user_messages_raw = user_messages(user)['message']
         all_bigrams = []
         all_trigrams = []
         
@@ -599,7 +668,7 @@ def compute_stats(df):
     emoji_data = {}
     for user in sorted_users:
         user_emojis = Counter()
-        for em_list in df[df['user']==user]['emojis']:
+        for em_list in user_messages(user)['emojis']:
             user_emojis.update(em_list)
         if user_emojis:
             emoji_data[user] = user_emojis
@@ -623,11 +692,11 @@ def compute_stats(df):
         'Sunday': 'Pazar'
     }
 
-    # Messages by Day of Week
-    # Helper for creating charts
-    import matplotlib.pyplot as plt
-    import io
     import base64
+    import io
+    import matplotlib
+    matplotlib.use('Agg')
+    import matplotlib.pyplot as plt
 
     def create_chart(x_data, y_data, title, xlabel, ylabel, chart_type='bar'):
         plt.figure(figsize=(10, 6))
@@ -699,7 +768,7 @@ def compute_stats(df):
     
     user_timeline = []
     for user in sorted_users:
-        user_df = df[df['user'] == user]
+        user_df = user_messages(user)
         first_msg = user_df['datetime'].min()
         last_msg = user_df['datetime'].max()
         # Count unique days when user sent messages
@@ -716,20 +785,17 @@ def compute_stats(df):
     write_line("|-----------|--------------|---------------|------------------------|")
     for timeline in user_timeline:
         participation_rate = (timeline['Days Active'] / total_chat_days) * 100
-        user_messages = df[df['user'] == timeline['User']].shape[0]
-        messages_per_day = user_messages / timeline['Days Active'] if timeline['Days Active'] > 0 else 0
+        user_messages_count = user_messages(timeline['User']).shape[0]
+        messages_per_day = user_messages_count / timeline['Days Active'] if timeline['Days Active'] > 0 else 0
         write_line(f"| {timeline['User']} | {timeline['Days Active']} / {total_chat_days} | {participation_rate:.1f}% | {messages_per_day:.1f} |")
     write_line("")
     
     # Convert markdown to HTML and then to PDF
     markdown_text = ''.join(markdown_content)
-    print(f"Debug: Markdown content length: {len(markdown_text)}")
-    print(f"Debug: First 500 chars: {markdown_text[:500]}")
-    
+
     # Convert markdown to HTML
     html_content = markdown.markdown(markdown_text, extensions=['tables'])
-    print(f"Debug: HTML content length: {len(html_content)}")
-    
+
     # Add CSS styling for better PDF appearance
     css_content = """
     <style>
@@ -796,8 +862,6 @@ def compute_stats(df):
     </html>
     """
     
-    print(f"Debug: Full HTML length: {len(full_html)}")
-    
     # Generate PDF
     try:
         font_config = FontConfiguration()
@@ -810,32 +874,37 @@ def compute_stats(df):
             f.write(full_html)
         print("Debug HTML saved to debug_output.html")
 
-if __name__ == '__main__':
-    import argparse
+def main():
     parser = argparse.ArgumentParser(description='WhatsApp chat statistics')
     parser.add_argument('chat_file', help='Path to exported chat text file')
     parser.add_argument('--start-date', '-s', help='Filter messages from this date/time onwards (Format: DD.MM.YYYY or DD.MM.YYYY HH:MM:SS)', default=None)
     args = parser.parse_args()
 
-    df = parse_chat(args.chat_file)
-    
+    start_dt = None
     if args.start_date:
-        from datetime import datetime
-        start_dt = None
-        for fmt in ('%d.%m.%Y %H:%M:%S', '%d.%m.%Y'):
-            try:
-                start_dt = datetime.strptime(args.start_date, fmt)
-                break
-            except ValueError:
-                continue
-        if start_dt is None:
-            print(f"Error: Invalid date format for --start-date. Please use DD.MM.YYYY or 'DD.MM.YYYY HH:MM:SS'")
-            exit(1)
-        df = df[df['datetime'] >= start_dt]
-        print(f"DEBUG: Filtered messages from {args.start_date} onwards. Remaining records: {len(df)}")
+        try:
+            start_dt = parse_start_date(args.start_date)
+        except ValueError as exc:
+            print(f"Error: Invalid date format for --start-date. {exc}")
+            return 1
+
+    df = parse_chat(args.chat_file)
 
     if df.empty:
         print("No messages found for the given criteria.")
-        exit(0)
+        return 0
+
+    if start_dt:
+        df = df[df['datetime'] >= start_dt]
+        print(f"Filtered messages from {args.start_date} onwards. Remaining records: {len(df)}")
+
+    if df.empty:
+        print("No messages found for the given criteria.")
+        return 0
 
     compute_stats(df)
+    return 0
+
+
+if __name__ == '__main__':
+    sys.exit(main())

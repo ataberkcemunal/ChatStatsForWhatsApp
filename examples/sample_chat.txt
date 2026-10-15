@@ -1,0 +1,25 @@
+[1.10.2026 09:00:00] Kitap Kulübü: ‎“Kitap Kulübü” grubunu oluşturdunuz
+[1.10.2026 09:01:00] Ayşe: Merhaba arkadaşlar, bu dosyadaki bütün konuşmalar kurgudur. 📚
+[1.10.2026 09:02:00] Deniz: Merhaba arkadaşlar, bu ay hangi kitabı okuyalım?
+[1.10.2026 09:03:00] Ekin: Bence kısa öyküler okuyalım. 📚😊
+[1.10.2026 09:04:00] Ayşe: ANKET:
+SEÇENEK: Öykü (2 oy)
+SEÇENEK: Roman (1 oy)
+[1.10.2026 09:05:00] Deniz: görüntü dahil edilmedi
+[1.10.2026 09:06:00] Ekin: https://example.com/kitaplar adresine de bakalım.
+[1.10.2026 09:07:00] Meta AI: Bu kurgu bot kaydı analize dahil edilmemelidir.
+[1.10.2026 09:08:00] ‎Siz: ‎Bir mesajı sabitlediniz
+[2.10.2026 18:00:00] Ayşe: Yarın akşam buluşalım mı?
+[2.10.2026 18:01:00] Deniz: Yarın akşam buluşalım, ben uygunum. 😊
+[2.10.2026 18:02:00] Ekin: Yarın akşam buluşalım. Kitapları da getirelim.
+[2.10.2026 18:03:00] Deniz: Çıkartma dahil edilmedi
+[2.10.2026 18:04:00] Ayşe: Bu mesaj silindi.
+[3.10.2026 19:00:00] Ekin: Merhaba arkadaşlar, toplantı notlarını paylaşıyorum.
+Birinci bölümde karakterleri konuşacağız.
+İkinci bölümde öykünün sonunu tartışacağız.
+[3.10.2026 19:01:00] Ayşe: Harika, notlar çok faydalı olmuş. 😊
+[3.10.2026 19:02:00] Deniz: Harika, notlar çok faydalı olmuş. Teşekkürler!
+[3.10.2026 19:03:00] Ekin: belge dahil edilmedi
+[4.10.2026 20:00:00] Deniz: Görüntülü arama, Cevapsız
+[4.10.2026 20:01:00] Ayşe: Haftaya yeniden görüşürüz. 📚
+[4.10.2026 20:02:00] Ekin: Haftaya yeniden görüşürüz, iyi akşamlar!

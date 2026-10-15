@@ -1,0 +1,17 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Generate WhatsApp chat report",
+			"type": "process",
+			"command": "${workspaceFolder}/run.sh",
+			"windows": {
+				"command": "powershell.exe",
+				"args": ["-NoProfile", "-File", "${workspaceFolder}/run.ps1"]
+			},
+			"isBackground": false,
+			"group": { "kind": "build", "isDefault": true },
+			"problemMatcher": []
+		}
+	]
+}

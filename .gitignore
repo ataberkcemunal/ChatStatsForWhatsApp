@@ -3,6 +3,7 @@ _chat.txt
 chat_stats.txt
 chat_stats.pdf
 debug_output.html
+sample_report.pdf
 
 # Python
 __pycache__/
@@ -27,16 +28,19 @@ wheels/
 *.egg
 
 # Virtual Environment
+.venv/
 venv/
 env/
 ENV/
 
 # IDE
 .idea/
-.vscode/
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
 *.swp
 *.swo
 
 # OS
 .DS_Store
-Thumbs.db 
+Thumbs.db

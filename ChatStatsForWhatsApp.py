@@ -1,6 +1,7 @@
 import re
 import argparse
 import sys
+from pathlib import Path
 from datetime import datetime
 from collections import Counter
 import pandas as pd
@@ -315,6 +316,7 @@ def parse_chat(filepath):
     records = []
     current = None
     known_group_names = set()
+    has_group_event = False
     
     # Patterns to detect group names from system messages
     group_name_patterns = [
@@ -342,9 +344,19 @@ def parse_chat(filepath):
             # Improved regex to handle cases with no space after colon or no content
             m = CHAT_LINE_REGEX.match(line)
             if m:
+                # A skipped message's continuation must not attach to the previous sender.
+                current = None
                 ts = datetime.strptime(m.group(1), '%d.%m.%Y %H:%M:%S')
-                user = m.group(2)
+                user = ''.join(ch for ch in m.group(2) if unicodedata.category(ch) != 'Cf').strip()
                 text = m.group(3) if m.group(3) else ""
+                group_event = bool(is_system_hint and re.search(
+                    r'grubunu oluştur|grubu oluştur|gruba katıldı|gruptan ayrıldı|'
+                    r'grubun (?:adını|simgesini|açıklamasını)|grup (?:adını|ayarlarını)',
+                    turkish_lower(text)
+                ))
+                has_group_event = has_group_event or group_event
+                if turkish_lower(user) in {'siz', 'meta ai', 'meta aı'}:
+                    continue
                 
                 # Check for deleted message BEFORE cleanup (as CLEANUP_REGEX removes the text)
                 is_deleted = 1 if is_deleted_message(text) else 0
@@ -361,7 +373,7 @@ def parse_chat(filepath):
                 
                 # Skip group messages
                 # Only skip if NOT a deleted message (deleted messages become empty after cleanup)
-                if not is_deleted and is_group_message(text, user, is_system_hint=is_system_hint):
+                if not is_deleted and (group_event or is_group_message(text, user, is_system_hint=is_system_hint)):
                     continue
 
                 # Check for poll (only if not deleted)
@@ -392,9 +404,13 @@ def parse_chat(filepath):
     df = add_time_columns(pd.DataFrame(records))
             
     # Filter out users that are actually group names
-    if known_group_names:
+    if known_group_names and not df.empty:
         df = df[~df['user'].isin(known_group_names)]
-        
+
+    # Save the type before date filtering can reduce the participant count.
+    df.attrs['is_group_chat'] = bool(
+        has_group_event or known_group_names or (not df.empty and df['user'].nunique() > 2)
+    )
     return df
 
 
@@ -408,7 +424,11 @@ def parse_start_date(value):
 
 
 # Compute and print statistics
-def compute_stats(df):
+def compute_stats(df, *, chat_type='auto', output_file='chat_stats.pdf', markdown_output=None):
+    is_group_chat = (
+        df.attrs.get('is_group_chat', df['user'].nunique() > 2)
+        if chat_type == 'auto' else chat_type == 'group'
+    )
     # Collect all markdown content
     markdown_content = []
 
@@ -477,7 +497,7 @@ def compute_stats(df):
     write_line("")
 
     call_stats = []
-    for user in sorted_users:
+    for user in ([] if is_group_chat else sorted_users):
         user_df = user_messages(user)
         
         # We need to look at raw messages (including those marked as media)
@@ -490,8 +510,7 @@ def compute_stats(df):
         # Video Calls (Initated)
         video_calls = count_contains(msgs, 'Görüntülü arama')
         
-        # Missed Calls (Initiated but not answered by other party)
-        # Pattern: 'Cevapsız' (Missed call) OR 'Cevaplanmadı' (Unanswered)
+        # Call status is recorded from the export owner's perspective.
         call_mask = msgs.str.contains('Sesli arama|Görüntülü arama', na=False, case=False, regex=True)
         missed_mask = msgs.str.contains('Cevapsız|Cevaplanmadı', na=False, case=False, regex=True)
         missed_calls = (call_mask & missed_mask).sum()
@@ -865,20 +884,35 @@ def compute_stats(df):
     # Generate PDF
     try:
         font_config = FontConfiguration()
-        HTML(string=full_html).write_pdf('chat_stats.pdf', font_config=font_config)
-        print("PDF report generated: chat_stats.pdf")
+        if markdown_output:
+            # Keep the text export small; charts are available in the PDF.
+            text_report = re.sub(r'<img\b[^>]*>', '*Grafik PDF raporunda yer alır.*', markdown_text)
+            Path(markdown_output).write_text(text_report.rstrip() + '\n', encoding='utf-8')
+        HTML(string=full_html).write_pdf(str(output_file), font_config=font_config)
+        print(f"PDF report generated: {output_file}")
     except Exception as e:
         print(f"Error generating PDF: {e}")
         # Fallback: save HTML for debugging
         with open('debug_output.html', 'w', encoding='utf-8') as f:
             f.write(full_html)
         print("Debug HTML saved to debug_output.html")
+        return False
+    return True
 
 def main():
     parser = argparse.ArgumentParser(description='WhatsApp chat statistics')
-    parser.add_argument('chat_file', help='Path to exported chat text file')
+    parser.add_argument('chat_file', nargs='?', default='_chat.txt', help='Path to exported chat text file (default: _chat.txt)')
     parser.add_argument('--start-date', '-s', help='Filter messages from this date/time onwards (Format: DD.MM.YYYY or DD.MM.YYYY HH:MM:SS)', default=None)
+    parser.add_argument('--chat-type', choices=['auto', 'group', 'direct'], default='auto',
+                        help='Chat type: auto-detect (default), group, or direct')
+    parser.add_argument('--output', '-o', default='chat_stats.pdf', help='Output PDF path (default: chat_stats.pdf)')
+    parser.add_argument('--markdown-output', help='Optional text report path (.md); charts remain in the PDF')
     args = parser.parse_args()
+    input_path = Path(args.chat_file).resolve()
+    output_path = Path(args.output).resolve()
+    markdown_path = Path(args.markdown_output).resolve() if args.markdown_output else None
+    if input_path == output_path or (markdown_path is not None and markdown_path in {input_path, output_path}):
+        parser.error('Girdi, PDF ve Markdown dosya yolları farklı olmalıdır.')
 
     start_dt = None
     if args.start_date:
@@ -888,7 +922,11 @@ def main():
             print(f"Error: Invalid date format for --start-date. {exc}")
             return 1
 
-    df = parse_chat(args.chat_file)
+    try:
+        df = parse_chat(args.chat_file)
+    except (OSError, UnicodeError) as exc:
+        print(f"Sohbet dosyası okunamadı: {args.chat_file}. {exc}", file=sys.stderr)
+        return 1
 
     if df.empty:
         print("No messages found for the given criteria.")
@@ -902,8 +940,8 @@ def main():
         print("No messages found for the given criteria.")
         return 0
 
-    compute_stats(df)
-    return 0
+    return 0 if compute_stats(df, chat_type=args.chat_type, output_file=args.output,
+                              markdown_output=args.markdown_output) else 1
 
 
 if __name__ == '__main__':

@@ -1,0 +1,37 @@
+name: Tests
+on: [push, pull_request, workflow_dispatch]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python: ['3.11', '3.12', '3.13', '3.14']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+          cache: pip
+      - name: Install PDF libraries
+        run: sudo apt-get update && sudo apt-get install -y libpango-1.0-0 libpangoft2-1.0-0 libharfbuzz-subset0 fonts-dejavu-core
+      - name: Install Python dependencies
+        run: ./setup.sh
+      - name: Run tests
+        run: .venv/bin/python -m unittest discover -s tests -v
+      - name: Generate sample PDF
+        run: ./run.sh examples/sample_chat.txt --output /tmp/sample-report.pdf
+      - name: Build source ZIP
+        run: .venv/bin/python tools/build_release.py
+  windows-launchers:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check PowerShell syntax
+        shell: pwsh
+        run: |
+          foreach ($file in @('setup.ps1', 'run.ps1')) {
+            $parseErrors = $null
+            $tokens = $null
+            [System.Management.Automation.Language.Parser]::ParseFile((Join-Path $PWD $file), [ref]$tokens, [ref]$parseErrors) | Out-Null
+            if ($parseErrors.Count -gt 0) { throw ($parseErrors | Out-String) }
+          }

@@ -11,6 +11,42 @@ We love your input! We want to make contributing to this project as easy and tra
 ## We Develop with GitHub
 We use GitHub to host code, to track issues and feature requests, as well as accept pull requests.
 
+## Run checks locally
+
+Use Python 3.11–3.14. Direct dependencies are pinned in `requirements.txt` to the versions verified locally on Python 3.14; transitive dependencies are resolved by pip. Install system PDF libraries and run `./setup.sh` (or `setup.ps1` on Windows) first.
+
+macOS:
+
+```bash
+DYLD_FALLBACK_LIBRARY_PATH=/opt/homebrew/lib:/usr/local/lib .venv/bin/python -m unittest discover -s tests -v
+```
+
+Linux:
+
+```bash
+.venv/bin/python -m unittest discover -s tests -v
+```
+
+Windows PowerShell, with MSYS2 Pango installed:
+
+```powershell
+$env:WEASYPRINT_DLL_DIRECTORIES = 'C:\msys64\ucrt64\bin'
+.venv\Scripts\python.exe -m unittest discover -s tests -v
+```
+
+GitHub Actions runs the test suite, sample PDF generation, and source packaging on Ubuntu with Python 3.11–3.14. A Windows job checks PowerShell syntax; it does not yet validate PDF rendering on Windows. Workflow execution results are available only after the changes are pushed.
+
+## Sample data and releases
+
+Use only fictional chat data in tests and examples. To regenerate the sample report on macOS/Linux:
+
+```bash
+./run.sh examples/sample_chat.txt --output sample_report.pdf --markdown-output SAMPLE_REPORT.md
+.venv/bin/python tools/build_release.py
+```
+
+The ZIP builder uses an explicit allowlist in `tools/build_release.py`. Add intentional public files there when adding source files. Never add real chat exports, personal reports, virtual environments, or credentials. Symlinked source files are rejected. Shell executable permissions are stored in the ZIP; if an extractor drops them, use `sh setup.sh` and `sh run.sh`.
+
 ## We Use [Github Flow](https://guides.github.com/introduction/flow/index.html)
 Pull requests are the best way to propose changes to the codebase. We actively welcome your pull requests:
 
@@ -40,4 +76,4 @@ We use GitHub issues to track public bugs. Report a bug by [opening a new issue]
 - Notes (possibly including why you think this might be happening, or stuff you tried that didn't work)
 
 ## License
-By contributing, you agree that your contributions will be licensed under its MIT License. 
+By contributing, you agree that your contributions will be licensed under its MIT License.

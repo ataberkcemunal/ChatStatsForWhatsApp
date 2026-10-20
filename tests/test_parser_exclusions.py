@@ -8,6 +8,21 @@ from ChatStatsForWhatsApp import parse_chat, compute_stats, main
 
 
 class SenderExclusionTests(unittest.TestCase):
+    def test_group_creation_notice_is_not_a_sender_message(self):
+        df = self.parse(
+            '[10.01.2019 22:51:52] 💩: \u200eBu grubu siz oluşturdunuz\n'
+            'bildirimin devamı\n'
+            '[10.01.2019 22:52:38] ANNEM: Merhaba\n'
+        )
+        self.assertEqual(df['user'].tolist(), ['ANNEM'])
+        self.assertEqual(df['message'].tolist(), ['Merhaba'])
+        self.assertTrue(df.attrs['is_group_chat'])
+
+    def test_unhinted_creation_sentence_is_kept_as_a_user_message(self):
+        df = self.parse('[10.01.2019 22:52:38] ANNEM: Bu grubu siz oluşturdunuz\n')
+        self.assertEqual(len(df), 1)
+        self.assertFalse(df.attrs['is_group_chat'])
+
     def parse(self, text):
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / 'chat.txt'

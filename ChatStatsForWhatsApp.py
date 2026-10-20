@@ -400,9 +400,9 @@ def parse_chat(filepath):
                 group_event = bool(
                     is_system_hint
                     and re.search(
-                        r"grubunu oluştur|grubu oluştur|gruba katıldı|gruptan ayrıldı|"
+                        r"grubunu oluştur|grubu oluştur|^bu grubu siz oluşturdunuz[.!]?$|gruba katıldı|gruptan ayrıldı|"
                         r"grubun (?:adını|simgesini|açıklamasını)|grup (?:adını|ayarlarını)",
-                        turkish_lower(text),
+                        turkish_lower(text).strip("\u200e\u200f \t\r\n"),
                     )
                 )
                 has_group_event = has_group_event or group_event

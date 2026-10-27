@@ -1,19 +1,17 @@
 # WhatsApp Sohbet İstatistikleri
 
-## 📅 Sohbet Zaman Çizelgesi
-**İlk Mesaj:** 2026-10-01 09:01:00
-
-**Son Mesaj:** 2026-10-04 20:02:00
-
+**Mesaj:** 18  
+**Katılımcı:** 3  
+**Sohbet günü:** 4  
+**Dönem:** 01.10.2026 – 04.10.2026  
+**İlk mesaj:** 01.10.2026 09:01 · **Son mesaj:** 04.10.2026 20:02
 
 ## 👥 Kullanıcı İstatistikleri
 | Kullanıcı | Ort. Harf | Medya | Emojiler | Linkler | Anketler | Silinen | **Mesajlar** |
 |-----------|-----------|-------|----------|---------|----------|---------|----------|
-| Ayşe | 28,7 | 0 | 3 | 0 | 1 | 1 | **6** |
-| Deniz | 29,8 | 2 | 1 | 0 | 0 | 0 | **6** |
-| Ekin | 48,8 | 1 | 2 | 1 | 0 | 0 | **6** |
-
-
+| Ayşe | 28,0 | 0 | 3 | 0 | 1 | 1 | **6** |
+| Deniz | 38,3 | 2 | 1 | 0 | 0 | 0 | **6** |
+| Ekin | 55,0 | 1 | 2 | 1 | 0 | 0 | **6** |
 
 
 ## 📱 Detaylı Medya İstatistikleri
@@ -32,8 +30,6 @@
 | yarın | 3 |
 | akşam | 3 |
 | buluşalım | 3 |
-| okuyalım | 2 |
-| bölümde | 2 |
 | harika | 2 |
 | notlar | 2 |
 | faydalı | 2 |
@@ -41,20 +37,23 @@
 | haftaya | 2 |
 | yeniden | 2 |
 | görüşürüz | 2 |
+| okuyalım | 2 |
+| bölümde | 2 |
 | dosyadaki | 1 |
 | bütün | 1 |
 | konuşmalar | 1 |
 | kurgudur | 1 |
+| öykü | 1 |
+| roman | 1 |
 | hangi | 1 |
 | kitabı | 1 |
+| uygunum | 1 |
+| teşekkürler | 1 |
 | bence | 1 |
 | kısa | 1 |
 | öyküler | 1 |
-| öykü | 1 |
-| roman | 1 |
 | adresine | 1 |
 | bakalım | 1 |
-| uygunum | 1 |
 | kitapları | 1 |
 | getirelim | 1 |
 | toplantı | 1 |
@@ -67,13 +66,10 @@
 | öykünün | 1 |
 | sonunu | 1 |
 | tartışacağız | 1 |
-| teşekkürler | 1 |
-| cevapsız | 1 |
 | akşamlar | 1 |
 
 
 ## 🔗 En Çok Kullanılan Kelime Kombinasyonları
-
 **İkili Kombinasyonlar**
 
 | İfade | Sayı |
@@ -92,12 +88,12 @@
 | dosyadaki bütün | 1 |
 | bütün konuşmalar | 1 |
 | konuşmalar kurgudur | 1 |
+| öykü roman | 1 |
+| buluşalım mı | 1 |
 | bu ay | 1 |
 | ay hangi | 1 |
 | hangi kitabı | 1 |
 | kitabı okuyalım | 1 |
-| bence kısa | 1 |
-| kısa öyküler | 1 |
 
 **Üçlü Kombinasyonlar**
 
@@ -113,21 +109,22 @@
 | bu dosyadaki bütün | 1 |
 | dosyadaki bütün konuşmalar | 1 |
 | bütün konuşmalar kurgudur | 1 |
+| akşam buluşalım mı | 1 |
 | arkadaşlar bu ay | 1 |
 | bu ay hangi | 1 |
 | ay hangi kitabı | 1 |
 | hangi kitabı okuyalım | 1 |
-| bence kısa öyküler | 1 |
-| kısa öyküler okuyalım | 1 |
-| adresine de bakalım | 1 |
-| akşam buluşalım mı | 1 |
 | akşam buluşalım ben | 1 |
 | buluşalım ben uygunum | 1 |
+| faydalı olmuş teşekkürler | 1 |
+| bence kısa öyküler | 1 |
+| kısa öyküler okuyalım | 1 |
 
 
 ## 🗣️ Kullanıcılara Göre En Çok Kullanılan Kelimeler
 
 #### Ayşe
+
 | Kelime | Sayı |
 |--------|------|
 | merhaba | 1 |
@@ -151,6 +148,7 @@
 
 
 #### Deniz
+
 | Kelime | Sayı |
 |--------|------|
 | merhaba | 1 |
@@ -167,10 +165,10 @@
 | faydalı | 1 |
 | olmuş | 1 |
 | teşekkürler | 1 |
-| cevapsız | 1 |
 
 
 #### Ekin
+
 | Kelime | Sayı |
 |--------|------|
 | bölümde | 2 |
@@ -299,21 +297,27 @@
 ## 😊 Kullanıcılara Göre En Çok Kullanılan Emojiler
 
 #### Ayşe
+
 | Emoji | Sayı |
 |-------|------|
 | 📚 | 2 |
 | 😊 | 1 |
 
+
 #### Deniz
+
 | Emoji | Sayı |
 |-------|------|
 | 😊 | 1 |
 
+
 #### Ekin
+
 | Emoji | Sayı |
 |-------|------|
 | 📚 | 1 |
 | 😊 | 1 |
+
 
 ## ⏰ Zamansal İstatistikler
 #### 📅 Haftanın Günlerine Göre Mesajlar
@@ -325,20 +329,21 @@
 #### 📆 Aylara Göre Mesajlar
 *Grafik PDF raporunda yer alır.*
 
-
 #### 🔥 En Aktif 10 Gün
-| Tarih | Mesajlar |
-|-------|----------|
-| 2026-10-01 | 6 |
-| 2026-10-02 | 5 |
-| 2026-10-03 | 4 |
-| 2026-10-04 | 3 |
+
+| Tarih | Gün | Mesajlar |
+|-------|-----|----------|
+| 01.10.2026 | Perşembe | 6 |
+| 02.10.2026 | Cuma | 5 |
+| 03.10.2026 | Cumartesi | 4 |
+| 04.10.2026 | Pazar | 3 |
 
 #### 📊 Kullanıcı Etkinlik Zaman Çizelgesi
+
 **Toplam Sohbet Günü: 4**
 
 | Kullanıcı | Aktif Günler | Katılım Oranı | Aktif Gün Başına Mesaj |
 |-----------|--------------|---------------|------------------------|
-| Ayşe | 4 / 4 | 100.0% | 1.5 |
-| Deniz | 4 / 4 | 100.0% | 1.5 |
-| Ekin | 4 / 4 | 100.0% | 1.5 |
+| Ayşe | 4 / 4 | %100,0 | 1,5 |
+| Deniz | 4 / 4 | %100,0 | 1,5 |
+| Ekin | 4 / 4 | %100,0 | 1,5 |

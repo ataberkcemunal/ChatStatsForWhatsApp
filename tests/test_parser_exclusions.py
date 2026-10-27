@@ -138,6 +138,24 @@ class SenderExclusionTests(unittest.TestCase):
     def test_end_date_without_time_covers_whole_day(self):
         self.assertEqual(parse_end_date('01.10.2026'), datetime(2026, 10, 1, 23, 59, 59))
         self.assertEqual(parse_end_date('01.10.2026 18:30:00'), datetime(2026, 10, 1, 18, 30))
+        self.assertEqual(parse_end_date('01.10.2026 18:30'), datetime(2026, 10, 1, 18, 30))
+
+    def test_report_escapes_names_and_averages_only_written_text(self):
+        df = self.parse(
+            '[1.10.2026 10:00:00] A|B <i>: merhaba\n'
+            '[1.10.2026 10:01:00] A|B <i>: \u200egörüntü dahil edilmedi\n'
+            '[1.10.2026 10:02:00] Can_: selam\n'
+        )
+        with tempfile.TemporaryDirectory() as directory, patch('ChatStatsForWhatsApp.HTML') as html:
+            root = Path(directory)
+            self.assertTrue(compute_stats(df, output_file=root / 'r.pdf', markdown_output=root / 'r.md'))
+            rendered = html.call_args.kwargs['string']
+            text = (root / 'r.md').read_text(encoding='utf-8')
+        self.assertNotIn('<i>', rendered)
+        self.assertIn('A|B &lt;i&gt;', rendered)
+        self.assertIn('Can_', rendered)
+        # "merhaba" is 7 letters; the media placeholder is not written text.
+        self.assertIn('| A\\|B &lt;i&gt; | 7,0 | 1 |', text)
 
     def test_cli_date_range_and_failure_exit_codes(self):
         with tempfile.TemporaryDirectory() as directory:

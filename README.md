@@ -75,7 +75,7 @@ A comma after the date and times without seconds (`[1.10.2026, 10:30]`) are also
 | Option | Meaning | Default |
 |---|---|---|
 | `chat_file` | Chat export to analyse | `_chat.txt` |
-| `--start-date`, `-s` | Only include records from this moment on (inclusive). `DD.MM.YYYY` or `"DD.MM.YYYY HH:MM:SS"` | whole chat |
+| `--start-date`, `-s` | Only include records from this moment on (inclusive). `DD.MM.YYYY`, `"DD.MM.YYYY HH:MM"` or `"DD.MM.YYYY HH:MM:SS"` | whole chat |
 | `--end-date`, `-e` | Only include records up to this moment (inclusive). A date without a time covers that whole day | whole chat |
 | `--chat-type` | `auto`, `group` or `direct` | `auto` |
 | `--output`, `-o` | PDF path | `chat_stats.pdf` |
@@ -104,7 +104,7 @@ Section titles in the PDF are in Turkish.
 
 | Section | Contents |
 |---|---|
-| Sohbet Zaman Çizelgesi | First and last included record |
+| Summary cards | Messages, participants, chat days and the period covered |
 | Kullanıcı İstatistikleri | Per person: messages, average characters, media, emojis, links, polls, deleted messages |
 | Arama İstatistikleri | Voice and video calls by status (direct chats only, when there are calls) |
 | Detaylı Medya İstatistikleri | Stickers, images, videos, audio, documents, GIFs, locations |
@@ -116,10 +116,12 @@ Section titles in the PDF are in Turkish.
 How the numbers are defined:
 
 - **Messages** – every record left after filtering, including media and deleted-message records.
-- **Ort. Harf** – average characters per message, spaces excluded (punctuation and symbols count).
+- **Ort. Harf** – average characters per written message, spaces excluded (punctuation and symbols count). Media placeholders, poll syntax, calls and deleted messages are not written text, so they are left out of both the letters and the message count.
 - **Active day** – a day on which the person has at least one record.
 - **Total chat days** – days with at least one record in the chat; silent days do not count.
 - **Participation rate** – the person's active days ÷ total chat days (not their share of messages).
+
+Numbers use Turkish formatting: `1.234` for thousands, `12,5` for decimals and `%45,3` for percentages.
 - **Messages per active day** – the person's messages ÷ their own active days.
 
 With `--start-date` or `--end-date`, every figure covers only the selected period.

@@ -1,4 +1,7 @@
 import argparse
+import base64
+import html
+import io
 import itertools
 import os
 import re
@@ -11,6 +14,11 @@ from pathlib import Path
 
 import emoji
 import markdown
+import matplotlib
+
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt  # noqa: E402  (the backend must be chosen first)
+from matplotlib.ticker import MaxNLocator  # noqa: E402
 import pandas as pd
 from weasyprint import HTML
 from weasyprint.text.fonts import FontConfiguration
@@ -40,18 +48,6 @@ MEDIA_TYPE_PATTERNS = {
     "GIFs": "GIF dahil edilmedi",
     "Locations": "konum:",
 }
-
-SYSTEM_TEXT_PATTERNS = [
-    # WhatsApp call status text can be exported as message text. These are
-    # metadata, not chat content, so keep them out of word and n-gram stats.
-    r"\bcevapsız\s+(?:sesli|görüntülü)?\s*arama\b",
-    r"\bsesli\s+arama\b",
-    r"\bgörüntülü\s+arama\b",
-    r"\bgeri\s+aramak\s+için\s+dokunun\b",
-    r"\bbaşka\s+bir\s+cihazda\s+cevaplandı\b",
-    r"\bcevaplanmadı\b",
-]
-
 
 # Regex for links, tags and system indicators (edited/deleted)
 LINK_REGEX = r"https?://\S+"
@@ -90,19 +86,10 @@ def clean_media_placeholders(text):
     is_system_poll = is_poll(text)
 
     # Remove markers
-    res = (
-        text.replace("\u200e", "")
-        .replace("\u200f", "")
-        .replace("\u200e", "")
-        .replace("\u200f", "")
-    )
+    res = text.replace("\u200e", "").replace("\u200f", "")
 
     # Remove pasted WhatsApp headers from quoted chat snippets.
     res = QUOTED_CHAT_HEADER_REGEX.sub(" ", res)
-
-    # Remove call/status text that WhatsApp inserts into exports.
-    for pat in SYSTEM_TEXT_PATTERNS:
-        res = re.sub(pat, "", res, flags=re.IGNORECASE)
 
     # Remove standard media placeholders
     for pat in MEDIA_PATTERNS:
@@ -137,13 +124,18 @@ def has_media_placeholder(cleaned_text):
     return any(pattern in cleaned_text for pattern in MEDIA_PATTERNS_LOWER)
 
 
-def get_message_stats(text):
+def get_message_stats(text, kind=whatsapp_chat.MESSAGE):
     cleaned_text = clean_message_lower(text)
+    written = "" if kind != whatsapp_chat.MESSAGE else clean_media_placeholders(text)
     emojis = [em["emoji"] for em in emoji.emoji_list(text)]
 
+    # Only what the person wrote counts: media placeholders, poll syntax and
+    # call status text are not letters someone typed.
     return {
-        "word_count": len(text.split()),
-        "letter_count": len(text.replace(" ", "")),
+        "letter_count": len(written.replace(" ", "")),
+        "has_text": int(bool(written)),
+        "words": _get_tokens(written, min_len=4, keep_apostrophes=True),
+        "phrase_words": _get_tokens(written, min_len=2, keep_apostrophes=True),
         "links": len(re.findall(LINK_REGEX, text)),
         "emojis": emojis,
         "emoji_count": len(emojis),
@@ -152,7 +144,7 @@ def get_message_stats(text):
 
 
 def update_message_stats(entry):
-    entry.update(get_message_stats(entry["message"]))
+    entry.update(get_message_stats(entry["message"], entry["kind"]))
 
 
 def add_time_columns(df):
@@ -161,7 +153,6 @@ def add_time_columns(df):
 
     df = df.copy()
     df["date"] = df["datetime"].dt.date
-    df["time"] = df["datetime"].dt.time
     df["weekday"] = df["datetime"].dt.day_name()
     df["month"] = df["datetime"].dt.to_period("M").astype(str)
     df["hour"] = df["datetime"].dt.hour
@@ -246,12 +237,12 @@ def parse_chat(filepath):
 
 
 def parse_start_date(value):
-    for fmt in ("%d.%m.%Y %H:%M:%S", "%d.%m.%Y"):
+    for fmt in ("%d.%m.%Y %H:%M:%S", "%d.%m.%Y %H:%M", "%d.%m.%Y"):
         try:
             return datetime.strptime(value, fmt)
         except ValueError:
             continue
-    raise ValueError("Please use DD.MM.YYYY or 'DD.MM.YYYY HH:MM:SS'")
+    raise ValueError("Please use DD.MM.YYYY, 'DD.MM.YYYY HH:MM' or 'DD.MM.YYYY HH:MM:SS'")
 
 
 def parse_end_date(value):
@@ -260,6 +251,100 @@ def parse_end_date(value):
     if ":" not in value:
         end = end.replace(hour=23, minute=59, second=59)
     return end
+
+
+DAY_NAMES = {
+    "Monday": "Pazartesi",
+    "Tuesday": "Salı",
+    "Wednesday": "Çarşamba",
+    "Thursday": "Perşembe",
+    "Friday": "Cuma",
+    "Saturday": "Cumartesi",
+    "Sunday": "Pazar",
+}
+MONTH_NAMES = ["Oca", "Şub", "Mar", "Nis", "May", "Haz", "Tem", "Ağu", "Eyl", "Eki", "Kas", "Ara"]
+CHART_COLOR = "#0f766e"
+
+REPORT_CSS = """
+@page {
+    size: A4;
+    margin: 18mm 16mm 19mm;
+    @bottom-right { content: counter(page) " / " counter(pages); font-size: 8pt; color: #64748b; }
+}
+body { font-family: "DejaVu Sans", Arial, sans-serif; font-size: 9.5pt; line-height: 1.45; color: #17253b; }
+.eyebrow { color: #0f766e; font-size: 9pt; font-weight: bold; letter-spacing: 1.5px; }
+h1 { font-size: 26pt; line-height: 1.15; margin: 6px 0 10px; color: #10253f; }
+h2 { font-size: 15pt; color: #10253f; margin: 26px 0 8px; padding-bottom: 4px;
+     border-bottom: 2px solid #0f766e; break-after: avoid; }
+h3, h4 { font-size: 11pt; color: #334155; margin: 16px 0 6px; break-after: avoid; }
+p { margin: 7px 0; }
+.meta { color: #64748b; font-size: 8.5pt; }
+.kpis { width: 100%; border-collapse: separate; border-spacing: 5px; margin: 12px 0 4px; table-layout: fixed; }
+.kpis td { background: #eff3f8; padding: 11px 9px; border: 0; vertical-align: top; }
+.kpis .value { display: block; font-size: 17pt; font-weight: bold; color: #0f766e; }
+.kpis .value.small { font-size: 12pt; padding: 5px 0 4px; }
+.kpis .label { display: block; font-size: 8pt; color: #475569; }
+table { border-collapse: collapse; width: 100%; margin: 8px 0 14px; font-size: 8.5pt; }
+th, td { border-bottom: 1px solid #e2e8f0; padding: 4px 7px; text-align: left; }
+th { background-color: #e6f2f1; color: #10253f; }
+tr { break-inside: avoid; }
+tr:nth-child(even) td { background-color: #f8fafc; }
+img { display: block; margin: 6px auto 12px; }
+"""
+
+
+def md_text(value):
+    """Escape a name or word for a Markdown table cell or heading."""
+    text = html.escape(str(value), quote=False).replace("\\", "\\\\")
+    for char in "|*_`[]#":
+        text = text.replace(char, "\\" + char)
+    return text
+
+
+def format_number(n):
+    return f"{n:,}".replace(",", ".")
+
+
+def format_decimal(n):
+    return f"{n:,.1f}".replace(",", "_").replace(".", ",").replace("_", ".")
+
+
+def format_datetime(value):
+    return value.strftime("%d.%m.%Y %H:%M")
+
+
+def create_chart(x_data, y_data, title, xlabel, ylabel, chart_type="bar"):
+    fig, ax = plt.subplots(figsize=(10, 4.8))
+    if chart_type == "bar":
+        ax.bar(x_data, y_data, color=CHART_COLOR)
+    else:
+        ax.plot(x_data, y_data, marker="o", linestyle="-", color=CHART_COLOR)
+    ax.yaxis.set_major_locator(MaxNLocator(integer=True))
+    ax.grid(True, axis="y", linestyle="--", alpha=0.4)
+    ax.set_axisbelow(True)
+    for side in ("top", "right"):
+        ax.spines[side].set_visible(False)
+    ax.set_title(title)
+    ax.set_xlabel(xlabel)
+    ax.set_ylabel(ylabel)
+    ax.tick_params(axis="x", labelrotation=45)
+    fig.tight_layout()
+
+    buf = io.BytesIO()
+    fig.savefig(buf, format="png", dpi=110)
+    plt.close(fig)
+    img_base64 = base64.b64encode(buf.getvalue()).decode("utf-8")
+    return f'<img src="data:image/png;base64,{img_base64}" style="width:100%; max-width:800px;" />'
+
+
+def _phrase_table(write_line, title, counter, limit):
+    write_line(f"**{title}**")
+    write_line("")
+    write_line("| İfade | Sayı |")
+    write_line("|-------|------|")
+    for phrase, count in counter.most_common(limit):
+        write_line(f"| {md_text(' '.join(phrase))} | {format_number(count)} |")
+    write_line("")
 
 
 # Compute and print statistics
@@ -274,17 +359,11 @@ def compute_stats(
     # Collect all markdown content
     markdown_content = []
 
-    def write_header(title):
-        markdown_content.append(f"# {title}\n")
-
     def write_subheader(title):
         markdown_content.append(f"\n## {title}\n")
 
     def write_line(content):
         markdown_content.append(content + "\n")
-
-    def format_number(n):
-        return f"{n:,}".replace(",", ".")
 
     def user_messages(user):
         return df[df["user"] == user]
@@ -292,14 +371,29 @@ def compute_stats(
     def count_contains(series, pattern, regex=False):
         return series.str.contains(pattern, case=False, na=False, regex=regex).sum()
 
-    write_header("WhatsApp Sohbet İstatistikleri")
-
-    # Chat Summary
-    write_subheader("📅 Sohbet Zaman Çizelgesi")
-    write_line(f"**İlk Mesaj:** {df['datetime'].min()}")
-    write_line("")
-    write_line(f"**Son Mesaj:** {df['datetime'].max()}")
-    write_line("")
+    # Summary shown at the top of both reports
+    first, last = df["datetime"].min(), df["datetime"].max()
+    total_chat_days = df["date"].nunique()
+    summary = [
+        ("Mesaj", format_number(len(df))),
+        ("Katılımcı", format_number(df["user"].nunique())),
+        ("Sohbet günü", format_number(total_chat_days)),
+        ("Dönem", f"{first:%d.%m.%Y} – {last:%d.%m.%Y}"),
+    ]
+    summary_markdown = "".join(f"**{label}:** {value}  \n" for label, value in summary)
+    summary_markdown += f"**İlk mesaj:** {format_datetime(first)} · **Son mesaj:** {format_datetime(last)}\n"
+    kpis = "".join(
+        f'<td><span class="value{" small" if label == "Dönem" else ""}">{value}</span>'
+        f'<span class="label">{label}</span></td>'
+        for label, value in summary
+    )
+    header_html = (
+        '<div class="eyebrow">WHATSAPP SOHBET ANALİZİ</div>'
+        "<h1>Sohbet İstatistikleri</h1>"
+        f'<p class="meta">{format_datetime(first)} – {format_datetime(last)}'
+        f' · {"Grup sohbeti" if is_group_chat else "Birebir sohbet"}</p>'
+        f'<table class="kpis"><tr>{kpis}</tr></table>'
+    )
 
     # User Statistics
     write_subheader("👥 Kullanıcı İstatistikleri")
@@ -308,28 +402,20 @@ def compute_stats(
     user_stats = []
     for user in df["user"].unique():
         user_df = user_messages(user)
+        written = user_df["has_text"].sum()
         user_stats.append(
             {
                 "User": user,
                 "Messages": len(user_df),
-                "Letters": user_df["letter_count"].sum(),
+                # Average over messages with written text; media-only messages have none.
+                "AvgLetters": user_df["letter_count"].sum() / written if written else 0,
                 "Media": user_df["media"].sum(),
                 "Emojis": user_df["emoji_count"].sum(),
                 "Links": user_df["links"].sum(),
-                "Polls": user_df["poll"].sum() if "poll" in user_df.columns else 0,
-                "Deleted": user_df["deleted"].sum()
-                if "deleted" in user_df.columns
-                else 0,
+                "Polls": user_df["poll"].sum(),
+                "Deleted": user_df["deleted"].sum(),
             }
         )
-
-        # Calculate average letters per message
-        if user_stats[-1]["Messages"] > 0:
-            user_stats[-1]["AvgLetters"] = (
-                user_stats[-1]["Letters"] / user_stats[-1]["Messages"]
-            )
-        else:
-            user_stats[-1]["AvgLetters"] = 0
 
     # Sort by message count
     user_stats.sort(key=lambda x: x["Messages"], reverse=True)
@@ -342,12 +428,9 @@ def compute_stats(
         "|-----------|-----------|-------|----------|---------|----------|---------|----------|"
     )
     for stat in user_stats:
-        avg_letters_str = f"{stat['AvgLetters']:.1f}".replace(".", ",")
         write_line(
-            f"| {stat['User']} | {avg_letters_str} | {format_number(stat['Media'])} | {format_number(stat['Emojis'])} | {format_number(stat['Links'])} | {format_number(stat.get('Polls', 0))} | {format_number(stat.get('Deleted', 0))} | **{format_number(stat['Messages'])}** |"
+            f"| {md_text(stat['User'])} | {format_decimal(stat['AvgLetters'])} | {format_number(stat['Media'])} | {format_number(stat['Emojis'])} | {format_number(stat['Links'])} | {format_number(stat['Polls'])} | {format_number(stat['Deleted'])} | **{format_number(stat['Messages'])}** |"
         )
-    write_line("")
-
     write_line("")
 
     call_stats = []
@@ -365,13 +448,7 @@ def compute_stats(
         video_calls = count_contains(msgs, "Görüntülü arama")
 
         # Call status is recorded from the export owner's perspective.
-        call_mask = msgs.str.contains(
-            "Sesli arama|Görüntülü arama", na=False, case=False, regex=True
-        )
-        missed_mask = msgs.str.contains(
-            "Cevapsız|Cevaplanmadı", na=False, case=False, regex=True
-        )
-        missed_calls = (call_mask & missed_mask).sum()
+        missed_calls = count_contains(msgs, "Cevapsız|Cevaplanmadı", regex=True)
 
         total_calls = voice_calls + video_calls
         answered_calls = total_calls - missed_calls
@@ -389,7 +466,6 @@ def compute_stats(
             )
 
     if call_stats:
-        write_line("")
         write_subheader("📞 Arama İstatistikleri")
         call_stats.sort(key=lambda x: x["Total"], reverse=True)
         write_line(
@@ -400,7 +476,7 @@ def compute_stats(
         )
         for stat in call_stats:
             write_line(
-                f"| {stat['User']} | {format_number(stat['Voice'])} | {format_number(stat['Video'])} | {format_number(stat['Answered'])} | {format_number(stat['Missed'])} | **{format_number(stat['Total'])}** |"
+                f"| {md_text(stat['User'])} | {format_number(stat['Voice'])} | {format_number(stat['Video'])} | {format_number(stat['Answered'])} | {format_number(stat['Missed'])} | **{format_number(stat['Total'])}** |"
             )
         write_line("")
 
@@ -422,8 +498,7 @@ def compute_stats(
         )
 
     # Sort by total media
-    if media_stats and any(s["Total Media"] > 0 for s in media_stats):
-        write_line("")
+    if any(s["Total Media"] > 0 for s in media_stats):
         write_subheader("📱 Detaylı Medya İstatistikleri")
         media_stats.sort(key=lambda x: x["Total Media"], reverse=True)
 
@@ -434,118 +509,52 @@ def compute_stats(
             "|-----------|-------------|----------|----------|--------|----------|--------|----------|--------|"
         )
         for stat in media_stats:
+            counts = " | ".join(
+                format_number(stat[label]) for label in MEDIA_TYPE_PATTERNS
+            )
             write_line(
-                f"| {stat['User']} | {stat['Stickers']} | {stat['Images']} | {stat['Videos']} | {stat['Audio']} | {stat['Documents']} | {stat['GIFs']} | {stat['Locations']} | **{format_number(stat['Total Media'])}** |"
+                f"| {md_text(stat['User'])} | {counts} | **{format_number(stat['Total Media'])}** |"
             )
         write_line("")
 
+    # Words and phrases were tokenized once per message in parse_chat.
+    word_counts = {user: Counter() for user in sorted_users}
+    bigram_counts = {user: Counter() for user in sorted_users}
+    trigram_counts = {user: Counter() for user in sorted_users}
+    for user, words, phrase_words in zip(df["user"], df["words"], df["phrase_words"]):
+        word_counts[user].update(words)
+        bigram_counts[user].update(itertools.pairwise(phrase_words))
+        trigram_counts[user].update(zip(phrase_words, phrase_words[1:], phrase_words[2:]))
+
     # Most Used Words
     write_subheader("📝 En Çok Kullanılan Kelimeler (>3 harf)")
-    all_words = []
-    # Process all messages, cleaning out media placeholders to keep only captions
-    for msg in df["message"]:
-        cleaned = clean_media_placeholders(msg)
-        if cleaned:
-            tokens = _get_tokens(cleaned, min_len=4, keep_apostrophes=True)
-            all_words.extend(tokens)
-    wc = Counter(all_words)
-
     write_line("| Kelime | Sayı |")
     write_line("|--------|------|")
-    for word, count in wc.most_common(50):
-        write_line(f"| {word} | {format_number(count)} |")
+    for word, count in sum(word_counts.values(), Counter()).most_common(50):
+        write_line(f"| {md_text(word)} | {format_number(count)} |")
     write_line("")
 
     # Most Used Word Combinations
     write_subheader("🔗 En Çok Kullanılan Kelime Kombinasyonları")
-    all_bigrams = []
-    all_trigrams = []
-
-    for msg in df["message"]:
-        cleaned = clean_media_placeholders(msg)
-        if cleaned:
-            # Use keep_apostrophes=True for n-grams to get meaningful phrases like "Ankara'da hava"
-            words = _get_tokens(cleaned, min_len=2, keep_apostrophes=True)
-
-            if len(words) >= 2:
-                all_bigrams.extend(itertools.pairwise(words))
-            if len(words) >= 3:
-                all_trigrams.extend(zip(words, words[1:], words[2:]))
-
-    write_line("\n**İkili Kombinasyonlar**")
-    write_line("")
-    write_line("| İfade | Sayı |")
-    write_line("|-------|------|")
-    for bg, count in Counter(all_bigrams).most_common(20):
-        write_line(f"| {' '.join(bg)} | {format_number(count)} |")
-    write_line("")
-
-    write_line("**Üçlü Kombinasyonlar**")
-    write_line("")
-    write_line("| İfade | Sayı |")
-    write_line("|-------|------|")
-    for tg, count in Counter(all_trigrams).most_common(20):
-        write_line(f"| {' '.join(tg)} | {format_number(count)} |")
-    write_line("")
+    _phrase_table(write_line, "İkili Kombinasyonlar", sum(bigram_counts.values(), Counter()), 20)
+    _phrase_table(write_line, "Üçlü Kombinasyonlar", sum(trigram_counts.values(), Counter()), 20)
 
     # Most Used Words by User
-
     write_subheader("🗣️ Kullanıcılara Göre En Çok Kullanılan Kelimeler")
     for user in sorted_users:
-        write_line(f"\n#### {user}")
-        user_words = []
-        # Process user messages, cleaning placeholders
-        user_messages_raw = user_messages(user)["message"]
-        for msg in user_messages_raw:
-            cleaned = clean_media_placeholders(msg)
-            if cleaned:
-                tokens = _get_tokens(cleaned, min_len=4, keep_apostrophes=True)
-                user_words.extend(tokens)
-        wc = Counter(user_words)
-
+        write_line(f"\n#### {md_text(user)}\n")
         write_line("| Kelime | Sayı |")
         write_line("|--------|------|")
-        for word, count in wc.most_common(20):
-            write_line(f"| {word} | {format_number(count)} |")
+        for word, count in word_counts[user].most_common(20):
+            write_line(f"| {md_text(word)} | {format_number(count)} |")
         write_line("")
 
     # Most Used Word Combinations by User
     write_subheader("🔗 Kullanıcı Bazlı En Çok Kullanılan Kelime Kombinasyonları")
-
     for user in sorted_users:
-        write_line(f"\n#### {user}")
-        # Process messages, cleaning placeholders
-        user_messages_raw = user_messages(user)["message"]
-        all_bigrams = []
-        all_trigrams = []
-
-        for msg in user_messages_raw:
-            cleaned = clean_media_placeholders(msg)
-            if cleaned:
-                # Use keep_apostrophes=True for n-grams to get meaningful phrases like "Ankara'da hava"
-                words = _get_tokens(cleaned, min_len=2, keep_apostrophes=True)
-
-                if len(words) >= 2:
-                    all_bigrams.extend(itertools.pairwise(words))
-                if len(words) >= 3:
-                    all_trigrams.extend(zip(words, words[1:], words[2:]))
-
-        write_line("\n**İkili Kombinasyonlar**")
-        write_line("")
-        write_line("| İfade | Sayı |")
-        write_line("|-------|------|")
-        for bg, count in Counter(all_bigrams).most_common(10):
-            write_line(f"| {' '.join(bg)} | {format_number(count)} |")
-
-        write_line("")
-
-        write_line("**Üçlü Kombinasyonlar**")
-        write_line("")
-        write_line("| İfade | Sayı |")
-        write_line("|-------|------|")
-        for tg, count in Counter(all_trigrams).most_common(10):
-            write_line(f"| {' '.join(tg)} | {format_number(count)} |")
-        write_line("")
+        write_line(f"\n#### {md_text(user)}\n")
+        _phrase_table(write_line, "İkili Kombinasyonlar", bigram_counts[user], 10)
+        _phrase_table(write_line, "Üçlü Kombinasyonlar", trigram_counts[user], 10)
 
     # Most Used Emojis by User
     emoji_data = {}
@@ -559,140 +568,95 @@ def compute_stats(
     if emoji_data:
         write_subheader("😊 Kullanıcılara Göre En Çok Kullanılan Emojiler")
         for user, user_emojis in emoji_data.items():
-            write_line(f"\n#### {user}")
+            write_line(f"\n#### {md_text(user)}\n")
             write_line("| Emoji | Sayı |")
             write_line("|-------|------|")
             for em, cnt in user_emojis.most_common(5):
                 write_line(f"| {em} | {format_number(cnt)} |")
+            write_line("")
 
     # Temporal Statistics
     write_subheader("⏰ Zamansal İstatistikler")
 
-    # Translation for day names
-    day_translation = {
-        "Monday": "Pazartesi",
-        "Tuesday": "Salı",
-        "Wednesday": "Çarşamba",
-        "Thursday": "Perşembe",
-        "Friday": "Cuma",
-        "Saturday": "Cumartesi",
-        "Sunday": "Pazar",
-    }
-
-    import base64
-    import io
-
-    import matplotlib
-
-    matplotlib.use("Agg")
-    import matplotlib.pyplot as plt
-
-    def create_chart(x_data, y_data, title, xlabel, ylabel, chart_type="bar"):
-        plt.figure(figsize=(10, 6))
-
-        if chart_type == "bar":
-            plt.bar(x_data, y_data, color="skyblue")
-        elif chart_type == "line":
-            plt.plot(x_data, y_data, marker="o", linestyle="-", color="orange")
-            plt.grid(True, linestyle="--", alpha=0.7)
-
-        plt.title(title)
-        plt.xlabel(xlabel)
-        plt.ylabel(ylabel)
-        plt.xticks(rotation=45)
-        plt.tight_layout()
-
-        # Save to buffer
-        buf = io.BytesIO()
-        plt.savefig(buf, format="png")
-        buf.seek(0)
-        img_base64 = base64.b64encode(buf.read()).decode("utf-8")
-        plt.close()
-
-        return f'<img src="data:image/png;base64,{img_base64}" style="width:100%; max-width:800px;" />'
-
     write_line("#### 📅 Haftanın Günlerine Göre Mesajlar")
     days = (
         df["weekday"]
-        .map(day_translation)
+        .map(DAY_NAMES)
         .value_counts()
-        .reindex(
-            ["Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartesi", "Pazar"]
+        .reindex(list(DAY_NAMES.values()), fill_value=0)
+    )
+    write_line(
+        create_chart(
+            days.index,
+            days.values,
+            "Haftanın Günlerine Göre Mesaj Dağılımı",
+            "Günler",
+            "Mesaj Sayısı",
+            "bar",
         )
     )
-    # Generate Day Chart
-    day_chart = create_chart(
-        days.index,
-        days.values,
-        "Haftanın Günlerine Göre Mesaj Dağılımı",
-        "Günler",
-        "Mesaj Sayısı",
-        "bar",
-    )
-    write_line(day_chart)
     write_line("")
 
     # Messages by Hour
     write_line("#### 🕐 Saatlere Göre Mesajlar")
     hour_stats = df["hour"].value_counts().reindex(range(24), fill_value=0).sort_index()
-    # Generate Hour Chart with all 24 hours on x-axis
-    hour_labels = [f"{h:02d}" for h in range(24)]
-    hour_chart = create_chart(
-        hour_labels,
-        hour_stats.values,
-        "Saatlere Göre Mesaj Dağılımı",
-        "Saat",
-        "Mesaj Sayısı",
-        "line",
+    write_line(
+        create_chart(
+            [f"{h:02d}" for h in range(24)],
+            hour_stats.values,
+            "Saatlere Göre Mesaj Dağılımı",
+            "Saat",
+            "Mesaj Sayısı",
+            "line",
+        )
     )
-    write_line(hour_chart)
     write_line("")
 
     # Messages by Month
     write_line("#### 📆 Aylara Göre Mesajlar")
     month_stats = df["month"].value_counts().sort_index()
-    # Generate Month Chart
-    month_chart = create_chart(
-        month_stats.index.astype(str),
-        month_stats.values,
-        "Aylara Göre Mesaj Dağılımı",
-        "Ay",
-        "Mesaj Sayısı",
-        "bar",
+    month_labels = [
+        f"{MONTH_NAMES[int(month[5:7]) - 1]} {month[:4]}" for month in month_stats.index
+    ]
+    write_line(
+        create_chart(
+            month_labels,
+            month_stats.values,
+            "Aylara Göre Mesaj Dağılımı",
+            "Ay",
+            "Mesaj Sayısı",
+            "bar",
+        )
     )
-    write_line(month_chart)
-    write_line("")
     write_line("")
 
     # Most Active Days
     write_line("#### 🔥 En Aktif 10 Gün")
-    day_stats = df["date"].value_counts().head(10)
-    write_line("| Tarih | Mesajlar |")
-    write_line("|-------|----------|")
-    for d, v in day_stats.items():
-        write_line(f"| {d} | {format_number(v)} |")
+    write_line("")
+    day_stats = df["date"].value_counts()
+    # Busiest first; on equal counts, the earlier day first.
+    busiest = sorted(day_stats.items(), key=lambda item: (-item[1], item[0]))[:10]
+    write_line("| Tarih | Gün | Mesajlar |")
+    write_line("|-------|-----|----------|")
+    for d, v in busiest:
+        weekday = list(DAY_NAMES.values())[d.weekday()]
+        write_line(f"| {d:%d.%m.%Y} | {weekday} | {format_number(v)} |")
     write_line("")
 
     # Users First and Last Message
     write_line("#### 📊 Kullanıcı Etkinlik Zaman Çizelgesi")
-
-    # Calculate total days the chat has been active
-    total_chat_days = df["date"].nunique()
-    write_line(f"**Toplam Sohbet Günü: {total_chat_days}**")
+    write_line("")
+    write_line(f"**Toplam Sohbet Günü: {format_number(total_chat_days)}**")
     write_line("")
 
     user_timeline = []
     for user in sorted_users:
         user_df = user_messages(user)
-        first_msg = user_df["datetime"].min()
-        last_msg = user_df["datetime"].max()
-        # Count unique days when user sent messages
         active_days = user_df["date"].nunique()
         user_timeline.append(
             {
                 "User": user,
-                "First Message": first_msg,
-                "Last Message": last_msg,
+                "Messages": len(user_df),
                 "Days Active": active_days,
             }
         )
@@ -702,88 +666,29 @@ def compute_stats(
     write_line("|-----------|--------------|---------------|------------------------|")
     for timeline in user_timeline:
         participation_rate = (timeline["Days Active"] / total_chat_days) * 100
-        user_messages_count = user_messages(timeline["User"]).shape[0]
-        messages_per_day = (
-            user_messages_count / timeline["Days Active"]
-            if timeline["Days Active"] > 0
-            else 0
-        )
+        messages_per_day = timeline["Messages"] / timeline["Days Active"]
         write_line(
-            f"| {timeline['User']} | {timeline['Days Active']} / {total_chat_days} | {participation_rate:.1f}% | {messages_per_day:.1f} |"
+            f"| {md_text(timeline['User'])} | {format_number(timeline['Days Active'])} / {format_number(total_chat_days)} | %{format_decimal(participation_rate)} | {format_decimal(messages_per_day)} |"
         )
     write_line("")
 
-    # Convert markdown to HTML and then to PDF
-    markdown_text = "".join(markdown_content)
+    body_markdown = "".join(markdown_content)
+    # The Markdown export carries the summary as text; the PDF shows it as cards.
+    markdown_text = "# WhatsApp Sohbet İstatistikleri\n\n" + summary_markdown + body_markdown
+    html_content = header_html + markdown.markdown(body_markdown, extensions=["tables"])
 
-    # Convert markdown to HTML
-    html_content = markdown.markdown(markdown_text, extensions=["tables"])
-
-    # Add CSS styling for better PDF appearance
-    css_content = """
-    <style>
-        body { 
-            font-family: Arial, sans-serif; 
-            margin: 40px; 
-            font-size: 12px;
-            line-height: 1.4;
-        }
-        h1 { 
-            color: #2c3e50; 
-            border-bottom: 2px solid #3498db; 
-            padding-bottom: 10px; 
-            font-size: 24px;
-        }
-        h2 { 
-            color: #34495e; 
-            margin-top: 30px; 
-            font-size: 20px;
-        }
-        h3 { 
-            color: #7f8c8d; 
-            font-size: 16px;
-        }
-        table { 
-            border-collapse: collapse; 
-            width: 100%; 
-            margin: 20px 0; 
-            font-size: 10px;
-        }
-        th, td { 
-            border: 1px solid #ddd; 
-            padding: 6px; 
-            text-align: left; 
-        }
-        th { 
-            background-color: #f2f2f2; 
-            font-weight: bold; 
-        }
-        tr:nth-child(even) { 
-            background-color: #f9f9f9; 
-        }
-        strong { 
-            color: #e74c3c; 
-        }
-        p {
-            margin: 10px 0;
-        }
-    </style>
-    """
-
-    # Combine HTML content with CSS
-    full_html = f"""
-    <!DOCTYPE html>
-    <html>
-    <head>
-        <meta charset="utf-8">
-        <title>WhatsApp Sohbet İstatistikleri</title>
-        {css_content}
-    </head>
-    <body>
-        {html_content}
-    </body>
-    </html>
-    """
+    full_html = f"""<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="utf-8">
+    <title>WhatsApp Sohbet İstatistikleri</title>
+    <style>{REPORT_CSS}</style>
+</head>
+<body>
+{html_content}
+</body>
+</html>
+"""
 
     # Generate PDF. Both reports go to temporary files first, so a failure
     # never leaves a new Markdown file next to an old PDF.
@@ -837,13 +742,13 @@ def main():
     parser.add_argument(
         "--start-date",
         "-s",
-        help="Filter messages from this date/time onwards (Format: DD.MM.YYYY or DD.MM.YYYY HH:MM:SS)",
+        help="Filter messages from this date/time onwards (Format: DD.MM.YYYY, DD.MM.YYYY HH:MM or DD.MM.YYYY HH:MM:SS)",
         default=None,
     )
     parser.add_argument(
         "--end-date",
         "-e",
-        help="Filter messages up to this date/time, inclusive (Format: DD.MM.YYYY for the whole day or DD.MM.YYYY HH:MM:SS)",
+        help="Filter messages up to this date/time, inclusive (Format: DD.MM.YYYY for the whole day, DD.MM.YYYY HH:MM or DD.MM.YYYY HH:MM:SS)",
         default=None,
     )
     parser.add_argument(

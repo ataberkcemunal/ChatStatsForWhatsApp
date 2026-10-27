@@ -75,7 +75,7 @@ Tarihten sonra virgül ve saniyesiz saat (`[1.10.2026, 10:30]`) de kabul edilir.
 | Seçenek | Anlamı | Varsayılan |
 |---|---|---|
 | `chat_file` | İncelenecek sohbet dosyası | `_chat.txt` |
-| `--start-date`, `-s` | Yalnızca bu andan itibarenki kayıtlar (o an dahil). `GG.AA.YYYY` veya `"GG.AA.YYYY SS:DD:SS"` | tüm sohbet |
+| `--start-date`, `-s` | Yalnızca bu andan itibarenki kayıtlar (o an dahil). `GG.AA.YYYY`, `"GG.AA.YYYY SS:DD"` veya `"GG.AA.YYYY SS:DD:SS"` | tüm sohbet |
 | `--end-date`, `-e` | Yalnızca bu ana kadarki kayıtlar (o an dahil). Saatsiz tarih o günün tamamını kapsar | tüm sohbet |
 | `--chat-type` | `auto`, `group` veya `direct` | `auto` |
 | `--output`, `-o` | PDF yolu | `chat_stats.pdf` |
@@ -102,7 +102,7 @@ Başarılı çalışma sonunda `PDF report generated: <yol>` yazılır ve çık�
 
 | Bölüm | İçerik |
 |---|---|
-| Sohbet Zaman Çizelgesi | Dahil edilen ilk ve son kayıt |
+| Özet kutuları | Mesaj, katılımcı, sohbet günü ve kapsanan dönem |
 | Kullanıcı İstatistikleri | Kişi başına mesaj, ortalama harf, medya, emoji, bağlantı, anket, silinen mesaj |
 | Arama İstatistikleri | Duruma göre sesli ve görüntülü aramalar (yalnızca birebir sohbetlerde, arama varsa) |
 | Detaylı Medya İstatistikleri | Çıkartma, görsel, video, ses, belge, GIF, konum |
@@ -114,10 +114,12 @@ Başarılı çalışma sonunda `PDF report generated: <yol>` yazılır ve çık�
 Sayıların tanımları:
 
 - **Mesaj**: Filtrelemeden sonra kalan her kayıt; medya ve silinen mesaj kayıtları dahil.
-- **Ort. Harf**: Boşluklar hariç mesaj başına ortalama karakter (noktalama ve semboller sayılır).
+- **Ort. Harf**: Boşluklar hariç, yazılı mesaj başına ortalama karakter (noktalama ve semboller sayılır). Medya yer tutucuları, anket söz dizimi, aramalar ve silinen mesajlar yazılı metin sayılmaz; ne harflere ne de mesaj sayısına katılır.
 - **Aktif gün**: Kişinin en az bir kaydı olan gün.
 - **Toplam sohbet günü**: Sohbette en az bir kayıt olan gün; sessiz günler sayılmaz.
 - **Katılım oranı**: Kişinin aktif günleri ÷ toplam sohbet günü (mesaj payı değildir).
+
+Sayılar Türkçe biçimde yazılır: binlik için `1.234`, ondalık için `12,5`, yüzde için `%45,3`.
 - **Aktif gün başına mesaj**: Kişinin mesajları ÷ kendi aktif gün sayısı.
 
 `--start-date` veya `--end-date` verildiğinde tüm değerler yalnızca seçilen dönemi kapsar.

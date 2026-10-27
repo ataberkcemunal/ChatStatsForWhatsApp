@@ -36,6 +36,10 @@ $env:WEASYPRINT_DLL_DIRECTORIES = 'C:\msys64\ucrt64\bin'
 
 GitHub Actions runs the test suite, sample PDF generation, and source packaging on Ubuntu with Python 3.11–3.14. A Windows job checks the PowerShell scripts' syntax, then runs `setup.ps1`, the test suite and `run.ps1` on the sample chat with Python 3.14, Windows PowerShell 5.1 and MSYS2 Pango. Workflow execution results are available only after the changes are pushed.
 
+## Shared parser
+
+`whatsapp_chat.py` and `tests/test_whatsapp_chat.py` are also used by Profanity Stats for WhatsApp, which lives next to this project. The copies here are the originals: edit them here, then run `sync_parser.sh` in the parent folder. A test fails while the two copies differ (it is skipped when the sibling project is not present). Keep the module standard-library only.
+
 ## Sample data and releases
 
 Use only fictional chat data in tests and examples. To regenerate the sample report on macOS/Linux:

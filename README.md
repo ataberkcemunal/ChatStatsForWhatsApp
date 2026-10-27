@@ -64,7 +64,7 @@ In WhatsApp, export the chat **without media**. If you get a ZIP, extract the `.
 [1.10.2026 10:31:05] Deniz: Selam
 ```
 
-Messages that span several lines are supported. Other languages and date formats are not recognised. Media files are not read; media is counted from placeholders such as “görüntü dahil edilmedi”.
+A comma after the date and times without seconds (`[1.10.2026, 10:30]`) are also accepted. Messages that span several lines are supported. Other languages and date formats are not recognised. Media files are not read; media is counted from placeholders such as “görüntü dahil edilmedi”.
 
 ## Usage
 
@@ -131,15 +131,17 @@ With `--start-date` or `--end-date`, every figure covers only the selected perio
 - **Group:** the call table is hidden.
 - **Direct:** the call table appears if there are call records. Statuses come from the exporting phone; “answered” means total calls minus missed calls, not who picked up.
 
-Call records still count towards message totals in both cases; call status phrases are removed from the word analysis.
+Call records still count towards message totals in both cases; call status phrases are removed from the word analysis. Only actual call records are counted as calls, so a message such as “sesli arama yapalım mı?” is not.
 
 ### What is filtered out
 
 - Records sent by **“Siz”** or **“Meta AI”**, including calls attributed to “Siz”. Mentions of these names inside other people's messages are kept.
-- Recognised group and system notifications. “Edited” markers are removed from the text.
+- Recognised group and system notifications, empty records, and timestamped lines without a sender. “Edited” markers are removed from the text.
 - Invisible formatting characters in sender names.
 
 Deleted messages are counted, but their content cannot be recovered. “Siz” is not linked to a real person, and the same person written in two different ways is not merged.
+
+Reading the export is done by `whatsapp_chat.py`, which Profanity Stats for WhatsApp shares, so both reports count the same messages.
 
 ## Sample report
 

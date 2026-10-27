@@ -64,7 +64,7 @@ WhatsApp'ta sohbeti **medya olmadan** dışa aktarın. ZIP gelirse içindeki `.t
 [1.10.2026 10:31:05] Deniz: Selam
 ```
 
-Birden çok satıra yayılan mesajlar desteklenir. Başka diller ve tarih biçimleri tanınmaz. Medya dosyaları okunmaz; medya “görüntü dahil edilmedi” gibi yer tutuculardan sayılır.
+Tarihten sonra virgül ve saniyesiz saat (`[1.10.2026, 10:30]`) de kabul edilir. Birden çok satıra yayılan mesajlar desteklenir. Başka diller ve tarih biçimleri tanınmaz. Medya dosyaları okunmaz; medya “görüntü dahil edilmedi” gibi yer tutuculardan sayılır.
 
 ## Kullanım
 
@@ -129,15 +129,17 @@ Sayıların tanımları:
 - **Grup:** Arama tablosu gizlenir.
 - **Birebir:** Arama kaydı varsa arama tablosu gösterilir. Durumlar dışa aktaran telefonun kayıtlarından gelir; “cevaplanan”, toplam aramadan cevapsız aramaların çıkarılmasıyla bulunur, kimin açtığını göstermez.
 
-Her iki durumda da arama kayıtları mesaj toplamına girer; arama durum ifadeleri kelime analizinden çıkarılır.
+Her iki durumda da arama kayıtları mesaj toplamına girer; arama durum ifadeleri kelime analizinden çıkarılır. Yalnızca gerçek arama kayıtları arama sayılır; “sesli arama yapalım mı?” gibi bir mesaj sayılmaz.
 
 ### Filtrelenenler
 
 - **“Siz”** veya **“Meta AI”** tarafından gönderilen kayıtlar (“Siz”e ait aramalar dahil). Başkalarının mesajlarında bu adların geçmesi sorun değildir; o mesajlar korunur.
-- Tanınan grup ve sistem bildirimleri. “Düzenlendi” işaretleri metinden temizlenir.
+- Tanınan grup ve sistem bildirimleri, boş kayıtlar ve göndereni olmayan zaman damgalı satırlar. “Düzenlendi” işaretleri metinden temizlenir.
 - Gönderen adlarındaki görünmez biçimlendirme karakterleri.
 
 Silinen mesajlar sayılır ama içerikleri geri getirilemez. “Siz” gerçek bir kişiyle eşleştirilmez; aynı kişinin farklı yazılmış adları birleştirilmez.
+
+Dışa aktarımı `whatsapp_chat.py` okur. Bu dosya Profanity Stats for WhatsApp ile ortaktır; böylece iki rapor aynı mesajları sayar.
 
 ## Örnek rapor
 

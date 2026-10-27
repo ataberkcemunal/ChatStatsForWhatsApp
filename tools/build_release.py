@@ -6,10 +6,10 @@ from zipfile import ZipFile, ZipInfo, ZIP_DEFLATED
 
 ROOT = Path(__file__).resolve().parents[1]
 RELEASE_FILES = (
-    'ChatStatsForWhatsApp.py', 'requirements.txt', 'setup.sh', 'run.sh',
+    'ChatStatsForWhatsApp.py', 'whatsapp_chat.py', 'requirements.txt', 'setup.sh', 'run.sh',
     'setup.ps1', 'run.ps1', '.gitignore', 'README.md', 'README_TR.md',
     'CONTRIBUTING.md', 'LICENSE', 'SAMPLE_REPORT.md',
-    'examples/sample_chat.txt', 'tests/test_parser_exclusions.py',
+    'examples/sample_chat.txt', 'tests/test_parser_exclusions.py', 'tests/test_whatsapp_chat.py',
     'tests/test_release.py', 'tools/build_release.py', '.github/workflows/tests.yml',
     '.vscode/settings.json', '.vscode/tasks.json',
 )

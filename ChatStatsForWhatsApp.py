@@ -15,15 +15,8 @@ import pandas as pd
 from weasyprint import HTML
 from weasyprint.text.fonts import FontConfiguration
 
-
-def turkish_lower(text):
-    """Turkish-aware lowercasing for 'İ' and 'I'"""
-    if not text:
-        return ""
-    # Standard Turkish rules for lingual accuracy:
-    # 1. Map uppercase 'İ' to lowercase 'i'
-    # 2. Map uppercase 'I' to lowercase 'ı'
-    return text.replace("İ", "i").replace("I", "ı").lower()
+import whatsapp_chat
+from whatsapp_chat import turkish_lower
 
 
 # Patterns to detect media placeholders in chat. Calls are tracked separately,
@@ -60,120 +53,6 @@ SYSTEM_TEXT_PATTERNS = [
 ]
 
 
-def is_group_user(user):
-    """Check if a user is a group/system user that should be excluded"""
-    user_lower = turkish_lower(user)
-
-    # Common group/system user patterns
-    group_user_patterns = ["grup", "whatsapp", "sistem", "bildirim", "güncelleme"]
-
-    for pattern in group_user_patterns:
-        if pattern in user_lower:
-            return True
-    return False
-
-
-def is_group_message(text, user, is_system_hint=False):
-    """Check if a message is a group/system message that should be excluded"""
-    if not text:
-        return True
-
-    # First check if the user is a group/system user
-    if is_group_user(user):
-        return True
-
-    # Explicitly keep poll messages (even if they look like system messages)
-    # Check for ANKET: at start or \u200eANKET:
-    if "ANKET:" in text.upper() and re.search(
-        r"(?:^|\s|\u200e)ANKET:", text, re.IGNORECASE
-    ):
-        return False
-
-    text_lower = turkish_lower(text)
-
-    # High-confidence system patterns that should be skipped regardless of is_system_hint
-    # (These often appear in exports as if a user sent them)
-    # Using regex to handle variations like "grubun adını", "grup adını", "grubun simgesini" etc.
-    system_patterns = [
-        r"grubun adını değiştirdi",
-        r"grup adını değiştirdi",
-        r"grubun simgesini değiştirdi",
-        r"grup simgesini değiştirdi",
-        r"grubun açıklamasını değiştirdi",
-        r"grup açıklamasını değiştirdi",
-        r"grubun konusunu değiştirdi",
-        r"grup konusunu değiştirdi",
-        r"grubun adını değiştirdiniz",
-        r"grup adını değiştirdiniz",
-        r"grubun simgesini değiştirdiniz",
-        r"grup simgesini değiştirdiniz",
-        r"bu grubun simgesini",
-        r"bu grubun adını",
-        r"gelişmiş sohbet gizliliğini etkinleştirdi",
-        r"gelişmiş sohbet gizliliğini devre dışı bıraktı",
-        r"medya dosyalarını otomatik olarak kaydedemez",
-        r"okunmamış mesajları özetleyemez",
-        r'grup adını [“"](.*?)[”"] olarak değiştirdi',
-        r'grup adını [“"](.*?)[”"] olarak değiştirdiniz',
-        r'adını [“"](.*?)[”"] olarak değiştirdi',
-        r'adını [“"](.*?)[”"] olarak değiştirdiniz',
-    ]
-    if any(re.search(p, text_lower, re.IGNORECASE) for p in system_patterns):
-        return True
-
-    # If it's not a group user and no system hint is provided, it's likely a user message
-    if not is_system_hint:
-        return False
-
-    # Common group-related patterns in message content (checked only if hinted as system)
-    group_patterns = [
-        r"grubu oluşturdu",
-        r"gruba katıldı",
-        r"gruptan ayrıldı",
-        r"grup açıklamasını değiştirdi",
-        r"grup ayarlarını değiştirdi",
-        r"grup fotoğrafını değiştirdi",
-        r"grup adını değiştirdi",
-        r"grup bağlantısını değiştirdi",
-        r"grup bağlantısını sıfırladı",
-        r"grup bağlantısını kapatıp açtı",
-        r"grup bağlantısını kapattı",
-        r"grup bağlantısını sildi",
-        r"grup bağlantısını yeniledi",
-        r"sistem mesajı",
-        r"grup mesajı",
-        r"grup bildirimi",
-        r"grup güncellemesi",
-        r"mesajlar ve aramalar uçtan uca şifrelidir",
-        r"bir mesajı sabitlediniz",
-        r"sizi ekledi",
-        r"artık yöneticisiniz",
-        r"tarafından okunabilir",
-        r"uçtan uca şifrelenmeye devam ettiği için",
-        r"kişisini ekledi",
-        r"kişisini çıkardı",
-        r"güvenlik kodu değişti",
-    ]
-
-    # Check for matches with group patterns
-    for pattern in group_patterns:
-        if re.search(pattern, text_lower, re.IGNORECASE):
-            return True
-
-    # Check for messages that are just group names (usually short, all caps, or contain specific keywords)
-    if len(text.strip()) < 50:  # Short messages are more likely to be group names
-        # Check if it's mostly uppercase (common for group names)
-        if text.isupper() and len(text.strip()) > 3:
-            return True
-
-        # Check if it contains common group name indicators
-        group_indicators = ["tayfa", "grup", "ekip", "kulüp", "dernek"]
-        if any(indicator in text_lower for indicator in group_indicators):
-            return True
-
-    return False
-
-
 # Regex for links, tags and system indicators (edited/deleted)
 LINK_REGEX = r"https?://\S+"
 TAG_REGEX = r"@\u2068(.*?)\u2069"
@@ -181,13 +60,9 @@ CLEANUP_REGEX = re.compile(
     r"\u200e?<.*?(?:mesaj düzenlendi|message was edited)>|\u200e?Bu mesajı sildiniz\.|\u200e?Bu mesaj silindi\.",
     re.IGNORECASE,
 )
-CHAT_LINE_REGEX = re.compile(
-    r"^\[(\d{1,2}\.\d{1,2}\.\d{4} \d{2}:\d{2}:\d{2})\] (.*?):(?: (.*))?$"
-)
 QUOTED_CHAT_HEADER_REGEX = re.compile(
     r"\[\d{1,2}\.\d{1,2}\.\d{4}\s+\d{1,2}:\d{2}(?::\d{2})?\]\s+[^:\n]{1,80}:"
 )
-LINE_PREFIX_CHARS = "".join(chr(i) for i in range(32)) + "\u200e\u200f"
 
 
 def is_poll(text):
@@ -204,20 +79,6 @@ def is_poll(text):
     has_heuristic = "ANKET:" in upper_text and "SEÇENEK:" in upper_text
 
     return has_marker or has_heuristic
-
-
-def is_deleted_message(text):
-    """Check if a message is a 'This message was deleted' notification"""
-    if not text:
-        return False
-    # Patterns for deleted messages (Turkish and English)
-    # Handles invisible markers (\u200e) often present in WhatsApp exports
-    patterns = [
-        r"\u200e?Bu mesaj silindi\.",
-        r"\u200e?Bu mesajı sildiniz\.",
-        r"\u200e?This message was deleted\.",
-    ]
-    return any(re.search(p, text, re.IGNORECASE) for p in patterns)
 
 
 def clean_media_placeholders(text):
@@ -361,116 +222,26 @@ def _get_tokens(text, min_len=2, keep_apostrophes=False):
 
 # Parse chat file into DataFrame
 def parse_chat(filepath):
+    """Load an export into a DataFrame; the shared parser decides what counts."""
+    chat = whatsapp_chat.read_chat(filepath)
     records = []
-    current = None
-    known_group_names = set()
-    has_group_event = False
-
-    # Patterns to detect group names from system messages
-    group_name_patterns = [
-        r'"(.*?)" grubunu oluşturdu',
-        r'[“"](.*?)[”"] grubunu oluşturdu',
-        r'[“"](.*?)[”"] grubunu oluşturdunuz',
-        r'grubunun konusunu "(.*?)" olarak değiştirdi',
-        r'grubunun konusunu [“"](.*?)[”"] olarak değiştirdi',
-        r'Grup adını "(.*?)" olarak değiştirdiniz',
-        r'Grup adını [“"](.*?)[”"] olarak değiştirdiniz',
-        r'Grup adını "(.*?)" olarak değiştirdi',
-        r'Grup adını [“"](.*?)[”"] olarak değiştirdi',
-    ]
-
-    with open(filepath, encoding="utf-8") as f:
-        for raw in f:
-            # Check for system message hint (U+200E at the start or in the message)
-            is_system_hint = "\u200e" in raw or "\u200f" in raw
-
-            # Keep normal leading spaces: pasted/quoted chat lines often start
-            # with a space and should remain part of the previous message.
-            line = raw.rstrip("\n").lstrip(LINE_PREFIX_CHARS)
-
-            # Message line: [DD.MM.YYYY, HH:MM:SS] User: message
-            # Improved regex to handle cases with no space after colon or no content
-            m = CHAT_LINE_REGEX.match(line)
-            if m:
-                # A skipped message's continuation must not attach to the previous sender.
-                current = None
-                ts = datetime.strptime(m.group(1), "%d.%m.%Y %H:%M:%S")
-                user = "".join(
-                    ch for ch in m.group(2) if unicodedata.category(ch) != "Cf"
-                ).strip()
-                text = m.group(3) if m.group(3) else ""
-                group_event = bool(
-                    is_system_hint
-                    and re.search(
-                        r"grubunu oluştur|grubu oluştur|^bu grubu siz oluşturdunuz[.!]?$|gruba katıldı|gruptan ayrıldı|"
-                        r"grubun (?:adını|simgesini|açıklamasını)|grup (?:adını|ayarlarını)",
-                        turkish_lower(text).strip("\u200e\u200f \t\r\n"),
-                    )
-                )
-                has_group_event = has_group_event or group_event
-                if turkish_lower(user) in {"siz", "meta ai", "meta aı"}:
-                    continue
-
-                # Check for deleted message BEFORE cleanup (as CLEANUP_REGEX removes the text)
-                is_deleted = 1 if is_deleted_message(text) else 0
-
-                # Remove system indicators (edited/deleted) instead of skipping the message
-                text = CLEANUP_REGEX.sub("", text).strip()
-
-                # Check for group name in system messages (before they are skipped)
-                for pattern in group_name_patterns:
-                    match = re.search(pattern, text)
-                    if match:
-                        known_group_names.add(match.group(1))
-                        # Also add without special chars if needed, but usually exact match works
-
-                # Skip group messages
-                # Only skip if NOT a deleted message (deleted messages become empty after cleanup)
-                if not is_deleted and (
-                    group_event
-                    or is_group_message(text, user, is_system_hint=is_system_hint)
-                ):
-                    continue
-
-                # Check for poll (only if not deleted)
-                poll = 1 if (not is_deleted and is_poll(text)) else 0
-
-                entry = {
-                    "datetime": ts,
-                    "user": user,
-                    "message": text,
-                    "poll": poll,
-                    "deleted": is_deleted,
-                }
-                update_message_stats(entry)
-                records.append(entry)
-                current = entry
-            else:
-                # Continuation of previous message
-                if current:
-                    current["message"] += " " + line
-                    text = current["message"]
-                    update_message_stats(current)
-
-                    # Re-check flags for continuation
-                    # Be careful not to overwrite deleted flag if it was already set (since text might be stripped)
-                    is_del = (
-                        1 if (current.get("deleted") or is_deleted_message(text)) else 0
-                    )
-                    current["deleted"] = is_del
-                    current["poll"] = 1 if (not is_del and is_poll(text)) else 0
+    for record in chat.records:
+        deleted = record.kind == whatsapp_chat.DELETED
+        # Edit markers and deletion notices are not part of what was written.
+        text = CLEANUP_REGEX.sub("", record.text.replace("\n", " ")).strip()
+        entry = {
+            "datetime": record.timestamp,
+            "user": record.sender,
+            "message": text,
+            "kind": record.kind,
+            "poll": 0 if deleted else int(is_poll(text)),
+            "deleted": int(deleted),
+        }
+        update_message_stats(entry)
+        records.append(entry)
     df = add_time_columns(pd.DataFrame(records))
-
-    # Filter out users that are actually group names
-    if known_group_names and not df.empty:
-        df = df[~df["user"].isin(known_group_names)]
-
     # Save the type before date filtering can reduce the participant count.
-    df.attrs["is_group_chat"] = bool(
-        has_group_event
-        or known_group_names
-        or (not df.empty and df["user"].nunique() > 2)
-    )
+    df.attrs["is_group_chat"] = chat.is_group_chat
     return df
 
 
@@ -583,9 +354,9 @@ def compute_stats(
     for user in [] if is_group_chat else sorted_users:
         user_df = user_messages(user)
 
-        # We need to look at raw messages (including those marked as media)
-        # remove U+200E for searching
-        msgs = user_df["message"].str.replace("\u200e", "", regex=False)
+        # Only call records count; a message that mentions "sesli arama" is not a call.
+        call_df = user_df[user_df["kind"] == whatsapp_chat.CALL]
+        msgs = call_df["message"].str.replace("\u200e", "", regex=False)
 
         # Voice Calls (Initated)
         voice_calls = count_contains(msgs, "Sesli arama")

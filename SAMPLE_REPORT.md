@@ -64,7 +64,7 @@ Ort. harf: yazılı mesaj başına boşluksuz karakter; medya, arama ve silinen 
 ## Kelimeler ve ifadeler
 
 
-### En sık kelimeler (4+ harf)
+**En sık kelimeler (4+ harf)**
 
 | Kelime | Sayı |
 |---|---:|
@@ -88,9 +88,6 @@ Ort. harf: yazılı mesaj başına boşluksuz karakter; medya, arama ve silinen 
 | kurgudur | 1 |
 | öykü | 1 |
 | roman | 1 |
-
-| Kelime | Sayı |
-|---|---:|
 | hangi | 1 |
 | kitabı | 1 |
 | uygunum | 1 |
@@ -111,6 +108,8 @@ Ort. harf: yazılı mesaj başına boşluksuz karakter; medya, arama ve silinen 
 | ikinci | 1 |
 | öykünün | 1 |
 | sonunu | 1 |
+| tartışacağız | 1 |
+| akşamlar | 1 |
 
 
 **İkili ifadeler**
@@ -160,6 +159,8 @@ Ort. harf: yazılı mesaj başına boşluksuz karakter; medya, arama ve silinen 
 
 ### Ayşe
 
+6 mesaj · %33,3 pay · 4 aktif gün
+
 | Kelime | Sayı |
 |---|---:|
 | merhaba | 1 |
@@ -202,6 +203,8 @@ Ort. harf: yazılı mesaj başına boşluksuz karakter; medya, arama ve silinen 
 
 ### Deniz
 
+6 mesaj · %33,3 pay · 4 aktif gün
+
 | Kelime | Sayı |
 |---|---:|
 | merhaba | 1 |
@@ -243,6 +246,8 @@ Ort. harf: yazılı mesaj başına boşluksuz karakter; medya, arama ve silinen 
 
 
 ### Ekin
+
+6 mesaj · %33,3 pay · 4 aktif gün
 
 | Kelime | Sayı |
 |---|---:|

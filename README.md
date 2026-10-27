@@ -109,9 +109,9 @@ The PDF has the same look as the Profanity Stats report; section titles are in T
 | Aramalar | Voice and video calls by status (direct chats only, when there are calls) |
 | Medya | Stickers, images, videos, audio, documents, GIFs and locations per person, with totals |
 | Zaman | Weekday and hour charts side by side, a month chart when the chat spans several months, and the ten busiest days |
-| Kelimeler ve ifadeler | The 40 most frequent words (4+ letters) and the most frequent two- and three-word phrases |
-| Kişi bazında kelimeler | Each person's top words and phrases side by side |
-| Emojiler | Each person's five most used emojis |
+| Kelimeler ve ifadeler | The 45 most frequent words (4+ letters) in three columns, and the 15 most frequent two- and three-word phrases |
+| Kişi bazında kelimeler | For each person, a highlighted band (messages, share, active days) and their top 10 words, two-word and three-word phrases side by side |
+| Emojiler | Each person's ten most used emojis |
 
 How the numbers are defined:
 

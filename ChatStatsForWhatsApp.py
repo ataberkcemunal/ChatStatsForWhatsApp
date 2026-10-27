@@ -304,6 +304,13 @@ def create_chart(labels, values, *, kind="bar", size=(5.4, 2.9)):
     return "data:image/svg+xml;base64," + base64.b64encode(buf.getvalue()).decode("ascii")
 
 
+# How many entries each list shows; the same for every person.
+TOP_WORDS = 45  # three columns of 15
+TOP_PHRASES = 15
+TOP_PER_PERSON = 10
+TOP_EMOJIS = 10
+
+
 def _top(counter, limit):
     return [[" ".join(item) if isinstance(item, tuple) else item, report_style.number(count)]
             for item, count in counter.most_common(limit)]
@@ -365,6 +372,7 @@ def compute_stats(
         )
     user_stats.sort(key=lambda x: x["Messages"], reverse=True)
     sorted_users = [s["User"] for s in user_stats]
+    stats_by_user = {s["User"]: s for s in user_stats}
 
     report.section("Kişiler")
     report.table(
@@ -504,24 +512,28 @@ def compute_stats(
     all_words = sum(word_counts.values(), Counter())
 
     report.section("Kelimeler ve ifadeler")
-    top_words = _top(all_words, 40)
-    report.subsection("En sık kelimeler (4+ harf)")
+    report.term_list(
+        ["Kelime", "Sayı"], _top(all_words, TOP_WORDS), title="En sık kelimeler (4+ harf)",
+        more=max(0, len(all_words) - TOP_WORDS),
+    )
     with report.grid(2):
-        half = (len(top_words) + 1) // 2
-        report.table(["Kelime", "Sayı"], top_words[:half], numeric=[1])
-        report.table(["Kelime", "Sayı"], top_words[half:], numeric=[1])
-    with report.grid(2):
-        report.table(["İfade", "Sayı"], _top(sum(bigram_counts.values(), Counter()), 15),
+        report.table(["İfade", "Sayı"], _top(sum(bigram_counts.values(), Counter()), TOP_PHRASES),
                      numeric=[1], title="İkili ifadeler")
-        report.table(["İfade", "Sayı"], _top(sum(trigram_counts.values(), Counter()), 15),
+        report.table(["İfade", "Sayı"], _top(sum(trigram_counts.values(), Counter()), TOP_PHRASES),
                      numeric=[1], title="Üçlü ifadeler")
 
     report.section("Kişi bazında kelimeler")
     for user in sorted_users:
-        with report.grid(3, title=user):
-            report.table(["Kelime", "Sayı"], _top(word_counts[user], 10), numeric=[1])
-            report.table(["İkili ifade", "Sayı"], _top(bigram_counts[user], 10), numeric=[1])
-            report.table(["Üçlü ifade", "Sayı"], _top(trigram_counts[user], 10), numeric=[1])
+        stat = stats_by_user[user]
+        details = [
+            f"{number(stat['Messages'])} mesaj",
+            f"{percent(100 * stat['Messages'] / len(df))} pay",
+            f"{number(stat['Days Active'])} aktif gün",
+        ]
+        with report.person(user, details), report.grid(3):
+            report.table(["Kelime", "Sayı"], _top(word_counts[user], TOP_PER_PERSON), numeric=[1])
+            report.table(["İkili ifade", "Sayı"], _top(bigram_counts[user], TOP_PER_PERSON), numeric=[1])
+            report.table(["Üçlü ifade", "Sayı"], _top(trigram_counts[user], TOP_PER_PERSON), numeric=[1])
 
     # Emojis
     emoji_data = {}
@@ -535,7 +547,8 @@ def compute_stats(
         report.section("Emojiler")
         with report.grid(3):
             for user, user_emojis in emoji_data.items():
-                report.table(["Emoji", "Sayı"], _top(user_emojis, 5), numeric=[1], title=user, css_class="emoji")
+                report.table(["Emoji", "Sayı"], _top(user_emojis, TOP_EMOJIS), numeric=[1], title=user,
+                             css_class="emoji")
 
     full_html = report.html()
     markdown_text = report.markdown()

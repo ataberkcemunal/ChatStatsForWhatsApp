@@ -47,6 +47,19 @@ table.data tr.total td { font-weight: bold; border-top: 1.5px solid #94a3b8; bac
 .grid.cols-3 { grid-template-columns: 1fr 1fr 1fr; }
 .block { break-inside: avoid; }
 .keep { break-inside: avoid; }
+.termlist { columns: 3; column-gap: 16px; margin: 2px 0 12px; font-size: 8.5pt; }
+.termlist.cols-2 { columns: 2; }
+.termlist .item { display: flex; justify-content: space-between; padding: 3px 6px;
+                  border-bottom: 1px solid #e2e8f0; break-inside: avoid; }
+.termlist .item:nth-child(even) { background: #f8fafc; }
+.termlist .count { padding-left: 8px; white-space: nowrap; }
+.person { break-inside: avoid; margin: 14px 0 6px; }
+.person .band { display: flex; justify-content: space-between; align-items: baseline;
+                background: #e6f2f1; border-left: 4px solid #0f766e; padding: 6px 10px; margin-bottom: 6px; }
+.person .name { font-weight: bold; font-size: 11pt; color: #10253f; }
+.person .details { font-size: 8pt; color: #475569; }
+.more { color: #64748b; font-size: 7.5pt; margin: -8px 0 10px; }
+.caption { break-after: avoid;  color: #64748b; font-size: 7.5pt; margin: 0 0 2px; }
 .chart { display: block; width: 100%; margin: 2px 0 10px; }
 .bar { display: inline-block; height: 7px; background: #0f766e; border-radius: 1px; vertical-align: middle; }
 """
@@ -166,6 +179,47 @@ class Report:
         for row in [*rows, *([total] if total else [])]:
             self._md.append("| " + " | ".join(md_text(v) for v in row) + " |\n")
         self._md.append("\n")
+
+    def term_list(self, headers, rows, title=None, columns=3, more=0):
+        """A long two-column list (word and count) that flows in newspaper-style
+        columns. Unlike tables side by side, it splits cleanly across pages.
+        ``more`` is how many further entries were left out of ``rows``.
+        """
+        heading = f"<h3>{escape(title)}</h3>" if title else ""
+        items = "".join(
+            f'<div class="item"><span>{escape(term)}</span><span class="count">{escape(count)}</span></div>'
+            for term, count in rows
+        )
+        self._html.append(
+            f'{heading}<p class="caption">{escape(headers[0])} · {escape(headers[1])}</p>'
+            f'<div class="termlist cols-{columns}">{items}</div>'
+        )
+        if more:
+            self._html.append(f'<p class="more">… ve {number(more)} ifade daha</p>')
+        if title:
+            self._md.append(f"\n**{md_text(title)}**\n\n")
+        self._md.append(f"| {md_text(headers[0])} | {md_text(headers[1])} |\n|---|---:|\n")
+        self._md.append("".join(f"| {md_text(term)} | {md_text(count)} |\n" for term, count in rows))
+        self._md.append(f"\n*… ve {number(more)} ifade daha*\n\n" if more else "\n")
+
+    def person(self, name, details):
+        """A highlighted band for one person; what follows inside the ``with``
+        block stays on the same page as the band.
+        """
+        report = self
+
+        class _Person:
+            def __enter__(self):
+                report._html.append(
+                    f'<div class="person"><div class="band"><span class="name">{escape(name)}</span>'
+                    f'<span class="details">{escape(" · ".join(details))}</span></div>'
+                )
+                report._md.append(f"\n### {md_text(name)}\n\n{' · '.join(details)}\n\n")
+
+            def __exit__(self, *exc):
+                report._html.append("</div>")
+
+        return _Person()
 
     def grid(self, columns, title=None):
         """Lay the tables added inside ``with report.grid(n):`` side by side in the PDF.

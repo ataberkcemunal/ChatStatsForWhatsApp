@@ -109,9 +109,9 @@ PDF, Profanity Stats raporuyla aynı görünümü kullanır.
 | Aramalar | Duruma göre sesli ve görüntülü aramalar (yalnızca birebir sohbetlerde, arama varsa) |
 | Medya | Kişi başına çıkartma, görsel, video, ses, belge, GIF ve konum; toplamlarla |
 | Zaman | Yan yana gün ve saat grafikleri, sohbet birden çok ayı kapsıyorsa ay grafiği ve en yoğun on gün |
-| Kelimeler ve ifadeler | En sık 40 kelime (4+ harf) ile en sık iki ve üç kelimelik ifadeler |
-| Kişi bazında kelimeler | Her kişinin en sık kelimeleri ve ifadeleri yan yana |
-| Emojiler | Her kişinin en çok kullandığı beş emoji |
+| Kelimeler ve ifadeler | Üç sütunda en sık 45 kelime (4+ harf) ile en sık 15 iki ve üç kelimelik ifade |
+| Kişi bazında kelimeler | Her kişi için vurgulu bir bant (mesaj, pay, aktif gün) ve en sık 10 kelime, ikili ve üçlü ifade yan yana |
+| Emojiler | Her kişinin en çok kullandığı on emoji |
 
 Sayıların tanımları:
 

@@ -5,159 +5,145 @@
 
 English · [Türkçe](README_TR.md)
 
-Generate PDF and optional Markdown reports from WhatsApp chat exports in **Turkish**. Analyze messages, words, emojis, media, and activity over time. The source chat file is unchanged.
+Turns a **Turkish** WhatsApp chat export into a PDF report: who writes how much, which words, emojis and media they use, and when the chat is most active. A Markdown copy of the report is optional. Everything runs on your computer, and the chat file is never modified.
 
 ## Quick start
 
-Open a terminal in the project folder. Run setup once, then use the launcher for subsequent reports:
-
 ```bash
-./setup.sh
+./setup.sh                                    # once
 ./run.sh examples/sample_chat.txt --output sample_report.pdf
 ```
 
-This analyzes a fictional chat. For your own chat, place `_chat.txt` in the project folder and run `./run.sh`. The default report is `chat_stats.pdf`.
+This builds a report from a fictional sample chat. For your own chat, copy it into this folder as `_chat.txt` and run `./run.sh`. The report is written to `chat_stats.pdf`.
+
+On Windows use `.\setup.ps1` and `.\run.ps1`; every option below works the same way.
 
 ## Installation
 
-Python **3.11–3.14** is required. Local verification used Python 3.14; GitHub Actions is configured for all four versions. Initial setup needs internet access to download packages. Direct dependencies are pinned in `requirements.txt`; pip resolves transitive dependencies.
-
-Download or clone the project:
+You need Python **3.11–3.14** and the Pango library, which WeasyPrint uses to draw the PDF. Setup needs an internet connection once to download packages.
 
 ```bash
 git clone https://github.com/ataberkcemunal/ChatStatsForWhatsApp.git
 cd ChatStatsForWhatsApp
 ```
 
-Quote folder paths containing spaces: `cd "/path/to/project folder"`.
-
 ### macOS
 
-Install Python and [Homebrew](https://brew.sh). Check them with `python3 --version` and `brew --version`.
+Install [Homebrew](https://brew.sh), then run `./setup.sh`. The script:
 
-```bash
-./setup.sh
-```
+1. installs Pango with Homebrew if it is missing,
+2. creates a `.venv` folder with a supported Python (`python3`, then `python3.14` … `python3.11`),
+3. installs the packages pinned in `requirements.txt`.
 
-Setup installs Pango through Homebrew if missing, creates `.venv`, and installs Python packages into it. An existing `.venv` is used first. Otherwise, setup checks for a supported `python3`, then `python3.14`, `python3.13`, `python3.12`, and `python3.11`.
-
-Manual environment activation is unnecessary. The leading dot makes `.venv` a hidden folder. Pango's system libraries live under Homebrew; `run.sh` configures their search path.
+You never need to activate `.venv` yourself; `run.sh` uses it and points WeasyPrint at Homebrew's libraries.
 
 ### Linux
 
-Install your distribution's Pango system packages, then run `./setup.sh`. Package names vary; see the [WeasyPrint installation instructions](https://doc.courtbouillon.org/weasyprint/stable/first_steps.html#linux).
+Install your distribution's Pango packages ([WeasyPrint's list](https://doc.courtbouillon.org/weasyprint/stable/first_steps.html#linux)), then run `./setup.sh`.
 
 ### Windows (PowerShell)
 
-Install Python 3.11–3.14 and check that `python` works. Install [MSYS2](https://www.msys2.org/), then install Pango in the **MSYS2 UCRT64** shell:
+1. Install Python 3.11–3.14 and [MSYS2](https://www.msys2.org/).
+2. In the **MSYS2 UCRT64** shell run `pacman -S mingw-w64-ucrt-x86_64-pango`.
+3. In PowerShell, in the project folder, run `.\setup.ps1`.
 
-```bash
-pacman -S mingw-w64-ucrt-x86_64-pango
-```
-
-Close the MSYS2 shell. Open PowerShell in the project folder:
-
-```powershell
-.\setup.ps1
-.\run.ps1 examples/sample_chat.txt --output sample_report.pdf
-```
-
-The default library path is `C:\msys64\ucrt64\bin`. For a custom installation, set the appropriate path in each new PowerShell session:
+`run.ps1` looks for Pango in `C:\msys64\ucrt64\bin`. If MSYS2 is elsewhere, set the path first:
 
 ```powershell
 $env:WEASYPRINT_DLL_DIRECTORIES = 'D:\msys64\ucrt64\bin'
 ```
 
-These steps follow the [WeasyPrint Windows documentation](https://doc.courtbouillon.org/weasyprint/stable/first_steps.html#windows). Windows execution has not been verified locally; CI checks PowerShell syntax only. If scripts are blocked, follow your computer's script execution policy.
+Windows has not been tested end to end; CI only checks the PowerShell scripts' syntax.
 
-In the examples below, replace `./run.sh` with `.\run.ps1` on Windows; the options are the same.
+## Exporting the chat
 
-## Prepare your chat file
-
-Export the WhatsApp chat **without media**. If it arrives as an archive, extract the `.txt` file and copy it into the project folder. The default name is `_chat.txt`, but you can specify another name.
-
-Supported UTF-8 plain text format:
+In WhatsApp, export the chat **without media**. If you get a ZIP, extract the `.txt` file. The file must be UTF-8 text in this format:
 
 ```text
 [1.10.2026 10:30:00] Ayşe: Merhaba
 [1.10.2026 10:31:05] Deniz: Selam
 ```
 
-Multiline messages are supported. Other languages, date formats, or export formats may not be recognized. Media contents are not inspected; counts come from placeholders such as “görüntü dahil edilmedi”.
+Messages that span several lines are supported. Other languages and date formats are not recognised. Media files are not read; media is counted from placeholders such as “görüntü dahil edilmedi”.
 
 ## Usage
 
-Run these commands from the project folder:
-
-| Purpose | Command |
-|---|---|
-| Analyze the default `_chat.txt` | `./run.sh` |
-| Choose another file | `./run.sh chat.txt` |
-| Use a filename containing spaces | `./run.sh "Family Chat.txt"` |
-| Set a start date | `./run.sh --start-date 01.10.2026` |
-| Set a start date and time | `./run.sh --start-date "01.10.2026 18:30:00"` |
-| Explicitly select a group chat | `./run.sh --chat-type group` |
-| Explicitly select a direct chat | `./run.sh --chat-type direct` |
-| Save the PDF under another name | `./run.sh --output report.pdf` |
-| Also export Markdown text | `./run.sh --markdown-output report.md` |
-| Show help | `./run.sh --help` |
-
-Options can be combined:
-
 ```bash
-./run.sh "Family Chat.txt" --chat-type group --start-date 01.10.2026 --output family.pdf
+./run.sh [chat_file] [options]
 ```
 
-Dates use `DD.MM.YYYY`, optionally followed by `HH:MM:SS`. The start time is inclusive; there is no end-date option. Relative paths are resolved from the project folder. For an external file, use `./run.sh "/full/path/chat.txt"`.
+| Option | Meaning | Default |
+|---|---|---|
+| `chat_file` | Chat export to analyse | `_chat.txt` |
+| `--start-date`, `-s` | Only include records from this moment on (inclusive). `DD.MM.YYYY` or `"DD.MM.YYYY HH:MM:SS"` | whole chat |
+| `--end-date`, `-e` | Only include records up to this moment (inclusive). A date without a time covers that whole day | whole chat |
+| `--chat-type` | `auto`, `group` or `direct` | `auto` |
+| `--output`, `-o` | PDF path | `chat_stats.pdf` |
+| `--markdown-output` | Also write the report as Markdown (charts stay in the PDF) | off |
+| `--help` | Show all options | |
 
-A successful run prints `PDF report generated: chat_stats.pdf`, or the custom output path. Open that PDF to view the report.
+Examples:
 
-The default PDF is overwritten on each successful run. Use `--output` to preserve an earlier report. Input, PDF, and Markdown paths must differ; destination folders must already exist. The Markdown export contains chart descriptions; the charts themselves are in the PDF.
+```bash
+./run.sh "Family Chat.txt"
+./run.sh --start-date "20.10.2026 14:50:00" --output october.pdf
+./run.sh --start-date 01.10.2026 --end-date 31.10.2026 --output october-only.pdf
+./run.sh "/full/path/_chat.txt" --chat-type group --markdown-output report.md
+```
 
-In VS Code, **Terminal → Run Build Task** also generates the report (`Cmd+Shift+B` on macOS).
+- `run.sh` switches to the project folder first, so relative paths are relative to the project folder. Use a full path for files elsewhere.
+- Quote paths that contain spaces.
+- The PDF, Markdown and chat paths must all be different, and the output folder must already exist.
+- An existing report with the same name is overwritten. Use `--output` to keep an older one.
 
-## Group and direct chats
+When the run succeeds it prints `PDF report generated: <path>` and exits with code 0. If there are no messages to report, a date is invalid or the PDF cannot be created, the error goes to stderr and the exit code is 1. In VS Code, **Terminal → Run Build Task** (`Cmd+Shift+B`) runs `run.sh` with the defaults.
 
-The default `--chat-type auto` detects a group from group system events or more than two participants. Detection runs before date filtering. For incomplete exports or groups with only two active participants, explicitly select `group` or `direct`.
+## What is in the report
 
-- **Group chats:** The Call Statistics table is hidden.
-- **Direct chats:** The table appears if call records exist. Status reflects the exporting account's records. “Answered” is total calls minus missed records; it does not establish who answered.
-
-Hiding the table does not remove other senders' call records from every metric. Call records can still contribute to message totals; recognized call status phrases are cleaned from word and phrase analysis.
-
-## Read the report
-
-The report's headings are in Turkish.
+Section titles in the PDF are in Turkish.
 
 | Section | Contents |
 |---|---|
-| Sohbet Zaman Çizelgesi | First and last included record timestamps |
-| Kullanıcı İstatistikleri | Per-person messages, average characters, media, emojis, links, polls, and deleted messages |
-| Arama İstatistikleri | Voice/video call records and status counts, only for direct chats with calls |
-| Detaylı Medya İstatistikleri | Stickers, images, videos, audio, documents, GIFs, and locations |
-| Words and combinations | Frequent words, bigrams, and trigrams across the chat and by person |
-| Emoji statistics | Most-used emojis by person, if emojis exist |
-| Zamansal İstatistikler | Day-of-week, hour, and month distributions; ten busiest days |
-| Kullanıcı Etkinlik Zaman Çizelgesi | Active days, participation rate, and messages per active day |
+| Sohbet Zaman Çizelgesi | First and last included record |
+| Kullanıcı İstatistikleri | Per person: messages, average characters, media, emojis, links, polls, deleted messages |
+| Arama İstatistikleri | Voice and video calls by status (direct chats only, when there are calls) |
+| Detaylı Medya İstatistikleri | Stickers, images, videos, audio, documents, GIFs, locations |
+| Words and phrases | Most frequent words, two-word and three-word phrases, overall and per person |
+| Emoji statistics | Most used emojis per person |
+| Zamansal İstatistikler | Activity by weekday, hour and month; the ten busiest days |
+| Kullanıcı Etkinlik Zaman Çizelgesi | Active days, participation rate, messages per active day |
 
-- **Messages:** Records remaining after filtering; these can include media and deleted message records.
-- **Ort. Harf:** Average characters per message after removing spaces; punctuation and symbols can be included.
-- **Active day:** A day on which the participant has at least one included record.
-- **Total chat days:** Distinct days containing at least one included record; silent calendar days between them do not count.
-- **Participation rate:** The participant's active days divided by total chat days, rather than their share of messages.
-- **Messages per active day:** The participant's total messages divided by their own active days.
+How the numbers are defined:
 
-With a date filter, metrics cover only the selected period.
+- **Messages** – every record left after filtering, including media and deleted-message records.
+- **Ort. Harf** – average characters per message, spaces excluded (punctuation and symbols count).
+- **Active day** – a day on which the person has at least one record.
+- **Total chat days** – days with at least one record in the chat; silent days do not count.
+- **Participation rate** – the person's active days ÷ total chat days (not their share of messages).
+- **Messages per active day** – the person's messages ÷ their own active days.
 
-### Automatic filters
+With `--start-date` or `--end-date`, every figure covers only the selected period.
 
-Records sent by **“Siz”** or **“Meta AI”** are excluded from all analysis, including calls attributed to “Siz”. Invisible formatting characters are removed from sender names. Other participants' messages mentioning these names are preserved.
+### Group or direct chat
 
-Recognized group and system notifications are excluded; edit markers are cleaned. Deleted messages are counted from their markers; original contents cannot be recovered. “Siz” is not mapped to a real person, and differently written sender names are not automatically merged.
+`--chat-type auto` treats a chat as a group when it finds group system events or more than two participants. This is decided on the whole file, before the date filter. If an export is incomplete, or a group has only two active members, choose `group` or `direct` yourself.
 
-## Sample data and report
+- **Group:** the call table is hidden.
+- **Direct:** the call table appears if there are call records. Statuses come from the exporting phone; “answered” means total calls minus missed calls, not who picked up.
 
-[examples/sample_chat.txt](examples/sample_chat.txt) is a completely fictional book-club chat. [SAMPLE_REPORT.md](SAMPLE_REPORT.md) is generated from it. The sample is a group chat, so its report has no call table. Regenerate it with:
+Call records still count towards message totals in both cases; call status phrases are removed from the word analysis.
+
+### What is filtered out
+
+- Records sent by **“Siz”** or **“Meta AI”**, including calls attributed to “Siz”. Mentions of these names inside other people's messages are kept.
+- Recognised group and system notifications. “Edited” markers are removed from the text.
+- Invisible formatting characters in sender names.
+
+Deleted messages are counted, but their content cannot be recovered. “Siz” is not linked to a real person, and the same person written in two different ways is not merged.
+
+## Sample report
+
+[examples/sample_chat.txt](examples/sample_chat.txt) is a fictional book-club group chat, and [SAMPLE_REPORT.md](SAMPLE_REPORT.md) is the report generated from it. To regenerate both outputs:
 
 ```bash
 ./run.sh examples/sample_chat.txt --output sample_report.pdf --markdown-output SAMPLE_REPORT.md
@@ -165,45 +151,35 @@ Recognized group and system notifications are excluded; edit markers are cleaned
 
 ## Troubleshooting
 
-| Problem | Action |
+| Message or problem | What to do |
 |---|---|
-| `Python ortamı bulunamadı` | Run `./setup.sh`, or `.\setup.ps1` on Windows. |
-| `Sohbet dosyası okunamadı` | Check the name, path, read permissions, and UTF-8 encoding; quote paths containing spaces. |
-| `No messages found for the given criteria.` | Check the line format and whether records remain after date filtering. |
-| Pango, `libgobject`, or WeasyPrint error | On macOS, use `brew install pango` and `./run.sh`; on Windows, check MSYS2 Pango and the DLL path. |
-| `ModuleNotFoundError` | Reinstall packages with the setup launcher. |
-| `Permission denied` for a `.sh` file | Use `sh setup.sh` or `sh run.sh`. |
-| A group report shows the call table | Regenerate with `--chat-type group`. |
-| PDF generation error | Inspect the terminal error and `debug_output.html` if created. |
+| `Python ortamı bulunamadı` / `Python environment missing` | Run `./setup.sh` (Windows: `.\setup.ps1`). |
+| `Sohbet dosyası okunamadı` | Check the file name, path, permissions and that it is UTF-8. Quote paths with spaces. |
+| `No messages found for the given criteria.` | Check the line format and the `--start-date` / `--end-date` values. |
+| Pango, `libgobject` or WeasyPrint error | macOS: `brew install pango`, then use `./run.sh`. Windows: check MSYS2 Pango and `WEASYPRINT_DLL_DIRECTORIES`. |
+| `ModuleNotFoundError` | Run the setup script again. |
+| `Permission denied` on a `.sh` file | Use `sh setup.sh` / `sh run.sh`. |
+| Call table appears in a group report | Run again with `--chat-type group`. |
+| `Error generating PDF` | Read the error; the HTML is saved as `debug_output.html` for inspection. Existing reports with the same names are left untouched. |
 
-The first chart may take time while the font cache is built. If no records are found or PDF generation fails, an earlier PDF can remain in the folder. Check the success message and modification time.
+The first run can be slow while Matplotlib builds its font cache. The PDF and the Markdown file are only replaced together, after both are ready. If a run fails, the reports already in the folder stay as they were, so check the success message and the file's modification time.
 
-## Data and sharing
+## Privacy and sharing
 
-Analysis runs locally; the application does not send your chat to an analysis service. Package downloads during setup are separate. Reports include names, phrases, and activity information; review their contents before sharing.
+The analysis is local; your chat is not sent anywhere. Setup only downloads packages. Reports contain names, phrases and activity patterns, so review them before sharing.
 
-`.gitignore` excludes the default `_chat.txt`, `chat_stats.pdf`, and `sample_report.pdf`. Other filenames are not automatically protected. `.gitignore` does not filter a ZIP you create manually from the folder.
-
-For distribution, use the ZIP builder's explicit project file list:
+`.gitignore` covers `_chat.txt`, `chat_stats.pdf`, `sample_report.pdf` and `debug_output.html`. Files with other names are not protected, and `.gitignore` does not apply to a ZIP you make by hand. To build a clean source package instead:
 
 ```bash
-.venv/bin/python tools/build_release.py
+.venv/bin/python tools/build_release.py        # Windows: .venv\Scripts\python.exe tools/build_release.py
 ```
 
-Windows:
-
-```powershell
-.venv\Scripts\python.exe tools/build_release.py
-```
-
-The output is `dist/ChatStatsForWhatsApp.zip`. It includes code, documentation, tests, and fictional sample data; it excludes private chats, reports, environments, and caches. This is a source package; recipients still run setup.
-
-If `.venv` is deleted, recreate it with setup. `__pycache__` folders are regenerable Python caches.
+This creates `dist/ChatStatsForWhatsApp.zip` from an explicit file list: code, docs, tests and the fictional sample, with no chats, reports, environments or caches. Recipients still need to run setup.
 
 ## Tests and contributing
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for test commands and development instructions. GitHub Actions is configured to run tests, generate the sample PDF, and build the ZIP on Ubuntu with Python 3.11–3.14. The Windows job checks PowerShell syntax. Remote results become available after changes are pushed to GitHub.
+Test commands and development notes are in [CONTRIBUTING.md](CONTRIBUTING.md). GitHub Actions runs the tests, renders the sample PDF and builds the ZIP on Ubuntu with Python 3.11–3.14, and checks PowerShell syntax on Windows.
 
 ## License
 
-[MIT](LICENSE). Created by [Ataberk Cem Ünal](https://github.com/ataberkcemunal).
+[MIT](LICENSE) · Created by [Ataberk Cem Ünal](https://github.com/ataberkcemunal)

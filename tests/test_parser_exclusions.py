@@ -1,10 +1,13 @@
+import io
 import tempfile
 import unittest
 import sys
+from contextlib import redirect_stderr, redirect_stdout
+from datetime import datetime
 from pathlib import Path
 from unittest.mock import patch
 
-from ChatStatsForWhatsApp import parse_chat, compute_stats, main
+from ChatStatsForWhatsApp import parse_chat, parse_end_date, compute_stats, main
 
 
 class SenderExclusionTests(unittest.TestCase):
@@ -75,16 +78,18 @@ class SenderExclusionTests(unittest.TestCase):
             '[1.10.2026 10:01:00] Bora: Görüntülü arama, 2 dk.\n'
         )
         self.assertFalse(df.attrs['is_group_chat'])
-        for chat_type, visible in [('auto', True), ('group', False), ('direct', True)]:
-            with self.subTest(chat_type=chat_type), patch('ChatStatsForWhatsApp.HTML') as html:
-                self.assertTrue(compute_stats(df, chat_type=chat_type))
-                rendered = html.call_args.kwargs['string']
-                self.assertEqual('📞 Arama İstatistikleri' in rendered, visible)
-                self.assertIn('Kullanıcı İstatistikleri', rendered)
-        df.attrs['is_group_chat'] = True
-        with patch('ChatStatsForWhatsApp.HTML') as html:
-            self.assertTrue(compute_stats(df))
-            self.assertNotIn('📞 Arama İstatistikleri', html.call_args.kwargs['string'])
+        with tempfile.TemporaryDirectory() as directory:
+            output = Path(directory) / 'report.pdf'
+            for chat_type, visible in [('auto', True), ('group', False), ('direct', True)]:
+                with self.subTest(chat_type=chat_type), patch('ChatStatsForWhatsApp.HTML') as html:
+                    self.assertTrue(compute_stats(df, chat_type=chat_type, output_file=output))
+                    rendered = html.call_args.kwargs['string']
+                    self.assertEqual('📞 Arama İstatistikleri' in rendered, visible)
+                    self.assertIn('Kullanıcı İstatistikleri', rendered)
+            df.attrs['is_group_chat'] = True
+            with patch('ChatStatsForWhatsApp.HTML') as html:
+                self.assertTrue(compute_stats(df, output_file=output))
+                self.assertNotIn('📞 Arama İstatistikleri', html.call_args.kwargs['string'])
 
     def test_sample_and_custom_output_paths(self):
         sample = Path(__file__).resolve().parents[1] / 'examples/sample_chat.txt'
@@ -95,7 +100,10 @@ class SenderExclusionTests(unittest.TestCase):
             output = Path(directory) / 'sample.pdf'
             markdown = Path(directory) / 'sample.md'
             self.assertTrue(compute_stats(df, output_file=output, markdown_output=markdown))
-            self.assertEqual(html.return_value.write_pdf.call_args.args[0], str(output))
+            written = Path(html.return_value.write_pdf.call_args.args[0])
+            self.assertEqual(written.parent, output.parent)
+            self.assertTrue(output.exists())
+            self.assertFalse(written.exists())
             text = markdown.read_text(encoding='utf-8')
             self.assertNotIn('Arama İstatistikleri', text)
             self.assertNotIn('base64', text)
@@ -112,6 +120,51 @@ class SenderExclusionTests(unittest.TestCase):
                 with self.assertRaises(SystemExit) as error:
                     main()
                 self.assertEqual(error.exception.code, 2)
+
+    def test_failed_pdf_keeps_previous_reports(self):
+        df = parse_chat(Path(__file__).resolve().parents[1] / 'examples/sample_chat.txt')
+        with tempfile.TemporaryDirectory() as directory, patch('ChatStatsForWhatsApp.HTML') as html:
+            root = Path(directory)
+            output, markdown = root / 'report.pdf', root / 'report.md'
+            output.write_text('old pdf')
+            markdown.write_text('old markdown')
+            html.return_value.write_pdf.side_effect = OSError('PDF unavailable')
+            with patch('builtins.open'), redirect_stderr(io.StringIO()):
+                self.assertFalse(compute_stats(df, output_file=output, markdown_output=markdown))
+            self.assertEqual(output.read_text(), 'old pdf')
+            self.assertEqual(markdown.read_text(), 'old markdown')
+            self.assertEqual(sorted(path.name for path in root.iterdir()), ['report.md', 'report.pdf'])
+
+    def test_end_date_without_time_covers_whole_day(self):
+        self.assertEqual(parse_end_date('01.10.2026'), datetime(2026, 10, 1, 23, 59, 59))
+        self.assertEqual(parse_end_date('01.10.2026 18:30:00'), datetime(2026, 10, 1, 18, 30))
+
+    def test_cli_date_range_and_failure_exit_codes(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            source, output = root / 'chat.txt', root / 'report.pdf'
+            source.write_text(
+                '[1.10.2026 10:00:00] Ayşe: Merhaba\n'
+                '[2.10.2026 10:00:00] Bora: Selam\n'
+                '[3.10.2026 10:00:00] Ayşe: Görüşürüz\n',
+                encoding='utf-8',
+            )
+            cases = [
+                (['--start-date', '02.10.2026', '--end-date', '02.10.2026'], 0, 1),
+                (['--start-date', '03.10.2026', '--end-date', '01.10.2026'], 1, None),
+                (['--start-date', '05.10.2026'], 1, None),
+                (['--end-date', '2026-10-01'], 1, None),
+            ]
+            for options, code, rows in cases:
+                with self.subTest(options=options), patch('ChatStatsForWhatsApp.compute_stats', return_value=True) as compute, \
+                        patch.object(sys, 'argv', ['app', str(source), '--output', str(output), *options]), \
+                        redirect_stdout(io.StringIO()), redirect_stderr(io.StringIO()) as errors:
+                    self.assertEqual(main(), code)
+                    if rows is None:
+                        compute.assert_not_called()
+                        self.assertTrue(errors.getvalue())
+                    else:
+                        self.assertEqual(len(compute.call_args.args[0]), rows)
 
 
 if __name__ == '__main__':

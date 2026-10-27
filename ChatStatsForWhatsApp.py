@@ -1,7 +1,9 @@
 import argparse
 import itertools
+import os
 import re
 import sys
+import tempfile
 import unicodedata
 from collections import Counter
 from datetime import datetime
@@ -479,6 +481,14 @@ def parse_start_date(value):
         except ValueError:
             continue
     raise ValueError("Please use DD.MM.YYYY or 'DD.MM.YYYY HH:MM:SS'")
+
+
+def parse_end_date(value):
+    """Inclusive upper bound; a date without a time covers that whole day."""
+    end = parse_start_date(value)
+    if ":" not in value:
+        end = end.replace(hour=23, minute=59, second=59)
+    return end
 
 
 # Compute and print statistics
@@ -1004,27 +1014,45 @@ def compute_stats(
     </html>
     """
 
-    # Generate PDF
+    # Generate PDF. Both reports go to temporary files first, so a failure
+    # never leaves a new Markdown file next to an old PDF.
+    temporary_files = []
     try:
         font_config = FontConfiguration()
+        pdf_temp = _temporary_sibling(output_file, temporary_files)
+        HTML(string=full_html).write_pdf(str(pdf_temp), font_config=font_config)
         if markdown_output:
             # Keep the text export small; charts are available in the PDF.
             text_report = re.sub(
                 r"<img\b[^>]*>", "*Grafik PDF raporunda yer alır.*", markdown_text
             )
-            Path(markdown_output).write_text(
-                text_report.rstrip() + "\n", encoding="utf-8"
-            )
-        HTML(string=full_html).write_pdf(str(output_file), font_config=font_config)
+            markdown_temp = _temporary_sibling(markdown_output, temporary_files)
+            markdown_temp.write_text(text_report.rstrip() + "\n", encoding="utf-8")
+            os.replace(markdown_temp, markdown_output)
+        os.replace(pdf_temp, output_file)
         print(f"PDF report generated: {output_file}")
     except (OSError, ValueError) as e:
-        print(f"Error generating PDF: {e}")
+        print(f"Error generating PDF: {e}", file=sys.stderr)
         # Fallback: save HTML for debugging
         with open("debug_output.html", "w", encoding="utf-8") as f:
             f.write(full_html)
-        print("Debug HTML saved to debug_output.html")
+        print("Debug HTML saved to debug_output.html", file=sys.stderr)
         return False
+    finally:
+        for path in temporary_files:
+            path.unlink(missing_ok=True)
     return True
+
+
+def _temporary_sibling(path, temporary_files):
+    """Create an empty temporary file next to path, so os.replace stays atomic."""
+    path = Path(path)
+    descriptor, name = tempfile.mkstemp(
+        prefix=f".{path.name}.", suffix=".tmp", dir=path.parent
+    )
+    os.close(descriptor)
+    temporary_files.append(Path(name))
+    return Path(name)
 
 
 def main():
@@ -1039,6 +1067,12 @@ def main():
         "--start-date",
         "-s",
         help="Filter messages from this date/time onwards (Format: DD.MM.YYYY or DD.MM.YYYY HH:MM:SS)",
+        default=None,
+    )
+    parser.add_argument(
+        "--end-date",
+        "-e",
+        help="Filter messages up to this date/time, inclusive (Format: DD.MM.YYYY for the whole day or DD.MM.YYYY HH:MM:SS)",
         default=None,
     )
     parser.add_argument(
@@ -1068,13 +1102,17 @@ def main():
     ):
         parser.error("Girdi, PDF ve Markdown dosya yolları farklı olmalıdır.")
 
-    start_dt = None
-    if args.start_date:
-        try:
-            start_dt = parse_start_date(args.start_date)
-        except ValueError as exc:
-            print(f"Error: Invalid date format for --start-date. {exc}")
-            return 1
+    option = "--start-date"
+    try:
+        start_dt = parse_start_date(args.start_date) if args.start_date else None
+        option = "--end-date"
+        end_dt = parse_end_date(args.end_date) if args.end_date else None
+    except ValueError as exc:
+        print(f"Error: Invalid date format for {option}. {exc}", file=sys.stderr)
+        return 1
+    if start_dt and end_dt and start_dt > end_dt:
+        print("Error: --start-date must not be after --end-date.", file=sys.stderr)
+        return 1
 
     try:
         df = parse_chat(args.chat_file)
@@ -1083,18 +1121,22 @@ def main():
         return 1
 
     if df.empty:
-        print("No messages found for the given criteria.")
-        return 0
+        print("No messages found for the given criteria.", file=sys.stderr)
+        return 1
 
     if start_dt:
         df = df[df["datetime"] >= start_dt]
-        print(
-            f"Filtered messages from {args.start_date} onwards. Remaining records: {len(df)}"
+    if end_dt:
+        df = df[df["datetime"] <= end_dt]
+    if start_dt or end_dt:
+        period = " - ".join(
+            [args.start_date or "beginning", args.end_date or "end"]
         )
+        print(f"Filtered messages for {period}. Remaining records: {len(df)}")
 
     if df.empty:
-        print("No messages found for the given criteria.")
-        return 0
+        print("No messages found for the given criteria.", file=sys.stderr)
+        return 1
 
     return (
         0

@@ -93,7 +93,7 @@ class SharedCopyTests(unittest.TestCase):
                 with self.subTest(project=sibling, file=name):
                     self.assertEqual(
                         (PROJECT / name).read_bytes(), (other / name).read_bytes(),
-                        'Run sync_parser.sh in the parent folder after editing the shared parser.',
+                        'Run Tools/sync_parser.sh in the parent folder after editing the shared parser.',
                     )
 
 

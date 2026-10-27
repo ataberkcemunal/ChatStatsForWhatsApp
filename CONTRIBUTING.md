@@ -38,7 +38,7 @@ GitHub Actions runs the test suite, sample PDF generation, and source packaging 
 
 ## Shared parser
 
-`whatsapp_chat.py` and `tests/test_whatsapp_chat.py` are also used by Profanity Stats for WhatsApp, which lives next to this project. The copies here are the originals: edit them here, then run `sync_parser.sh` in the parent folder. A test fails while the two copies differ (it is skipped when the sibling project is not present). Keep the module standard-library only.
+`whatsapp_chat.py` and `tests/test_whatsapp_chat.py` are also used by Profanity Stats for WhatsApp, which lives next to this project. The copies here are the originals: edit them here, then run `Tools/sync_parser.sh` in the parent folder. A test fails while the two copies differ (it is skipped when the sibling project is not present). Keep the module standard-library only.
 
 ## Sample data and releases
 

@@ -13,7 +13,7 @@ if [ -x .venv/bin/python ]; then
 elif [ -x venv/bin/python ]; then
     python=venv/bin/python
 else
-    echo "Python ortamı bulunamadı. Önce ./setup.sh komutunu çalıştırın." >&2
+    echo "Python environment missing. Run ./setup.sh first." >&2
     exit 1
 fi
 

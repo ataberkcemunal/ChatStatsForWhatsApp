@@ -153,8 +153,8 @@ Deleted messages are counted, but their content cannot be recovered. “Siz” i
 
 | Message or problem | What to do |
 |---|---|
-| `Python ortamı bulunamadı` / `Python environment missing` | Run `./setup.sh` (Windows: `.\setup.ps1`). |
-| `Sohbet dosyası okunamadı` | Check the file name, path, permissions and that it is UTF-8. Quote paths with spaces. |
+| `Python environment missing` | Run `./setup.sh` (Windows: `.\setup.ps1`). |
+| `Could not read chat file` | Check the file name, path, permissions and that it is UTF-8. Quote paths with spaces. |
 | `No messages found for the given criteria.` | Check the line format and the `--start-date` / `--end-date` values. |
 | Pango, `libgobject` or WeasyPrint error | macOS: `brew install pango`, then use `./run.sh`. Windows: check MSYS2 Pango and `WEASYPRINT_DLL_DIRECTORIES`. |
 | `ModuleNotFoundError` | Run the setup script again. |

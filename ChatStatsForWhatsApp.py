@@ -1100,7 +1100,7 @@ def main():
     if input_path == output_path or (
         markdown_path is not None and markdown_path in {input_path, output_path}
     ):
-        parser.error("Girdi, PDF ve Markdown dosya yolları farklı olmalıdır.")
+        parser.error("The chat, PDF and Markdown paths must all be different.")
 
     option = "--start-date"
     try:
@@ -1117,7 +1117,7 @@ def main():
     try:
         df = parse_chat(args.chat_file)
     except (OSError, UnicodeError) as exc:
-        print(f"Sohbet dosyası okunamadı: {args.chat_file}. {exc}", file=sys.stderr)
+        print(f"Could not read chat file: {args.chat_file}. {exc}", file=sys.stderr)
         return 1
 
     if df.empty:

@@ -14,16 +14,16 @@ else
         fi
     done
     if [ -z "$setup_python" ]; then
-        echo "Python 3.11–3.14 bulunamadı. Önce desteklenen bir Python sürümü yükleyin." >&2
+        echo "Python 3.11-3.14 not found. Install a supported Python version first." >&2
         exit 1
     fi
 fi
 
-"$setup_python" -c 'import sys; sys.exit(0 if (3, 11) <= sys.version_info[:2] <= (3, 14) else "Python 3.11–3.14 gerekli.")'
+"$setup_python" -c 'import sys; sys.exit(0 if (3, 11) <= sys.version_info[:2] <= (3, 14) else "Python 3.11-3.14 is required.")'
 
 if [ "$(uname -s)" = "Darwin" ]; then
     if ! command -v brew >/dev/null 2>&1; then
-        echo "PDF kütüphaneleri için Homebrew gerekli: https://brew.sh" >&2
+        echo "Homebrew is required for the PDF libraries: https://brew.sh" >&2
         exit 1
     fi
     if ! brew list --versions pango >/dev/null 2>&1; then
@@ -34,6 +34,6 @@ fi
 if [ ! -x .venv/bin/python ]; then
     "$setup_python" -m venv .venv
 fi
-.venv/bin/python -c 'import sys; sys.exit(0 if (3, 11) <= sys.version_info[:2] <= (3, 14) else "Mevcut .venv Python 3.11–3.14 kullanmalı.")'
+.venv/bin/python -c 'import sys; sys.exit(0 if (3, 11) <= sys.version_info[:2] <= (3, 14) else "Existing .venv uses an unsupported Python version; delete it and run setup again.")'
 .venv/bin/python -m pip install -r requirements.txt
-echo "Kurulum tamamlandı. Çalıştırmak için: ./run.sh"
+echo "Setup complete. Run ./run.sh"

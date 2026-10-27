@@ -151,8 +151,8 @@ Silinen mesajlar sayılır ama içerikleri geri getirilemez. “Siz” gerçek b
 
 | Mesaj veya sorun | Yapılacak |
 |---|---|
-| `Python ortamı bulunamadı` / `Python environment missing` | `./setup.sh` çalıştırın (Windows: `.\setup.ps1`). |
-| `Sohbet dosyası okunamadı` | Dosya adını, yolunu, izinleri ve UTF-8 olduğunu kontrol edin. Boşluklu yolları tırnağa alın. |
+| `Python environment missing` | `./setup.sh` çalıştırın (Windows: `.\setup.ps1`). |
+| `Could not read chat file` | Dosya adını, yolunu, izinleri ve UTF-8 olduğunu kontrol edin. Boşluklu yolları tırnağa alın. |
 | `No messages found for the given criteria.` | Satır biçimini ve `--start-date` / `--end-date` değerlerini kontrol edin. |
 | Pango, `libgobject` veya WeasyPrint hatası | macOS: `brew install pango`, sonra `./run.sh` kullanın. Windows: MSYS2 Pango ve `WEASYPRINT_DLL_DIRECTORIES` değerini kontrol edin. |
 | `ModuleNotFoundError` | Kurulum betiğini yeniden çalıştırın. |

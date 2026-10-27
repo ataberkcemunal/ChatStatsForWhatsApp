@@ -84,12 +84,12 @@ class SenderExclusionTests(unittest.TestCase):
                 with self.subTest(chat_type=chat_type), patch('ChatStatsForWhatsApp.HTML') as html:
                     self.assertTrue(compute_stats(df, chat_type=chat_type, output_file=output))
                     rendered = html.call_args.kwargs['string']
-                    self.assertEqual('📞 Arama İstatistikleri' in rendered, visible)
-                    self.assertIn('Kullanıcı İstatistikleri', rendered)
+                    self.assertEqual('<h2>Aramalar</h2>' in rendered, visible)
+                    self.assertIn('<h2>Kişiler</h2>', rendered)
             df.attrs['is_group_chat'] = True
             with patch('ChatStatsForWhatsApp.HTML') as html:
                 self.assertTrue(compute_stats(df, output_file=output))
-                self.assertNotIn('📞 Arama İstatistikleri', html.call_args.kwargs['string'])
+                self.assertNotIn('<h2>Aramalar</h2>', html.call_args.kwargs['string'])
 
     def test_sample_and_custom_output_paths(self):
         sample = Path(__file__).resolve().parents[1] / 'examples/sample_chat.txt'
@@ -105,10 +105,11 @@ class SenderExclusionTests(unittest.TestCase):
             self.assertTrue(output.exists())
             self.assertFalse(written.exists())
             text = markdown.read_text(encoding='utf-8')
-            self.assertNotIn('Arama İstatistikleri', text)
+            self.assertNotIn('## Aramalar', text)
             self.assertNotIn('base64', text)
-            self.assertIn('| Kullanıcı | Ort. Harf', text)
-            self.assertNotIn('|\n\n|', text)
+            self.assertIn('| Kişi | Mesaj | Pay | Ort. harf |', text)
+            # Header and alignment row stay together, so the table renders.
+            self.assertIn('| Kişi | Mesaj | Pay | Ort. harf | Medya | Emoji | Link | Anket | Silinen |\n|---|---:|', text)
 
     def test_cli_rejects_output_overwriting_input(self):
         for args in [
@@ -155,7 +156,7 @@ class SenderExclusionTests(unittest.TestCase):
         self.assertIn('A|B &lt;i&gt;', rendered)
         self.assertIn('Can_', rendered)
         # "merhaba" is 7 letters; the media placeholder is not written text.
-        self.assertIn('| A\\|B &lt;i&gt; | 7,0 | 1 |', text)
+        self.assertIn('| A\\|B &lt;i&gt; | 2 | %66,7 | 7,0 | 1 |', text)
 
     def test_cli_date_range_and_failure_exit_codes(self):
         with tempfile.TemporaryDirectory() as directory:

@@ -100,29 +100,29 @@ When the run succeeds it prints `PDF report generated: <path>` and exits with co
 
 ## What is in the report
 
-Section titles in the PDF are in Turkish.
+The PDF has the same look as the Profanity Stats report; section titles are in Turkish.
 
 | Section | Contents |
 |---|---|
-| Summary cards | Messages, participants, chat days and the period covered |
-| Kullanıcı İstatistikleri | Per person: messages, average characters, media, emojis, links, polls, deleted messages |
-| Arama İstatistikleri | Voice and video calls by status (direct chats only, when there are calls) |
-| Detaylı Medya İstatistikleri | Stickers, images, videos, audio, documents, GIFs, locations |
-| Words and phrases | Most frequent words, two-word and three-word phrases, overall and per person |
-| Emoji statistics | Most used emojis per person |
-| Zamansal İstatistikler | Activity by weekday, hour and month; the ten busiest days |
-| Kullanıcı Etkinlik Zaman Çizelgesi | Active days, participation rate, messages per active day |
+| Summary cards | Messages, participants, chat days and messages per day |
+| Kişiler | Per person: messages (with a bar), share, average letters, media, emojis, links, polls, deleted messages, plus a total row; then active days, participation and messages per active day |
+| Aramalar | Voice and video calls by status (direct chats only, when there are calls) |
+| Medya | Stickers, images, videos, audio, documents, GIFs and locations per person, with totals |
+| Zaman | Weekday and hour charts side by side, a month chart when the chat spans several months, and the ten busiest days |
+| Kelimeler ve ifadeler | The 40 most frequent words (4+ letters) and the most frequent two- and three-word phrases |
+| Kişi bazında kelimeler | Each person's top words and phrases side by side |
+| Emojiler | Each person's five most used emojis |
 
 How the numbers are defined:
 
 - **Messages** – every record left after filtering, including media and deleted-message records.
-- **Ort. Harf** – average characters per written message, spaces excluded (punctuation and symbols count). Media placeholders, poll syntax, calls and deleted messages are not written text, so they are left out of both the letters and the message count.
+- **Ort. harf** – average characters per written message, spaces excluded (punctuation and symbols count). Media placeholders, poll syntax, calls and deleted messages are not written text, so they are left out of both the letters and the message count.
 - **Active day** – a day on which the person has at least one record.
-- **Total chat days** – days with at least one record in the chat; silent days do not count.
-- **Participation rate** – the person's active days ÷ total chat days (not their share of messages).
+- **Chat days** – days with at least one record in the chat; silent days do not count.
+- **Participation** – the person's active days ÷ chat days (not their share of messages).
+- **Messages per active day** – the person's messages ÷ their own active days.
 
 Numbers use Turkish formatting: `1.234` for thousands, `12,5` for decimals and `%45,3` for percentages.
-- **Messages per active day** – the person's messages ÷ their own active days.
 
 With `--start-date` or `--end-date`, every figure covers only the selected period.
 

@@ -100,27 +100,29 @@ Başarılı çalışma sonunda `PDF report generated: <yol>` yazılır ve çık�
 
 ## Raporun içeriği
 
+PDF, Profanity Stats raporuyla aynı görünümü kullanır.
+
 | Bölüm | İçerik |
 |---|---|
-| Özet kutuları | Mesaj, katılımcı, sohbet günü ve kapsanan dönem |
-| Kullanıcı İstatistikleri | Kişi başına mesaj, ortalama harf, medya, emoji, bağlantı, anket, silinen mesaj |
-| Arama İstatistikleri | Duruma göre sesli ve görüntülü aramalar (yalnızca birebir sohbetlerde, arama varsa) |
-| Detaylı Medya İstatistikleri | Çıkartma, görsel, video, ses, belge, GIF, konum |
-| Kelimeler ve kalıplar | En sık kelimeler, iki ve üç kelimelik kalıplar; genel ve kişi bazında |
-| Emoji istatistikleri | Kişi başına en çok kullanılan emojiler |
-| Zamansal İstatistikler | Haftanın günü, saat ve aya göre etkinlik; en yoğun on gün |
-| Kullanıcı Etkinlik Zaman Çizelgesi | Aktif gün, katılım oranı, aktif gün başına mesaj |
+| Özet kutuları | Mesaj, katılımcı, sohbet günü ve günde ortalama mesaj |
+| Kişiler | Kişi başına mesaj (çubukla), pay, ortalama harf, medya, emoji, bağlantı, anket, silinen mesaj ve toplam satırı; ardından aktif gün, katılım ve aktif gün başına mesaj |
+| Aramalar | Duruma göre sesli ve görüntülü aramalar (yalnızca birebir sohbetlerde, arama varsa) |
+| Medya | Kişi başına çıkartma, görsel, video, ses, belge, GIF ve konum; toplamlarla |
+| Zaman | Yan yana gün ve saat grafikleri, sohbet birden çok ayı kapsıyorsa ay grafiği ve en yoğun on gün |
+| Kelimeler ve ifadeler | En sık 40 kelime (4+ harf) ile en sık iki ve üç kelimelik ifadeler |
+| Kişi bazında kelimeler | Her kişinin en sık kelimeleri ve ifadeleri yan yana |
+| Emojiler | Her kişinin en çok kullandığı beş emoji |
 
 Sayıların tanımları:
 
 - **Mesaj**: Filtrelemeden sonra kalan her kayıt; medya ve silinen mesaj kayıtları dahil.
-- **Ort. Harf**: Boşluklar hariç, yazılı mesaj başına ortalama karakter (noktalama ve semboller sayılır). Medya yer tutucuları, anket söz dizimi, aramalar ve silinen mesajlar yazılı metin sayılmaz; ne harflere ne de mesaj sayısına katılır.
+- **Ort. harf**: Boşluklar hariç, yazılı mesaj başına ortalama karakter (noktalama ve semboller sayılır). Medya yer tutucuları, anket söz dizimi, aramalar ve silinen mesajlar yazılı metin sayılmaz; ne harflere ne de mesaj sayısına katılır.
 - **Aktif gün**: Kişinin en az bir kaydı olan gün.
-- **Toplam sohbet günü**: Sohbette en az bir kayıt olan gün; sessiz günler sayılmaz.
-- **Katılım oranı**: Kişinin aktif günleri ÷ toplam sohbet günü (mesaj payı değildir).
+- **Sohbet günü**: Sohbette en az bir kayıt olan gün; sessiz günler sayılmaz.
+- **Katılım**: Kişinin aktif günleri ÷ sohbet günü (mesaj payı değildir).
+- **Aktif gün başına mesaj**: Kişinin mesajları ÷ kendi aktif gün sayısı.
 
 Sayılar Türkçe biçimde yazılır: binlik için `1.234`, ondalık için `12,5`, yüzde için `%45,3`.
-- **Aktif gün başına mesaj**: Kişinin mesajları ÷ kendi aktif gün sayısı.
 
 `--start-date` veya `--end-date` verildiğinde tüm değerler yalnızca seçilen dönemi kapsar.
 

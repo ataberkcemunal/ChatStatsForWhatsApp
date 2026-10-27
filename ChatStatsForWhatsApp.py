@@ -1,7 +1,7 @@
 import argparse
 import base64
-import html
 import io
+import logging
 import itertools
 import os
 import re
@@ -13,7 +13,6 @@ from datetime import datetime
 from pathlib import Path
 
 import emoji
-import markdown
 import matplotlib
 
 matplotlib.use("Agg")
@@ -23,8 +22,13 @@ import pandas as pd
 from weasyprint import HTML
 from weasyprint.text.fonts import FontConfiguration
 
+import report_style
 import whatsapp_chat
 from whatsapp_chat import turkish_lower
+
+# Charts use the same typeface as the report text where available.
+plt.rcParams["font.family"] = ["Helvetica Neue", "Arial", "DejaVu Sans"]
+logging.getLogger("matplotlib.font_manager").setLevel(logging.ERROR)
 
 
 # Patterns to detect media placeholders in chat. Calls are tracked separately,
@@ -262,108 +266,59 @@ DAY_NAMES = {
     "Saturday": "Cumartesi",
     "Sunday": "Pazar",
 }
+DAY_SHORT = ["Pzt", "Sal", "Çar", "Per", "Cum", "Cmt", "Paz"]
 MONTH_NAMES = ["Oca", "Şub", "Mar", "Nis", "May", "Haz", "Tem", "Ağu", "Eyl", "Eki", "Kas", "Ara"]
-CHART_COLOR = "#0f766e"
-
-REPORT_CSS = """
-@page {
-    size: A4;
-    margin: 18mm 16mm 19mm;
-    @bottom-right { content: counter(page) " / " counter(pages); font-size: 8pt; color: #64748b; }
+MEDIA_LABELS = {
+    "Stickers": "Çıkartma",
+    "Images": "Görsel",
+    "Videos": "Video",
+    "Audio": "Ses",
+    "Documents": "Belge",
+    "GIFs": "GIF",
+    "Locations": "Konum",
 }
-body { font-family: "DejaVu Sans", Arial, sans-serif; font-size: 9.5pt; line-height: 1.45; color: #17253b; }
-.eyebrow { color: #0f766e; font-size: 9pt; font-weight: bold; letter-spacing: 1.5px; }
-h1 { font-size: 26pt; line-height: 1.15; margin: 6px 0 10px; color: #10253f; }
-h2 { font-size: 15pt; color: #10253f; margin: 26px 0 8px; padding-bottom: 4px;
-     border-bottom: 2px solid #0f766e; break-after: avoid; }
-h3, h4 { font-size: 11pt; color: #334155; margin: 16px 0 6px; break-after: avoid; }
-p { margin: 7px 0; }
-.meta { color: #64748b; font-size: 8.5pt; }
-.kpis { width: 100%; border-collapse: separate; border-spacing: 5px; margin: 12px 0 4px; table-layout: fixed; }
-.kpis td { background: #eff3f8; padding: 11px 9px; border: 0; vertical-align: top; }
-.kpis .value { display: block; font-size: 17pt; font-weight: bold; color: #0f766e; }
-.kpis .value.small { font-size: 12pt; padding: 5px 0 4px; }
-.kpis .label { display: block; font-size: 8pt; color: #475569; }
-table { border-collapse: collapse; width: 100%; margin: 8px 0 14px; font-size: 8.5pt; }
-th, td { border-bottom: 1px solid #e2e8f0; padding: 4px 7px; text-align: left; }
-th { background-color: #e6f2f1; color: #10253f; }
-tr { break-inside: avoid; }
-tr:nth-child(even) td { background-color: #f8fafc; }
-img { display: block; margin: 6px auto 12px; }
-"""
 
 
-def md_text(value):
-    """Escape a name or word for a Markdown table cell or heading."""
-    text = html.escape(str(value), quote=False).replace("\\", "\\\\")
-    for char in "|*_`[]#":
-        text = text.replace(char, "\\" + char)
-    return text
-
-
-def format_number(n):
-    return f"{n:,}".replace(",", ".")
-
-
-def format_decimal(n):
-    return f"{n:,.1f}".replace(",", "_").replace(".", ",").replace("_", ".")
-
-
-def format_datetime(value):
-    return value.strftime("%d.%m.%Y %H:%M")
-
-
-def create_chart(x_data, y_data, title, xlabel, ylabel, chart_type="bar"):
-    fig, ax = plt.subplots(figsize=(10, 4.8))
-    if chart_type == "bar":
-        ax.bar(x_data, y_data, color=CHART_COLOR)
+def create_chart(labels, values, *, kind="bar", size=(5.4, 2.9)):
+    """Draw a small chart as an SVG data URI in the reports' accent colour."""
+    fig, ax = plt.subplots(figsize=size)
+    if kind == "bar":
+        ax.bar(labels, values, color=report_style.ACCENT, width=0.7 if len(labels) > 3 else 0.4)
     else:
-        ax.plot(x_data, y_data, marker="o", linestyle="-", color=CHART_COLOR)
+        ax.plot(labels, values, marker="o", markersize=3, linewidth=1.6, color=report_style.ACCENT)
+        ax.fill_between(range(len(labels)), values, color=report_style.ACCENT, alpha=0.08)
     ax.yaxis.set_major_locator(MaxNLocator(integer=True))
-    ax.grid(True, axis="y", linestyle="--", alpha=0.4)
+    ax.grid(True, axis="y", color="#e2e8f0", linewidth=0.8)
     ax.set_axisbelow(True)
-    for side in ("top", "right"):
+    for side in ("top", "right", "left"):
         ax.spines[side].set_visible(False)
-    ax.set_title(title)
-    ax.set_xlabel(xlabel)
-    ax.set_ylabel(ylabel)
-    ax.tick_params(axis="x", labelrotation=45)
+    ax.spines["bottom"].set_color("#94a3b8")
+    ax.tick_params(colors="#475569", labelsize=8, length=0)
+    if len(labels) > 8:
+        ax.tick_params(axis="x", labelrotation=90 if kind == "line" else 45)
     fig.tight_layout()
 
     buf = io.BytesIO()
-    fig.savefig(buf, format="png", dpi=110)
+    fig.savefig(buf, format="svg", transparent=True)
     plt.close(fig)
-    img_base64 = base64.b64encode(buf.getvalue()).decode("utf-8")
-    return f'<img src="data:image/png;base64,{img_base64}" style="width:100%; max-width:800px;" />'
+    return "data:image/svg+xml;base64," + base64.b64encode(buf.getvalue()).decode("ascii")
 
 
-def _phrase_table(write_line, title, counter, limit):
-    write_line(f"**{title}**")
-    write_line("")
-    write_line("| İfade | Sayı |")
-    write_line("|-------|------|")
-    for phrase, count in counter.most_common(limit):
-        write_line(f"| {md_text(' '.join(phrase))} | {format_number(count)} |")
-    write_line("")
+def _top(counter, limit):
+    return [[" ".join(item) if isinstance(item, tuple) else item, report_style.number(count)]
+            for item, count in counter.most_common(limit)]
 
 
 # Compute and print statistics
 def compute_stats(
-    df, *, chat_type="auto", output_file="chat_stats.pdf", markdown_output=None
+    df, *, chat_type="auto", output_file="chat_stats.pdf", markdown_output=None, source_name=None
 ):
+    number, decimal, percent = report_style.number, report_style.decimal, report_style.percent
     is_group_chat = (
         df.attrs.get("is_group_chat", df["user"].nunique() > 2)
         if chat_type == "auto"
         else chat_type == "group"
     )
-    # Collect all markdown content
-    markdown_content = []
-
-    def write_subheader(title):
-        markdown_content.append(f"\n## {title}\n")
-
-    def write_line(content):
-        markdown_content.append(content + "\n")
 
     def user_messages(user):
         return df[df["user"] == user]
@@ -371,34 +326,25 @@ def compute_stats(
     def count_contains(series, pattern, regex=False):
         return series.str.contains(pattern, case=False, na=False, regex=regex).sum()
 
-    # Summary shown at the top of both reports
     first, last = df["datetime"].min(), df["datetime"].max()
     total_chat_days = df["date"].nunique()
-    summary = [
-        ("Mesaj", format_number(len(df))),
-        ("Katılımcı", format_number(df["user"].nunique())),
-        ("Sohbet günü", format_number(total_chat_days)),
-        ("Dönem", f"{first:%d.%m.%Y} – {last:%d.%m.%Y}"),
+    meta = [f"Kaynak: {source_name}"] if source_name else []
+    meta += [
+        f"{report_style.date_time(first)} – {report_style.date_time(last)}",
+        "Grup sohbeti" if is_group_chat else "Birebir sohbet",
     ]
-    summary_markdown = "".join(f"**{label}:** {value}  \n" for label, value in summary)
-    summary_markdown += f"**İlk mesaj:** {format_datetime(first)} · **Son mesaj:** {format_datetime(last)}\n"
-    kpis = "".join(
-        f'<td><span class="value{" small" if label == "Dönem" else ""}">{value}</span>'
-        f'<span class="label">{label}</span></td>'
-        for label, value in summary
-    )
-    header_html = (
-        '<div class="eyebrow">WHATSAPP SOHBET ANALİZİ</div>'
-        "<h1>Sohbet İstatistikleri</h1>"
-        f'<p class="meta">{format_datetime(first)} – {format_datetime(last)}'
-        f' · {"Grup sohbeti" if is_group_chat else "Birebir sohbet"}</p>'
-        f'<table class="kpis"><tr>{kpis}</tr></table>'
+    report = report_style.Report(
+        "Sohbet İstatistikleri",
+        meta,
+        [
+            ("Mesaj", number(len(df))),
+            ("Katılımcı", number(df["user"].nunique())),
+            ("Sohbet günü", number(total_chat_days)),
+            ("Günde ortalama mesaj", decimal(len(df) / total_chat_days)),
+        ],
     )
 
-    # User Statistics
-    write_subheader("👥 Kullanıcı İstatistikleri")
-
-    # Create comprehensive user stats table
+    # People
     user_stats = []
     for user in df["user"].unique():
         user_df = user_messages(user)
@@ -414,24 +360,51 @@ def compute_stats(
                 "Links": user_df["links"].sum(),
                 "Polls": user_df["poll"].sum(),
                 "Deleted": user_df["deleted"].sum(),
+                "Days Active": user_df["date"].nunique(),
             }
         )
-
-    # Sort by message count
     user_stats.sort(key=lambda x: x["Messages"], reverse=True)
     sorted_users = [s["User"] for s in user_stats]
 
-    write_line(
-        "| Kullanıcı | Ort. Harf | Medya | Emojiler | Linkler | Anketler | Silinen | **Mesajlar** |"
+    report.section("Kişiler")
+    report.table(
+        ["Kişi", "Mesaj", "Pay", "Ort. harf", "Medya", "Emoji", "Link", "Anket", "Silinen"],
+        [
+            [
+                s["User"], number(s["Messages"]), percent(100 * s["Messages"] / len(df)),
+                decimal(s["AvgLetters"]), number(s["Media"]), number(s["Emojis"]),
+                number(s["Links"]), number(s["Polls"]), number(s["Deleted"]),
+            ]
+            for s in user_stats
+        ],
+        numeric=range(1, 9),
+        bar_column=1,
+        bar_values=[s["Messages"] for s in user_stats],
+        total=[
+            "Toplam", number(len(df)), percent(100), "", number(df["media"].sum()),
+            number(df["emoji_count"].sum()), number(df["links"].sum()),
+            number(df["poll"].sum()), number(df["deleted"].sum()),
+        ],
     )
-    write_line(
-        "|-----------|-----------|-------|----------|---------|----------|---------|----------|"
+    report.paragraph(
+        "Ort. harf: yazılı mesaj başına boşluksuz karakter; medya, arama ve silinen mesajlar sayılmaz.",
+        "note",
     )
-    for stat in user_stats:
-        write_line(
-            f"| {md_text(stat['User'])} | {format_decimal(stat['AvgLetters'])} | {format_number(stat['Media'])} | {format_number(stat['Emojis'])} | {format_number(stat['Links'])} | {format_number(stat['Polls'])} | {format_number(stat['Deleted'])} | **{format_number(stat['Messages'])}** |"
-        )
-    write_line("")
+
+    by_days = sorted(user_stats, key=lambda x: x["Days Active"], reverse=True)
+    report.table(
+        ["Kişi", "Aktif gün", "Katılım", "Aktif gün başına mesaj"],
+        [
+            [
+                s["User"], f"{number(s['Days Active'])} / {number(total_chat_days)}",
+                percent(100 * s["Days Active"] / total_chat_days),
+                decimal(s["Messages"] / s["Days Active"]),
+            ]
+            for s in by_days
+        ],
+        numeric=range(1, 4),
+        title="Etkinlik",
+    )
 
     call_stats = []
     for user in [] if is_group_chat else sorted_users:
@@ -451,71 +424,74 @@ def compute_stats(
         missed_calls = count_contains(msgs, "Cevapsız|Cevaplanmadı", regex=True)
 
         total_calls = voice_calls + video_calls
-        answered_calls = total_calls - missed_calls
-
         if total_calls > 0:
-            call_stats.append(
-                {
-                    "User": user,
-                    "Voice": voice_calls,
-                    "Video": video_calls,
-                    "Answered": answered_calls,
-                    "Missed": missed_calls,
-                    "Total": total_calls,
-                }
-            )
+            call_stats.append([user, voice_calls, video_calls, total_calls - missed_calls, missed_calls, total_calls])
 
     if call_stats:
-        write_subheader("📞 Arama İstatistikleri")
-        call_stats.sort(key=lambda x: x["Total"], reverse=True)
-        write_line(
-            "| Kullanıcı | Sesli Arama | Görüntülü Arama | Cevaplanan | Cevapsız | **Toplam** |"
+        report.section("Aramalar")
+        call_stats.sort(key=lambda x: x[-1], reverse=True)
+        report.table(
+            ["Kişi", "Sesli", "Görüntülü", "Cevaplanan", "Cevapsız", "Toplam"],
+            [[row[0], *map(number, row[1:])] for row in call_stats],
+            numeric=range(1, 6),
         )
-        write_line(
-            "|-----------|-------------|-----------------|------------|----------|--------|"
-        )
-        for stat in call_stats:
-            write_line(
-                f"| {md_text(stat['User'])} | {format_number(stat['Voice'])} | {format_number(stat['Video'])} | {format_number(stat['Answered'])} | {format_number(stat['Missed'])} | **{format_number(stat['Total'])}** |"
-            )
-        write_line("")
 
-    # Create media stats table
+    # Media
     media_stats = []
     for user in sorted_users:
-        user_df = user_messages(user)
-
         # Count different media types using standard case-insensitive matching
         # (Avoids Turkish-specific I/ı issues for these fixed system placeholders)
-        msgs_clean = user_df["message"].str.replace("\u200e", "", regex=False)
-        media_counts = {
-            label: count_contains(msgs_clean, pattern)
-            for label, pattern in MEDIA_TYPE_PATTERNS.items()
-        }
-
-        media_stats.append(
-            {"User": user, **media_counts, "Total Media": sum(media_counts.values())}
+        msgs_clean = user_messages(user)["message"].str.replace("\u200e", "", regex=False)
+        counts = [count_contains(msgs_clean, pattern) for pattern in MEDIA_TYPE_PATTERNS.values()]
+        media_stats.append((user, counts))
+    if any(sum(counts) for _, counts in media_stats):
+        report.section("Medya")
+        media_stats.sort(key=lambda item: sum(item[1]), reverse=True)
+        column_totals = [sum(column) for column in zip(*(counts for _, counts in media_stats))]
+        report.table(
+            ["Kişi", *MEDIA_LABELS.values(), "Toplam"],
+            [[user, *map(number, counts), number(sum(counts))] for user, counts in media_stats],
+            numeric=range(1, len(MEDIA_LABELS) + 2),
+            total=["Toplam", *map(number, column_totals), number(sum(column_totals))],
         )
 
-    # Sort by total media
-    if any(s["Total Media"] > 0 for s in media_stats):
-        write_subheader("📱 Detaylı Medya İstatistikleri")
-        media_stats.sort(key=lambda x: x["Total Media"], reverse=True)
+    # Time
+    report.section("Zaman")
+    days = (
+        df["weekday"]
+        .map(DAY_NAMES)
+        .value_counts()
+        .reindex(list(DAY_NAMES.values()), fill_value=0)
+    )
+    hours = df["hour"].value_counts().reindex(range(24), fill_value=0).sort_index()
+    with report.grid(2):
+        report.chart_block(
+            "Haftanın günlerine göre", create_chart(DAY_SHORT, days.values)
+        )
+        report.chart_block(
+            "Saatlere göre",
+            create_chart([f"{h:02d}" for h in range(24)], hours.values, kind="line"),
+        )
+    month_stats = df["month"].value_counts().sort_index()
+    if len(month_stats) > 1:
+        month_labels = [
+            f"{MONTH_NAMES[int(month[5:7]) - 1]} {month[2:4]}" for month in month_stats.index
+        ]
+        report.chart_block(
+            "Aylara göre", create_chart(month_labels, month_stats.values, size=(10.8, 2.9))
+        )
 
-        write_line(
-            "| Kullanıcı | Çıkartmalar | Resimler | Videolar | Sesler | Belgeler | GIFler | Konumlar | **Toplam** |"
-        )
-        write_line(
-            "|-----------|-------------|----------|----------|--------|----------|--------|----------|--------|"
-        )
-        for stat in media_stats:
-            counts = " | ".join(
-                format_number(stat[label]) for label in MEDIA_TYPE_PATTERNS
-            )
-            write_line(
-                f"| {md_text(stat['User'])} | {counts} | **{format_number(stat['Total Media'])}** |"
-            )
-        write_line("")
+    day_stats = df["date"].value_counts()
+    # Busiest first; on equal counts, the earlier day first.
+    busiest = sorted(day_stats.items(), key=lambda item: (-item[1], item[0]))[:10]
+    report.table(
+        ["Tarih", "Gün", "Mesaj"],
+        [[f"{d:%d.%m.%Y}", list(DAY_NAMES.values())[d.weekday()], number(v)] for d, v in busiest],
+        numeric=[2],
+        title="En yoğun 10 gün",
+        bar_column=2,
+        bar_values=[v for _, v in busiest],
+    )
 
     # Words and phrases were tokenized once per message in parse_chat.
     word_counts = {user: Counter() for user in sorted_users}
@@ -525,38 +501,29 @@ def compute_stats(
         word_counts[user].update(words)
         bigram_counts[user].update(itertools.pairwise(phrase_words))
         trigram_counts[user].update(zip(phrase_words, phrase_words[1:], phrase_words[2:]))
+    all_words = sum(word_counts.values(), Counter())
 
-    # Most Used Words
-    write_subheader("📝 En Çok Kullanılan Kelimeler (>3 harf)")
-    write_line("| Kelime | Sayı |")
-    write_line("|--------|------|")
-    for word, count in sum(word_counts.values(), Counter()).most_common(50):
-        write_line(f"| {md_text(word)} | {format_number(count)} |")
-    write_line("")
+    report.section("Kelimeler ve ifadeler")
+    top_words = _top(all_words, 40)
+    report.subsection("En sık kelimeler (4+ harf)")
+    with report.grid(2):
+        half = (len(top_words) + 1) // 2
+        report.table(["Kelime", "Sayı"], top_words[:half], numeric=[1])
+        report.table(["Kelime", "Sayı"], top_words[half:], numeric=[1])
+    with report.grid(2):
+        report.table(["İfade", "Sayı"], _top(sum(bigram_counts.values(), Counter()), 15),
+                     numeric=[1], title="İkili ifadeler")
+        report.table(["İfade", "Sayı"], _top(sum(trigram_counts.values(), Counter()), 15),
+                     numeric=[1], title="Üçlü ifadeler")
 
-    # Most Used Word Combinations
-    write_subheader("🔗 En Çok Kullanılan Kelime Kombinasyonları")
-    _phrase_table(write_line, "İkili Kombinasyonlar", sum(bigram_counts.values(), Counter()), 20)
-    _phrase_table(write_line, "Üçlü Kombinasyonlar", sum(trigram_counts.values(), Counter()), 20)
-
-    # Most Used Words by User
-    write_subheader("🗣️ Kullanıcılara Göre En Çok Kullanılan Kelimeler")
+    report.section("Kişi bazında kelimeler")
     for user in sorted_users:
-        write_line(f"\n#### {md_text(user)}\n")
-        write_line("| Kelime | Sayı |")
-        write_line("|--------|------|")
-        for word, count in word_counts[user].most_common(20):
-            write_line(f"| {md_text(word)} | {format_number(count)} |")
-        write_line("")
+        with report.grid(3, title=user):
+            report.table(["Kelime", "Sayı"], _top(word_counts[user], 10), numeric=[1])
+            report.table(["İkili ifade", "Sayı"], _top(bigram_counts[user], 10), numeric=[1])
+            report.table(["Üçlü ifade", "Sayı"], _top(trigram_counts[user], 10), numeric=[1])
 
-    # Most Used Word Combinations by User
-    write_subheader("🔗 Kullanıcı Bazlı En Çok Kullanılan Kelime Kombinasyonları")
-    for user in sorted_users:
-        write_line(f"\n#### {md_text(user)}\n")
-        _phrase_table(write_line, "İkili Kombinasyonlar", bigram_counts[user], 10)
-        _phrase_table(write_line, "Üçlü Kombinasyonlar", trigram_counts[user], 10)
-
-    # Most Used Emojis by User
+    # Emojis
     emoji_data = {}
     for user in sorted_users:
         user_emojis = Counter()
@@ -564,131 +531,14 @@ def compute_stats(
             user_emojis.update(em_list)
         if user_emojis:
             emoji_data[user] = user_emojis
-
     if emoji_data:
-        write_subheader("😊 Kullanıcılara Göre En Çok Kullanılan Emojiler")
-        for user, user_emojis in emoji_data.items():
-            write_line(f"\n#### {md_text(user)}\n")
-            write_line("| Emoji | Sayı |")
-            write_line("|-------|------|")
-            for em, cnt in user_emojis.most_common(5):
-                write_line(f"| {em} | {format_number(cnt)} |")
-            write_line("")
+        report.section("Emojiler")
+        with report.grid(3):
+            for user, user_emojis in emoji_data.items():
+                report.table(["Emoji", "Sayı"], _top(user_emojis, 5), numeric=[1], title=user, css_class="emoji")
 
-    # Temporal Statistics
-    write_subheader("⏰ Zamansal İstatistikler")
-
-    write_line("#### 📅 Haftanın Günlerine Göre Mesajlar")
-    days = (
-        df["weekday"]
-        .map(DAY_NAMES)
-        .value_counts()
-        .reindex(list(DAY_NAMES.values()), fill_value=0)
-    )
-    write_line(
-        create_chart(
-            days.index,
-            days.values,
-            "Haftanın Günlerine Göre Mesaj Dağılımı",
-            "Günler",
-            "Mesaj Sayısı",
-            "bar",
-        )
-    )
-    write_line("")
-
-    # Messages by Hour
-    write_line("#### 🕐 Saatlere Göre Mesajlar")
-    hour_stats = df["hour"].value_counts().reindex(range(24), fill_value=0).sort_index()
-    write_line(
-        create_chart(
-            [f"{h:02d}" for h in range(24)],
-            hour_stats.values,
-            "Saatlere Göre Mesaj Dağılımı",
-            "Saat",
-            "Mesaj Sayısı",
-            "line",
-        )
-    )
-    write_line("")
-
-    # Messages by Month
-    write_line("#### 📆 Aylara Göre Mesajlar")
-    month_stats = df["month"].value_counts().sort_index()
-    month_labels = [
-        f"{MONTH_NAMES[int(month[5:7]) - 1]} {month[:4]}" for month in month_stats.index
-    ]
-    write_line(
-        create_chart(
-            month_labels,
-            month_stats.values,
-            "Aylara Göre Mesaj Dağılımı",
-            "Ay",
-            "Mesaj Sayısı",
-            "bar",
-        )
-    )
-    write_line("")
-
-    # Most Active Days
-    write_line("#### 🔥 En Aktif 10 Gün")
-    write_line("")
-    day_stats = df["date"].value_counts()
-    # Busiest first; on equal counts, the earlier day first.
-    busiest = sorted(day_stats.items(), key=lambda item: (-item[1], item[0]))[:10]
-    write_line("| Tarih | Gün | Mesajlar |")
-    write_line("|-------|-----|----------|")
-    for d, v in busiest:
-        weekday = list(DAY_NAMES.values())[d.weekday()]
-        write_line(f"| {d:%d.%m.%Y} | {weekday} | {format_number(v)} |")
-    write_line("")
-
-    # Users First and Last Message
-    write_line("#### 📊 Kullanıcı Etkinlik Zaman Çizelgesi")
-    write_line("")
-    write_line(f"**Toplam Sohbet Günü: {format_number(total_chat_days)}**")
-    write_line("")
-
-    user_timeline = []
-    for user in sorted_users:
-        user_df = user_messages(user)
-        active_days = user_df["date"].nunique()
-        user_timeline.append(
-            {
-                "User": user,
-                "Messages": len(user_df),
-                "Days Active": active_days,
-            }
-        )
-
-    user_timeline.sort(key=lambda x: x["Days Active"], reverse=True)
-    write_line("| Kullanıcı | Aktif Günler | Katılım Oranı | Aktif Gün Başına Mesaj |")
-    write_line("|-----------|--------------|---------------|------------------------|")
-    for timeline in user_timeline:
-        participation_rate = (timeline["Days Active"] / total_chat_days) * 100
-        messages_per_day = timeline["Messages"] / timeline["Days Active"]
-        write_line(
-            f"| {md_text(timeline['User'])} | {format_number(timeline['Days Active'])} / {format_number(total_chat_days)} | %{format_decimal(participation_rate)} | {format_decimal(messages_per_day)} |"
-        )
-    write_line("")
-
-    body_markdown = "".join(markdown_content)
-    # The Markdown export carries the summary as text; the PDF shows it as cards.
-    markdown_text = "# WhatsApp Sohbet İstatistikleri\n\n" + summary_markdown + body_markdown
-    html_content = header_html + markdown.markdown(body_markdown, extensions=["tables"])
-
-    full_html = f"""<!DOCTYPE html>
-<html lang="tr">
-<head>
-    <meta charset="utf-8">
-    <title>WhatsApp Sohbet İstatistikleri</title>
-    <style>{REPORT_CSS}</style>
-</head>
-<body>
-{html_content}
-</body>
-</html>
-"""
+    full_html = report.html()
+    markdown_text = report.markdown()
 
     # Generate PDF. Both reports go to temporary files first, so a failure
     # never leaves a new Markdown file next to an old PDF.
@@ -698,12 +548,8 @@ def compute_stats(
         pdf_temp = _temporary_sibling(output_file, temporary_files)
         HTML(string=full_html).write_pdf(str(pdf_temp), font_config=font_config)
         if markdown_output:
-            # Keep the text export small; charts are available in the PDF.
-            text_report = re.sub(
-                r"<img\b[^>]*>", "*Grafik PDF raporunda yer alır.*", markdown_text
-            )
             markdown_temp = _temporary_sibling(markdown_output, temporary_files)
-            markdown_temp.write_text(text_report.rstrip() + "\n", encoding="utf-8")
+            markdown_temp.write_text(markdown_text, encoding="utf-8")
             os.replace(markdown_temp, markdown_output)
         os.replace(pdf_temp, output_file)
         print(f"PDF report generated: {output_file}")
@@ -821,6 +667,7 @@ def main():
             chat_type=args.chat_type,
             output_file=args.output,
             markdown_output=args.markdown_output,
+            source_name=Path(args.chat_file).name,
         )
         else 1
     )

@@ -89,11 +89,11 @@ class SharedCopyTests(unittest.TestCase):
             other = PROJECT.parent / sibling
             if other.resolve() == PROJECT or not other.is_dir():
                 continue
-            for name in ('whatsapp_chat.py', 'tests/test_whatsapp_chat.py'):
+            for name in ('whatsapp_chat.py', 'report_style.py', 'tests/test_whatsapp_chat.py'):
                 with self.subTest(project=sibling, file=name):
                     self.assertEqual(
                         (PROJECT / name).read_bytes(), (other / name).read_bytes(),
-                        'Run Tools/sync_parser.sh in the parent folder after editing the shared parser.',
+                        'Run Tools/sync_shared.sh in the parent folder after editing a shared file.',
                     )
 
 

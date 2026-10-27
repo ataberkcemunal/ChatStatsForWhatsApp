@@ -2,7 +2,7 @@
 
 Shared by Chat Stats and Profanity Stats so both count the same messages.
 The copy in Chat Stats is the original; after editing it, run
-``Tools/sync_parser.sh`` in the parent folder to update Profanity Stats.
+``Tools/sync_shared.sh`` in the parent folder to update Profanity Stats.
 Uses only the standard library.
 """
 from __future__ import annotations

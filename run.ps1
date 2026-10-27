@@ -1,5 +1,7 @@
 $ErrorActionPreference = 'Stop'
 Set-Location $PSScriptRoot
+# Keep the project folder free of __pycache__ folders.
+$env:PYTHONDONTWRITEBYTECODE = '1'
 $python = Join-Path $PSScriptRoot '.venv\Scripts\python.exe'
 if (-not (Test-Path $python)) {
     throw 'Python environment missing. Run .\setup.ps1 first.'

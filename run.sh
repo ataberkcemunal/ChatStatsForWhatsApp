@@ -3,6 +3,9 @@ set -eu
 
 cd "$(dirname "$0")"
 
+# Keep the project folder free of __pycache__ folders.
+export PYTHONDONTWRITEBYTECODE=1
+
 # Let WeasyPrint find native libraries installed by Homebrew on macOS.
 if [ "$(uname -s)" = "Darwin" ]; then
     export DYLD_FALLBACK_LIBRARY_PATH="/opt/homebrew/lib:/usr/local/lib${DYLD_FALLBACK_LIBRARY_PATH:+:$DYLD_FALLBACK_LIBRARY_PATH}"

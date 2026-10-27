@@ -358,10 +358,10 @@ def compute_stats(
         call_df = user_df[user_df["kind"] == whatsapp_chat.CALL]
         msgs = call_df["message"].str.replace("\u200e", "", regex=False)
 
-        # Voice Calls (Initated)
+        # Voice Calls (Initiated)
         voice_calls = count_contains(msgs, "Sesli arama")
 
-        # Video Calls (Initated)
+        # Video Calls (Initiated)
         video_calls = count_contains(msgs, "Görüntülü arama")
 
         # Call status is recorded from the export owner's perspective.

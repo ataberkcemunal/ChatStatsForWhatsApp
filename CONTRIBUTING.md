@@ -34,7 +34,7 @@ $env:WEASYPRINT_DLL_DIRECTORIES = 'C:\msys64\ucrt64\bin'
 .venv\Scripts\python.exe -m unittest discover -s tests -v
 ```
 
-GitHub Actions runs the test suite, sample PDF generation, and source packaging on Ubuntu with Python 3.11–3.14. A Windows job checks PowerShell syntax; it does not yet validate PDF rendering on Windows. Workflow execution results are available only after the changes are pushed.
+GitHub Actions runs the test suite, sample PDF generation, and source packaging on Ubuntu with Python 3.11–3.14. A Windows job checks the PowerShell scripts' syntax, then runs `setup.ps1`, the test suite and `run.ps1` on the sample chat with Python 3.14, Windows PowerShell 5.1 and MSYS2 Pango. Workflow execution results are available only after the changes are pushed.
 
 ## Sample data and releases
 

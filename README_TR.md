@@ -53,7 +53,7 @@ Dağıtımınızın Pango paketlerini kurun ([WeasyPrint listesi](https://doc.co
 $env:WEASYPRINT_DLL_DIRECTORIES = 'D:\msys64\ucrt64\bin'
 ```
 
-Windows'ta uçtan uca deneme yapılmadı; CI yalnızca PowerShell betiklerinin söz dizimini denetler.
+CI; kurulumu, testleri ve örnek PDF'i Windows'ta Windows PowerShell 5.1 ve `C:\msys64` içindeki MSYS2 Pango ile çalıştırır.
 
 ## Sohbeti dışa aktarma
 
@@ -176,7 +176,7 @@ Bu komut belirli bir dosya listesinden `dist/ChatStatsForWhatsApp.zip` oluşturu
 
 ## Testler ve katkı
 
-Test komutları ve geliştirme notları [CONTRIBUTING.md](CONTRIBUTING.md) dosyasındadır. GitHub Actions; testleri çalıştırır, örnek PDF'i üretir ve ZIP'i Ubuntu üzerinde Python 3.11–3.14 ile oluşturur. Windows'ta PowerShell söz dizimini denetler.
+Test komutları ve geliştirme notları [CONTRIBUTING.md](CONTRIBUTING.md) dosyasındadır. GitHub Actions; testleri çalıştırır, örnek PDF'i üretir ve ZIP'i Ubuntu üzerinde Python 3.11–3.14 ile oluşturur. Windows'ta PowerShell betiklerini denetler, kurulumu ve testleri çalıştırır ve örnek PDF'i Python 3.14 ile üretir.
 
 ## Lisans
 

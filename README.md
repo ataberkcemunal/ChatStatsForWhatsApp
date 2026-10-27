@@ -53,7 +53,7 @@ Install your distribution's Pango packages ([WeasyPrint's list](https://doc.cour
 $env:WEASYPRINT_DLL_DIRECTORIES = 'D:\msys64\ucrt64\bin'
 ```
 
-Windows has not been tested end to end; CI only checks the PowerShell scripts' syntax.
+CI runs setup, the tests and the sample PDF on Windows with Windows PowerShell 5.1 and MSYS2 Pango in `C:\msys64`.
 
 ## Exporting the chat
 
@@ -178,7 +178,7 @@ This creates `dist/ChatStatsForWhatsApp.zip` from an explicit file list: code, d
 
 ## Tests and contributing
 
-Test commands and development notes are in [CONTRIBUTING.md](CONTRIBUTING.md). GitHub Actions runs the tests, renders the sample PDF and builds the ZIP on Ubuntu with Python 3.11–3.14, and checks PowerShell syntax on Windows.
+Test commands and development notes are in [CONTRIBUTING.md](CONTRIBUTING.md). GitHub Actions runs the tests, renders the sample PDF and builds the ZIP on Ubuntu with Python 3.11–3.14. On Windows it checks the PowerShell scripts, runs setup and the tests, and renders the sample PDF with Python 3.14.
 
 ## License
 

@@ -170,17 +170,11 @@ Dışa aktarımı `whatsapp_chat.py` okur. Bu dosya Profanity Stats for WhatsApp
 
 Analiz yereldir; sohbetiniz hiçbir yere gönderilmez. Kurulum yalnızca paket indirir. Raporlar isimler, ifadeler ve etkinlik bilgisi içerir; paylaşmadan önce gözden geçirin.
 
-`.gitignore`, `_chat.txt`, `chat_stats.pdf`, `sample_report.pdf` ve `debug_output.html` dosyalarını kapsar. Başka adlı dosyalar korunmaz ve `.gitignore` elle hazırladığınız bir ZIP'e uygulanmaz. Temiz bir kaynak paketi için:
-
-```bash
-.venv/bin/python tools/build_release.py        # Windows: .venv\Scripts\python.exe tools/build_release.py
-```
-
-Bu komut belirli bir dosya listesinden `dist/ChatStatsForWhatsApp.zip` oluşturur: kod, belgeler, testler ve kurgusal örnek. Sohbetler, raporlar, ortamlar ve önbellekler pakete girmez. Paketi alanların yine kurulumu çalıştırması gerekir.
+`.gitignore`, `_chat.txt`, `chat_stats.pdf`, `sample_report.pdf` ve `debug_output.html` dosyalarını kapsar. Başka adlı dosyalar korunmaz ve `.gitignore` elle hazırladığınız bir ZIP'e uygulanmaz. Projeyi paylaşmak için GitHub'daki **Code → Download ZIP** seçeneğini kullanın: yalnızca depodaki dosyaları içerir, sohbetleriniz ve raporlarınız asla pakete girmez. Paketi alanların yine kurulumu çalıştırması gerekir.
 
 ## Testler ve katkı
 
-Test komutları ve geliştirme notları [CONTRIBUTING.md](CONTRIBUTING.md) dosyasındadır. GitHub Actions; testleri çalıştırır, örnek PDF'i üretir ve ZIP'i Ubuntu üzerinde Python 3.11–3.14 ile oluşturur. Windows'ta PowerShell betiklerini denetler, kurulumu ve testleri çalıştırır ve örnek PDF'i Python 3.14 ile üretir.
+Test komutları ve geliştirme notları [CONTRIBUTING.md](CONTRIBUTING.md) dosyasındadır. GitHub Actions; testleri çalıştırır ve örnek PDF'i Ubuntu üzerinde Python 3.11–3.14 ile üretir. Windows'ta PowerShell betiklerini denetler, kurulumu ve testleri çalıştırır ve örnek PDF'i Python 3.14 ile üretir.
 
 ## Lisans
 

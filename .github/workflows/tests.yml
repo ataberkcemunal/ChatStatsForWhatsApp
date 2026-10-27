@@ -20,8 +20,6 @@ jobs:
         run: .venv/bin/python -m unittest discover -s tests -v
       - name: Generate sample PDF
         run: ./run.sh examples/sample_chat.txt --output /tmp/sample-report.pdf
-      - name: Build source ZIP
-        run: .venv/bin/python tools/build_release.py
   windows:
     runs-on: windows-latest
     steps:

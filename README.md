@@ -172,17 +172,11 @@ The first run can be slow while Matplotlib builds its font cache. The PDF and th
 
 The analysis is local; your chat is not sent anywhere. Setup only downloads packages. Reports contain names, phrases and activity patterns, so review them before sharing.
 
-`.gitignore` covers `_chat.txt`, `chat_stats.pdf`, `sample_report.pdf` and `debug_output.html`. Files with other names are not protected, and `.gitignore` does not apply to a ZIP you make by hand. To build a clean source package instead:
-
-```bash
-.venv/bin/python tools/build_release.py        # Windows: .venv\Scripts\python.exe tools/build_release.py
-```
-
-This creates `dist/ChatStatsForWhatsApp.zip` from an explicit file list: code, docs, tests and the fictional sample, with no chats, reports, environments or caches. Recipients still need to run setup.
+`.gitignore` covers `_chat.txt`, `chat_stats.pdf`, `sample_report.pdf` and `debug_output.html`. Files with other names are not protected, and `.gitignore` does not apply to a ZIP you make by hand. To share the project, use **Code → Download ZIP** on GitHub: it contains only the files in the repository, never your chats or reports. Recipients still need to run setup.
 
 ## Tests and contributing
 
-Test commands and development notes are in [CONTRIBUTING.md](CONTRIBUTING.md). GitHub Actions runs the tests, renders the sample PDF and builds the ZIP on Ubuntu with Python 3.11–3.14. On Windows it checks the PowerShell scripts, runs setup and the tests, and renders the sample PDF with Python 3.14.
+Test commands and development notes are in [CONTRIBUTING.md](CONTRIBUTING.md). GitHub Actions runs the tests and renders the sample PDF on Ubuntu with Python 3.11–3.14. On Windows it checks the PowerShell scripts, runs setup and the tests, and renders the sample PDF with Python 3.14.
 
 ## License
 

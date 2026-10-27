@@ -34,22 +34,21 @@ $env:WEASYPRINT_DLL_DIRECTORIES = 'C:\msys64\ucrt64\bin'
 .venv\Scripts\python.exe -m unittest discover -s tests -v
 ```
 
-GitHub Actions runs the test suite, sample PDF generation, and source packaging on Ubuntu with Python 3.11–3.14. A Windows job checks the PowerShell scripts' syntax, then runs `setup.ps1`, the test suite and `run.ps1` on the sample chat with Python 3.14, Windows PowerShell 5.1 and MSYS2 Pango. Workflow execution results are available only after the changes are pushed.
+GitHub Actions runs the test suite and sample PDF generation on Ubuntu with Python 3.11–3.14. A Windows job checks the PowerShell scripts' syntax, then runs `setup.ps1`, the test suite and `run.ps1` on the sample chat with Python 3.14, Windows PowerShell 5.1 and MSYS2 Pango. Workflow execution results are available only after the changes are pushed.
 
 ## Shared parser
 
 `whatsapp_chat.py` and `tests/test_whatsapp_chat.py` are also used by Profanity Stats for WhatsApp, which lives next to this project. The copies here are the originals: edit them here, then run `Tools/sync_parser.sh` in the parent folder. A test fails while the two copies differ (it is skipped when the sibling project is not present). Keep the module standard-library only.
 
-## Sample data and releases
+## Sample data
 
 Use only fictional chat data in tests and examples. To regenerate the sample report on macOS/Linux:
 
 ```bash
 ./run.sh examples/sample_chat.txt --output sample_report.pdf --markdown-output SAMPLE_REPORT.md
-.venv/bin/python tools/build_release.py
 ```
 
-The ZIP builder uses an explicit allowlist in `tools/build_release.py`. Add intentional public files there when adding source files. Never add real chat exports, personal reports, virtual environments, or credentials. Symlinked source files are rejected. Shell executable permissions are stored in the ZIP; if an extractor drops them, use `sh setup.sh` and `sh run.sh`.
+Never commit real chat exports, personal reports, virtual environments, or credentials.
 
 ## We Use [Github Flow](https://guides.github.com/introduction/flow/index.html)
 Pull requests are the best way to propose changes to the codebase. We actively welcome your pull requests:

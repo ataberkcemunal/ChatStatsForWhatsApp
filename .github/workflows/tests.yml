@@ -22,7 +22,7 @@ jobs:
         run: ./run.sh examples/sample_chat.txt --output /tmp/sample-report.pdf
       - name: Build source ZIP
         run: .venv/bin/python tools/build_release.py
-  windows-launchers:
+  windows:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
@@ -35,3 +35,27 @@ jobs:
             [System.Management.Automation.Language.Parser]::ParseFile((Join-Path $PWD $file), [ref]$tokens, [ref]$parseErrors) | Out-Null
             if ($parseErrors.Count -gt 0) { throw ($parseErrors | Out-String) }
           }
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.14'
+          cache: pip
+      # The runner image ships MSYS2 at C:\msys64, the default path used by the launchers.
+      - name: Install Pango with MSYS2
+        shell: pwsh
+        run: C:\msys64\usr\bin\bash.exe -lc 'pacman -S --noconfirm --needed mingw-w64-ucrt-x86_64-pango'
+      # Windows PowerShell 5.1 is what most users run the launchers with.
+      - name: Install Python dependencies
+        shell: powershell
+        run: .\setup.ps1
+      - name: Run tests
+        shell: powershell
+        run: |
+          $env:WEASYPRINT_DLL_DIRECTORIES = 'C:\msys64\ucrt64\bin'
+          .venv\Scripts\python.exe -m unittest discover -s tests -v
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Generate sample PDF
+        shell: powershell
+        run: |
+          .\run.ps1 examples/sample_chat.txt --output "$env:RUNNER_TEMP\sample-report.pdf"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          if (-not (Test-Path "$env:RUNNER_TEMP\sample-report.pdf")) { throw 'Sample PDF was not created.' }

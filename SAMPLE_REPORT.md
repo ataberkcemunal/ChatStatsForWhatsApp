@@ -8,6 +8,11 @@ Grup sohbeti
 **Katılımcı:** 3  
 **Sohbet günü:** 4  
 **Günde ortalama mesaj:** 4,5  
+**En uzun seri:** 4 gün  
+**En uzun sessizlik:** –  
+
+En uzun seri: her gün yazışılan 01.10.2026 – 04.10.2026
+
 
 ## Kişiler
 

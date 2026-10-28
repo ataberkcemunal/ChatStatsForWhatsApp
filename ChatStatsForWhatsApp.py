@@ -10,7 +10,7 @@ import sys
 import tempfile
 import unicodedata
 from collections import Counter
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 
 import emoji
@@ -343,6 +343,29 @@ def distinctive_words(word_counts, user, limit=TOP_DISTINCTIVE):
     return [word for _, _, word in sorted(scores)[:limit]]
 
 
+def day_streaks(dates):
+    """Return the longest run of days with records and the longest run without.
+
+    Each is ``(days, first_day, last_day)``; the silence is ``None`` when no
+    calendar day between the first and the last record is empty.
+    """
+    days = sorted(set(dates))
+    streak = silence = None
+    run_start = days[0]
+    for previous, day in zip(days, [*days[1:], None]):
+        if day is not None and (day - previous).days == 1:
+            continue
+        run = ((previous - run_start).days + 1, run_start, previous)
+        if streak is None or run[0] > streak[0]:
+            streak = run
+        if day is not None:
+            gap = ((day - previous).days - 1, previous + timedelta(days=1), day - timedelta(days=1))
+            if silence is None or gap[0] > silence[0]:
+                silence = gap
+            run_start = day
+    return streak, silence
+
+
 # Hours of silence that end one conversation; the next record opens a new one.
 CONVERSATION_GAP_HOURS = 3.0
 
@@ -402,6 +425,7 @@ def compute_stats(
 
     first, last = df["datetime"].min(), df["datetime"].max()
     total_chat_days = df["date"].nunique()
+    streak, silence = day_streaks(df["date"])
     meta = [f"Kaynak: {source_name}"] if source_name else []
     meta += [
         f"{report_style.date_time(first)} – {report_style.date_time(last)}",
@@ -415,7 +439,17 @@ def compute_stats(
             ("Katılımcı", number(df["user"].nunique())),
             ("Sohbet günü", number(total_chat_days)),
             ("Günde ortalama mesaj", decimal(len(df) / total_chat_days)),
+            ("En uzun seri", f"{number(streak[0])} gün"),
+            ("En uzun sessizlik", f"{number(silence[0])} gün" if silence else "–"),
         ],
+    )
+    def span(run):
+        return f"{run[1]:%d.%m.%Y} – {run[2]:%d.%m.%Y}"
+
+    report.paragraph(
+        f"En uzun seri: her gün yazışılan {span(streak)}"
+        + (f" · En uzun sessizlik: hiç yazışılmayan {span(silence)}" if silence else ""),
+        "note",
     )
 
     # People

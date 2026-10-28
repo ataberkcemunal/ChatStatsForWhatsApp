@@ -5,12 +5,12 @@ import unittest
 import sys
 from collections import Counter
 from contextlib import redirect_stderr, redirect_stdout
-from datetime import datetime
+from datetime import date, datetime
 from pathlib import Path
 from unittest.mock import patch
 
 from ChatStatsForWhatsApp import (
-    compute_stats, conversation_stats, distinctive_words, duration, main, parse_chat, parse_end_date,
+    compute_stats, conversation_stats, day_streaks, distinctive_words, duration, main, parse_chat, parse_end_date,
     positive_hours,
 )
 
@@ -217,6 +217,13 @@ class SenderExclusionTests(unittest.TestCase):
             text = (root / 'r.md').read_text(encoding='utf-8')
         self.assertIn('### Ayşe\n\n20 mesaj · %50,0 pay · 1 aktif gün\n\nKendine özgü: kanka, naber\n', text)
         self.assertIn('Kendine özgü: hocam, selam\n', text)
+
+    def test_day_streaks(self):
+        days = [date(2026, 10, d) for d in (1, 2, 2, 3, 8, 9, 10, 11, 13)]
+        streak, silence = day_streaks(days)
+        self.assertEqual(streak, (4, date(2026, 10, 8), date(2026, 10, 11)))
+        self.assertEqual(silence, (4, date(2026, 10, 4), date(2026, 10, 7)))
+        self.assertEqual(day_streaks([date(2026, 10, 5)]), ((1, date(2026, 10, 5), date(2026, 10, 5)), None))
 
     def test_duration_format(self):
         for seconds, text in [(45, '45 sn'), (322.5, '5 dk'), (3600, '1 sa'), (7500, '2 sa 5 dk'),

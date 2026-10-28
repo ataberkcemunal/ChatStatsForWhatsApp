@@ -112,7 +112,7 @@ class Report:
             + "</tr></table>",
         ]
         self._md = [f"# {title}\n\n", "  \n".join(escape(part) for part in meta) + "\n\n"]
-        self._md.append("".join(f"**{label}:** {value}  \n" for label, value in kpis))
+        self._md.append("".join(f"**{label}:** {value}  \n" for label, value in kpis) + "\n")
 
     def section(self, title):
         self._html.append(f"<h2>{escape(title)}</h2>")

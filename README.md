@@ -105,7 +105,7 @@ Section titles in the PDF are in Turkish.
 
 | Section | Contents |
 |---|---|
-| Summary cards | Messages, participants, chat days and messages per day |
+| Summary cards | Messages, participants, chat days, messages per day, longest streak and longest silence, with their dates below |
 | Kişiler | Per person: messages (with a bar), share, average letters, media, emojis, links, polls, deleted messages, plus a total row; then active days, participation and messages per active day; then conversations started, last words and median reply time |
 | Aramalar | Voice and video calls by status (direct chats only, when there are calls) |
 | Medya | Stickers, images, videos, audio, documents, GIFs and locations per person, with totals |
@@ -120,6 +120,7 @@ How the numbers are defined:
 - **Ort. harf** – average characters per written message, spaces excluded (punctuation and symbols count). Media placeholders, poll syntax, calls and deleted messages are not written text, so they are left out of both the letters and the message count.
 - **Active day** – a day on which the person has at least one record.
 - **Chat days** – days with at least one record in the chat; silent days do not count.
+- **Longest streak** – the most calendar days in a row with at least one record. **Longest silence** – the most calendar days in a row with none, between the first and last record.
 - **Participation** – the person's active days ÷ chat days (not their share of messages).
 - **Messages per active day** – the person's messages ÷ their own active days.
 - **Conversation** – records with no silence of 3 hours or more between them (set with `--conversation-gap`). The first record after such a silence starts a new conversation; the last record before it is the **last word**.

@@ -133,7 +133,7 @@ class Report:
     def paragraph(self, text, css_class=None):
         attribute = f' class="{css_class}"' if css_class else ""
         self._html.append(f"<p{attribute}>{escape(text)}</p>")
-        self._md.append(f"{text}\n\n")
+        self._md.append(f"{md_text(text)}\n\n")
 
     def table(self, headers, rows, numeric=(), title=None, total=None, bar_column=None, bar_values=None,
               css_class=""):

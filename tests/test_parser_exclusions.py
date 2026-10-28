@@ -3,13 +3,15 @@ import io
 import tempfile
 import unittest
 import sys
+from collections import Counter
 from contextlib import redirect_stderr, redirect_stdout
 from datetime import datetime
 from pathlib import Path
 from unittest.mock import patch
 
 from ChatStatsForWhatsApp import (
-    compute_stats, conversation_stats, duration, main, parse_chat, parse_end_date, positive_hours,
+    compute_stats, conversation_stats, distinctive_words, duration, main, parse_chat, parse_end_date,
+    positive_hours,
 )
 
 
@@ -189,6 +191,32 @@ class SenderExclusionTests(unittest.TestCase):
         for value in ['0', '-2', 'abc', 'nan', 'inf']:
             with self.subTest(value=value), self.assertRaises(argparse.ArgumentTypeError):
                 positive_hours(value)
+
+    def test_distinctive_words(self):
+        counts = {
+            # Everyone says "tamam"; only Ayşe keeps saying "kanka" and once "nadir".
+            'Ayşe': Counter({'tamam': 30, 'kanka': 25, 'nadir': 1}),
+            'Bora': Counter({'tamam': 30, 'hocam': 20, 'kanka': 1}),
+            'Can': Counter({'tamam': 30, 'hocam': 15}),
+        }
+        self.assertEqual(distinctive_words(counts, 'Ayşe'), ['kanka'])
+        self.assertEqual(distinctive_words(counts, 'Bora'), ['hocam'])
+        self.assertEqual(distinctive_words({'Ayşe': Counter({'tamam': 3})}, 'Ayşe'), [])
+
+    def test_report_shows_distinctive_words_in_the_person_band(self):
+        lines = ''.join(
+            f'[1.10.2026 10:{minute:02d}:00] {name}: {text}\n'
+            for minute, (name, text) in enumerate(
+                [('Ayşe', 'kanka naber tamam')] * 20 + [('Bora', 'hocam selam tamam')] * 20
+            )
+        )
+        with tempfile.TemporaryDirectory() as directory, patch('ChatStatsForWhatsApp.HTML'):
+            root = Path(directory)
+            self.assertTrue(compute_stats(self.parse(lines), output_file=root / 'r.pdf',
+                                          markdown_output=root / 'r.md'))
+            text = (root / 'r.md').read_text(encoding='utf-8')
+        self.assertIn('### Ayşe\n\n20 mesaj · %50,0 pay · 1 aktif gün\n\nKendine özgü: kanka, naber\n', text)
+        self.assertIn('Kendine özgü: hocam, selam\n', text)
 
     def test_duration_format(self):
         for seconds, text in [(45, '45 sn'), (322.5, '5 dk'), (3600, '1 sa'), (7500, '2 sa 5 dk'),

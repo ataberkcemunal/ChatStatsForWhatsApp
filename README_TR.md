@@ -109,7 +109,7 @@ Başarılı çalışma sonunda `PDF report generated: <yol>` yazılır ve çık�
 | Medya | Kişi başına çıkartma, görsel, video, ses, belge, GIF ve konum; toplamlarla |
 | Zaman | Yan yana gün ve saat grafikleri ile sohbet birden çok ayı kapsıyorsa ay grafiği |
 | Kelimeler ve ifadeler | Üç sütunda en sık 45 kelime (4+ harf) ile en sık 15 iki ve üç kelimelik ifade |
-| Kişi bazında kelimeler | Her kişi için vurgulu bir bant (mesaj, pay, aktif gün) ve en sık 15 kelime, ikili ve üçlü ifade yan yana |
+| Kişi bazında kelimeler | Her kişi için vurgulu bir bant (mesaj, pay, aktif gün), kendine özgü kelimeleri ve en sık 15 kelime, ikili ve üçlü ifade yan yana |
 | Emojiler | Her kişinin en çok kullandığı on emoji |
 
 Sayıların tanımları:
@@ -121,6 +121,7 @@ Sayıların tanımları:
 - **Katılım**: Kişinin aktif günleri ÷ sohbet günü (mesaj payı değildir).
 - **Aktif gün başına mesaj**: Kişinin mesajları ÷ kendi aktif gün sayısı.
 - **Sohbet**: Aralarında 3 saat (`--conversation-gap` ile değiştirilebilir) veya daha uzun sessizlik olmayan kayıtlar. Böyle bir sessizlikten sonraki ilk kayıt yeni bir sohbet başlatır; sessizlikten önceki son kayıt **son söz** sayılır.
+- **Kendine özgü**: Kişinin sohbetin geri kalanından belirgin biçimde daha sık kullandığı en fazla on kelime (ağırlıklı log-odds, z > 1,96). Kısa sohbetlerde hiç çıkmayabilir.
 - **Yanıt süresi**: Aynı sohbette başka birinin kaydından sonra gelen kayda kadar geçen bekleme. Tabloda kişinin ortancası gösterilir; birkaç uzun bekleme sonucu bozmaz.
 
 Sayılar Türkçe biçimde yazılır: binlik için `1.234`, ondalık için `12,5`, yüzde için `%45,3`.

@@ -3,6 +3,7 @@ import base64
 import io
 import logging
 import itertools
+import math
 import os
 import re
 import sys
@@ -308,12 +309,38 @@ def create_chart(labels, values, *, kind="bar", size=(5.4, 2.9)):
 TOP_WORDS = 45  # three columns of 15
 TOP_PHRASES = 15
 TOP_PER_PERSON = 15
+TOP_DISTINCTIVE = 10
 TOP_EMOJIS = 10
 
 
 def _top(counter, limit):
     return [[" ".join(item) if isinstance(item, tuple) else item, report_style.number(count)]
             for item, count in counter.most_common(limit)]
+
+
+def distinctive_words(word_counts, user, limit=TOP_DISTINCTIVE):
+    """Words this person uses clearly more often than everyone else.
+
+    Weighted log-odds with the whole chat as an informative Dirichlet prior
+    (Monroe, Colaresi & Quinn, 2008): each word gets a z-score, and only words
+    above 1.96 (about 95% confidence) are kept, highest first.
+    """
+    mine = word_counts[user]
+    others = sum((counts for name, counts in word_counts.items() if name != user), Counter())
+    prior = mine + others
+    n_mine, n_others, n_prior = mine.total(), others.total(), prior.total()
+    if not n_mine or not n_others:
+        return []
+    scores = []
+    for word, count in mine.items():
+        alpha, other = prior[word], others[word]
+        delta = math.log((count + alpha) / (n_mine + n_prior - count - alpha)) - math.log(
+            (other + alpha) / (n_others + n_prior - other - alpha)
+        )
+        z = delta / math.sqrt(1 / (count + alpha) + 1 / (other + alpha))
+        if z > 1.96:
+            scores.append((-z, -count, word))
+    return [word for _, _, word in sorted(scores)[:limit]]
 
 
 # Hours of silence that end one conversation; the next record opens a new one.
@@ -589,10 +616,16 @@ def compute_stats(
             f"{percent(100 * stat['Messages'] / len(df))} pay",
             f"{number(stat['Days Active'])} aktif gün",
         ]
-        with report.person(user, details), report.grid(3):
-            report.table(["Kelime", "Sayı"], _top(word_counts[user], TOP_PER_PERSON), numeric=[1])
-            report.table(["İkili ifade", "Sayı"], _top(bigram_counts[user], TOP_PER_PERSON), numeric=[1])
-            report.table(["Üçlü ifade", "Sayı"], _top(trigram_counts[user], TOP_PER_PERSON), numeric=[1])
+        with report.person(user, details):
+            distinctive = distinctive_words(word_counts, user)
+            if distinctive:
+                report.paragraph("Kendine özgü: " + ", ".join(distinctive), "note")
+            with report.grid(3):
+                report.table(["Kelime", "Sayı"], _top(word_counts[user], TOP_PER_PERSON), numeric=[1])
+                report.table(["İkili ifade", "Sayı"], _top(bigram_counts[user], TOP_PER_PERSON),
+                             numeric=[1])
+                report.table(["Üçlü ifade", "Sayı"], _top(trigram_counts[user], TOP_PER_PERSON),
+                             numeric=[1])
 
     # Emojis
     emoji_data = {}

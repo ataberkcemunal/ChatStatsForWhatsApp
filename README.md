@@ -107,7 +107,7 @@ Section titles in the PDF are in Turkish.
 | Section | Contents |
 |---|---|
 | Summary cards | Messages, participants, chat days, messages per day, longest streak and longest silence, with their dates below |
-| Kişiler | Per person: messages (with a bar), share, average letters, media, emojis, links, polls, deleted messages, plus a total row; then stickers, images, videos, audio, documents, GIFs and locations per person; then active days, participation and messages per active day; then questions and laughter (count and share); then conversations started and last words; in groups, whom each person replies to most and who replies to them most |
+| Kişiler | Per person: messages (with a bar), share, average letters, media, emojis, links, polls, deleted messages, plus a total row; then stickers, images, videos, audio, documents, GIFs and locations per person; then active days, participation and messages per active day; then questions (count, share and messages that are only question marks) and laughter (count and share); then conversations started and last words; in groups, whom each person replies to most and who replies to them most |
 | Aramalar | Voice and video calls by status (direct chats only, when there are calls) |
 | Zaman | Weekday and hour charts side by side; when the chat spans several months, a month chart and each person's monthly share (the five most active people, the rest as "Diğer") |
 | Kelimeler ve ifadeler | The 45 most frequent words (4+ letters) in three columns, and the 15 most frequent two- and three-word phrases |
@@ -126,7 +126,7 @@ How the numbers are defined:
 - **Messages per active day** – the person's messages ÷ their own active days.
 - **Conversation** – records with no silence of an hour or more between them (set with `--conversation-gap`). The first record after such a silence starts a new conversation; the last record before it is the **last word**.
 - **Distinctive words** – up to ten words a person uses clearly more often than the rest of the chat (weighted log-odds, z > 1.96). Short chats may have none.
-- **Questions and laughter** – written messages with a question (a question mark, the particle mi/mı/mu/mü, also attached as in gelcekmisin, a question word such as nasıl, neden, niye, niçin, kaç, hangi, nerede, kim, or a message that is only "ne"; "???" still counts as one question; neredeyse, neden olmak, "hangisi/kim/ne olursa olsun" and the ? in a link do not count) or with laughter (haha, hehe, hohoho, ksksks, sjsj, zaaa, asdf, xd, :D, :) or 😂 🤣), each counted once per message; the share is of the person's written messages.
+- **Questions and laughter** – written messages with a question (a question mark, the particle mi/mı/mu/mü, also attached as in gelcekmisin, a question word such as nasıl, neden, niye, niçin, kaç, hangi, nerede, kim, or a message that is only "ne"; "???" still counts as one question; neredeyse, neden olmak, "hangisi/kim/ne olursa olsun" and the ? in a link do not count) or with laughter (haha, hehe, hohoho, ksksks, sjsj, zaaa, asdf, xd, :D, :) or 😂 🤣), each counted once per message; the share is of the person's written messages. The table also counts messages that are only question marks ("?", "???"), which are included in the questions too.
 - **Who replies to whom** – the export does not record which message a reply answers, so the sender of the previous record in the same conversation is used.
 
 Numbers use Turkish formatting: `1.234` for thousands, `12,5` for decimals and `%45,3` for percentages.

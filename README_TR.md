@@ -105,7 +105,7 @@ Başarılı çalışma sonunda `PDF report generated: <yol>` yazılır ve çık�
 | Bölüm | İçerik |
 |---|---|
 | Özet kutuları | Mesaj, katılımcı, sohbet günü, günde ortalama mesaj, en uzun seri ve en uzun sessizlik; tarihleri altında |
-| Kişiler | Kişi başına mesaj (çubukla), pay, ortalama harf, medya, emoji, bağlantı, anket, silinen mesaj ve toplam satırı; ardından kişi başına çıkartma, görsel, video, ses, belge, GIF ve konum; ardından aktif gün, katılım ve aktif gün başına mesaj; ardından soru ve gülme (sayı ve oran); ardından başlattığı sohbet ve son söz; gruplarda kişinin en çok yanıt verdiği ve en çok yanıt aldığı kişi |
+| Kişiler | Kişi başına mesaj (çubukla), pay, ortalama harf, medya, emoji, bağlantı, anket, silinen mesaj ve toplam satırı; ardından kişi başına çıkartma, görsel, video, ses, belge, GIF ve konum; ardından aktif gün, katılım ve aktif gün başına mesaj; ardından soru (sayı, oran ve yalnızca soru işaretinden oluşan mesajlar) ve gülme (sayı ve oran); ardından başlattığı sohbet ve son söz; gruplarda kişinin en çok yanıt verdiği ve en çok yanıt aldığı kişi |
 | Aramalar | Duruma göre sesli ve görüntülü aramalar (yalnızca birebir sohbetlerde, arama varsa) |
 | Zaman | Yan yana gün ve saat grafikleri; sohbet birden çok ayı kapsıyorsa ay grafiği ve kişilerin aylık mesaj payı (en çok yazan beş kişi, kalanlar "Diğer") |
 | Kelimeler ve ifadeler | Üç sütunda en sık 45 kelime (4+ harf) ile en sık 15 iki ve üç kelimelik ifade |
@@ -124,7 +124,7 @@ Sayıların tanımları:
 - **Aktif gün başına mesaj**: Kişinin mesajları ÷ kendi aktif gün sayısı.
 - **Sohbet**: Aralarında 1 saat (`--conversation-gap` ile değiştirilebilir) veya daha uzun sessizlik olmayan kayıtlar. Böyle bir sessizlikten sonraki ilk kayıt yeni bir sohbet başlatır; sessizlikten önceki son kayıt **son söz** sayılır.
 - **Kendine özgü**: Kişinin sohbetin geri kalanından belirgin biçimde daha sık kullandığı en fazla on kelime (ağırlıklı log-odds, z > 1,96). Kısa sohbetlerde hiç çıkmayabilir.
-- **Soru ve gülme**: Soru (soru işareti, gelcekmisin gibi bitişik yazılanlar dahil mi/mı/mu/mü soru eki, nasıl, neden, niye, niçin, kaç, hangi, nerede, kim gibi bir soru kelimesi ya da yalnızca "ne" olan mesaj; "???" de tek soru sayılır; neredeyse, neden olmak, "hangisi/kim/ne olursa olsun" ve linklerdeki ? sayılmaz) ya da gülme (haha, hehe, hohoho, ksksks, sjsj, zaaa, asdf, xd, :D, :) veya 😂 🤣) içeren yazılı mesajlar; her mesaj bir kez sayılır, oran kişinin yazılı mesajlarına göredir.
+- **Soru ve gülme**: Soru (soru işareti, gelcekmisin gibi bitişik yazılanlar dahil mi/mı/mu/mü soru eki, nasıl, neden, niye, niçin, kaç, hangi, nerede, kim gibi bir soru kelimesi ya da yalnızca "ne" olan mesaj; "???" de tek soru sayılır; neredeyse, neden olmak, "hangisi/kim/ne olursa olsun" ve linklerdeki ? sayılmaz) ya da gülme (haha, hehe, hohoho, ksksks, sjsj, zaaa, asdf, xd, :D, :) veya 😂 🤣) içeren yazılı mesajlar; her mesaj bir kez sayılır, oran kişinin yazılı mesajlarına göredir. Tablo ayrıca yalnızca soru işaretinden oluşan mesajları ("?", "???") sayar; bunlar soruya da dahildir.
 - **Kim kime yanıt veriyor**: Dışa aktarım bir mesajın hangi mesaja cevap olduğunu kaydetmez; aynı sohbette bir önceki kaydın sahibi esas alınır.
 
 Sayılar Türkçe biçimde yazılır: binlik için `1.234`, ondalık için `12,5`, yüzde için `%45,3`.

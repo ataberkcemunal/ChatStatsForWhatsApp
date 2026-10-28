@@ -152,13 +152,16 @@ BARE_LINK_REGEX = re.compile(r"(?<!\w)(?:www\.)?[\w-]+(?:\.[\w-]+)+/\S*")
 
 
 def style_flags(written):
-    """Whether someone asked a question or laughed, once per message (links left out)."""
+    """Whether someone asked a question (or wrote only question marks) or laughed,
+    once per message (links left out)."""
     text = BARE_LINK_REGEX.sub("", re.sub(LINK_REGEX, "", written))
     lower = turkish_lower(text)
     asked = NOT_QUESTION_REGEX.sub(" ", lower)
     question = "?" in text or QUESTION_REGEX.search(asked) or ONLY_NE_REGEX.fullmatch(lower.strip())
     return {
         "question": int(bool(question)),
+        # A reply made of question marks only: "?", "???".
+        "only_question_mark": int(bool(re.fullmatch(r"\?+", "".join(text.split())))),
         "laugh": int(bool(LAUGH_REGEX.search(lower))),
     }
 
@@ -614,7 +617,7 @@ def compute_stats(
     )
 
     written_df = df[df["has_text"] == 1]
-    style = written_df.groupby("user")[["question", "laugh"]].sum()
+    style = written_df.groupby("user")[["question", "only_question_mark", "laugh"]].sum()
     styled_users = [user for user in sorted_users if user in style.index]
 
     def count_and_share(count, written):
@@ -622,23 +625,26 @@ def compute_stats(
 
     if styled_users:
         report.table(
-            ["Kişi", "Yazılı mesaj", "Soru", "Soru oranı", "Gülme", "Gülme oranı"],
+            ["Kişi", "Yazılı mesaj", "Soru", "Soru oranı", "Yalnız ?", "Gülme", "Gülme oranı"],
             [
                 [user, number(stats_by_user[user]["Written"]),
                  *count_and_share(style.at[user, "question"], stats_by_user[user]["Written"]),
+                 number(int(style.at[user, "only_question_mark"])),
                  *count_and_share(style.at[user, "laugh"], stats_by_user[user]["Written"])]
                 for user in styled_users
             ],
-            numeric=range(1, 6),
-            title="Üslup",
+            numeric=range(1, 7),
+            title="Soru ve gülme",
             total=["Toplam", number(len(written_df)),
                    *count_and_share(written_df["question"].sum(), len(written_df)),
+                   number(int(written_df["only_question_mark"].sum())),
                    *count_and_share(written_df["laugh"].sum(), len(written_df))],
         )
         report.paragraph(
             "Soru: soru işareti, mi/mı/mu/mü soru eki (gelcekmisin gibi bitişik de) ya da nasıl, neden, niye, "
             "niçin, kaç, hangi, nerede, kim gibi bir soru kelimesi içeren ya da yalnızca \"ne\" olan yazılı mesaj; "
             "\"???\" gibi birden çok işaret ya da ifade de bir soru sayılır. "
+            "Yalnız ?: yalnızca soru işaretinden oluşan mesaj (\"?\", \"???\"); bunlar Soru'ya da dahildir. "
             "Gülme: haha, hehe, hohoho, ksksks, sjsj, zaaa, asdf, xd, :D, :) gibi bir ifade ya da 😂 🤣 içeren mesaj. "
             "Oranlar yazılı mesajlara göredir.",
             "note",

@@ -298,13 +298,17 @@ class SenderExclusionTests(unittest.TestCase):
             with self.subTest(text=text):
                 flags = style_flags(text)
                 self.assertEqual((flags['question'], flags['laugh']), expected)
+        only = {'?': 1, '???': 1, ' ? ? ': 1, '?!': 0, 'ne?': 0, 'naber': 0}
+        for text, expected in only.items():
+            with self.subTest(text=text):
+                self.assertEqual(style_flags(text)['only_question_mark'], expected)
 
     def test_style_and_reply_tables(self):
         df = self.parse(
             '[1.10.2026 10:00:00] Ayşe: naber?\n'
             '[1.10.2026 10:01:00] Bora: hahaha iyi\n'
             '[1.10.2026 10:02:00] Ayşe: SÜPER??\n'
-            '[1.10.2026 10:03:00] Bora: tamam\n'
+            '[1.10.2026 10:03:00] Bora: ???\n'
             '[1.10.2026 10:04:00] Can: \u200egörüntü dahil edilmedi\n'
             '[1.10.2026 10:05:00] Bora: güzel!\n'
         )
@@ -314,13 +318,13 @@ class SenderExclusionTests(unittest.TestCase):
                                           markdown_output=root / 'r.md'))
             text = (root / 'r.md').read_text(encoding='utf-8')
         # Can wrote nothing, so has no style row.
-        self.assertIn('| Bora | 3 | 0 | %0,0 | 1 | %33,3 |', text)
-        self.assertIn('| Ayşe | 2 | 2 | %100,0 | 0 | %0,0 |', text)
-        self.assertIn('| Toplam | 5 | 2 | %40,0 | 1 | %20,0 |', text)
+        self.assertIn('| Bora | 3 | 1 | %33,3 | 1 | 1 | %33,3 |', text)
+        self.assertIn('| Ayşe | 2 | 2 | %100,0 | 0 | 0 | %0,0 |', text)
+        self.assertIn('| Toplam | 5 | 3 | %60,0 | 1 | 1 | %20,0 |', text)
         # The media table follows the people table, before the other people tables.
         self.assertLess(text.index('**Medya**'), text.index('**Etkinlik**'))
         self.assertNotIn('## Medya', text)
-        style = text[text.index('**Üslup**'):text.index('**Sohbet akışı**')]
+        style = text[text.index('**Soru ve gülme**'):text.index('**Sohbet akışı**')]
         self.assertNotIn('| Can |', style)
         # Replies (from → to): Bora→Ayşe, Ayşe→Bora, Bora→Ayşe, Can→Bora, Bora→Can.
         self.assertIn('| Bora | Ayşe | %66,7 | Ayşe | %50,0 |', text)

@@ -38,6 +38,23 @@ class ReadChatTests(unittest.TestCase):
         )
         self.assertEqual([r.text for r in chat.records], ['Merhaba', 'Selam'])
 
+    def test_pasted_older_chat_lines_stay_inside_the_message(self):
+        chat = self.read(
+            '[27.2.2022 18:38:49] Ayşe: Şu eski konuşmaya bak:\n'
+            '[11.9.2018 16:18:00] Can: yıllar önceki mesaj\n'
+            '[11.9.2018 16:19:00] Ayşe: buna cevap\n'
+            '[27.2.2022 18:40:00] Bora: haha\n'
+            # A few hours out of order is a late delivery, not a paste.
+            '[27.2.2022 15:00:00] Can: geç gelen mesaj\n'
+        )
+        self.assertEqual([(r.timestamp, r.sender) for r in chat.records], [
+            (datetime(2022, 2, 27, 18, 38, 49), 'Ayşe'),
+            (datetime(2022, 2, 27, 18, 40), 'Bora'),
+            (datetime(2022, 2, 27, 15, 0), 'Can'),
+        ])
+        self.assertEqual(chat.records[0].text, 'Şu eski konuşmaya bak:\n'
+                         '[11.9.2018 16:18:00] Can: yıllar önceki mesaj\n[11.9.2018 16:19:00] Ayşe: buna cevap')
+
     def test_excluded_senders_and_their_continuations_are_left_out(self):
         chat = self.read(
             '[1.10.2026 10:00:00] \u200eSiz: Görüntülü arama\n'

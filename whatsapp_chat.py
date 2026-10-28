@@ -9,7 +9,7 @@ from __future__ import annotations
 import re
 import unicodedata
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 
 MESSAGE = "message"
@@ -168,10 +168,16 @@ def parse_timestamp(date: str, time: str) -> datetime:
     return datetime.strptime(f"{date} {time}", fmt)
 
 
+# An export runs forward in time. A header more than this much older than the
+# newest record so far was pasted into a message (a quoted chat) and is text.
+PASTED_HEADER_AGE = timedelta(days=1)
+
+
 def _raw_records(path):
     """Yield (timestamp, sender, marked, text) for each "[time] sender: text" record."""
     current = None
     lines: list[str] = []
+    newest = None
     with Path(path).open(encoding="utf-8-sig") as stream:
         for raw in stream:
             line = raw.rstrip("\r\n")
@@ -179,14 +185,20 @@ def _raw_records(path):
             # belong to the previous message.
             stripped = line.lstrip(LINE_PREFIX_CHARS)
             header = HEADER.match(stripped)
+            timestamp = parse_timestamp(header[1], header[2]) if header else None
+            if timestamp and newest and timestamp < newest - PASTED_HEADER_AGE:
+                if current is not None:
+                    lines.append(line)
+                continue
             if header or TIMESTAMP_PREFIX.match(stripped):
                 if current is not None:
                     yield (*current, "\n".join(lines))
                 current, lines = None, []
                 if header:
                     marked = "\u200e" in line or "\u200f" in line
-                    current = (parse_timestamp(header[1], header[2]), header[3], marked)
+                    current = (timestamp, header[3], marked)
                     lines = [header[4] or ""]
+                    newest = max(newest, timestamp) if newest else timestamp
             elif current is not None:
                 lines.append(line)
     if current is not None:

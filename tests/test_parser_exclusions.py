@@ -180,6 +180,9 @@ class SenderExclusionTests(unittest.TestCase):
         # Ayşe answered after 10 min and 45 s; Bora after 2 min. The gap is not a reply.
         self.assertEqual(flow['reply'].to_dict(), {'Ayşe': 322.5, 'Bora': 120.0})
         self.assertEqual(flow['reply_all'], 120.0)
+        # Turns: Ayşe 10:00-10:00:30, Bora, Ayşe, Bora, Ayşe.
+        self.assertEqual(flow['turns'].to_dict(), {'Ayşe': 3, 'Bora': 2})
+        self.assertEqual(flow['turns_all'], 5)
         # With a longer gap the evening message is Bora's reply, not a new conversation.
         flow = conversation_stats(df, gap_hours=8)
         self.assertEqual(flow['conversations'], 1)

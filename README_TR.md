@@ -104,7 +104,7 @@ Başarılı çalışma sonunda `PDF report generated: <yol>` yazılır ve çık�
 | Bölüm | İçerik |
 |---|---|
 | Özet kutuları | Mesaj, katılımcı, sohbet günü, günde ortalama mesaj, en uzun seri ve en uzun sessizlik; tarihleri altında |
-| Kişiler | Kişi başına mesaj (çubukla), pay, ortalama harf, medya, emoji, bağlantı, anket, silinen mesaj ve toplam satırı; ardından aktif gün, katılım ve aktif gün başına mesaj; ardından başlattığı sohbet, son söz ve ortanca yanıt süresi |
+| Kişiler | Kişi başına mesaj (çubukla), pay, ortalama harf, medya, emoji, bağlantı, anket, silinen mesaj ve toplam satırı; ardından aktif gün, katılım ve aktif gün başına mesaj; ardından başlattığı sohbet, son söz, ortanca yanıt süresi ve tur başına mesaj |
 | Aramalar | Duruma göre sesli ve görüntülü aramalar (yalnızca birebir sohbetlerde, arama varsa) |
 | Medya | Kişi başına çıkartma, görsel, video, ses, belge, GIF ve konum; toplamlarla |
 | Zaman | Yan yana gün ve saat grafikleri ile sohbet birden çok ayı kapsıyorsa ay grafiği |
@@ -123,6 +123,7 @@ Sayıların tanımları:
 - **Aktif gün başına mesaj**: Kişinin mesajları ÷ kendi aktif gün sayısı.
 - **Sohbet**: Aralarında 3 saat (`--conversation-gap` ile değiştirilebilir) veya daha uzun sessizlik olmayan kayıtlar. Böyle bir sessizlikten sonraki ilk kayıt yeni bir sohbet başlatır; sessizlikten önceki son kayıt **son söz** sayılır.
 - **Kendine özgü**: Kişinin sohbetin geri kalanından belirgin biçimde daha sık kullandığı en fazla on kelime (ağırlıklı log-odds, z > 1,96). Kısa sohbetlerde hiç çıkmayabilir.
+- **Tur başına mesaj**: Kişinin söz başkasına geçmeden ya da sohbet bitmeden art arda gönderdiği kayıtların ortalaması.
 - **Yanıt süresi**: Aynı sohbette başka birinin kaydından sonra gelen kayda kadar geçen bekleme. Tabloda kişinin ortancası gösterilir; birkaç uzun bekleme sonucu bozmaz.
 
 Sayılar Türkçe biçimde yazılır: binlik için `1.234`, ondalık için `12,5`, yüzde için `%45,3`.

@@ -106,7 +106,7 @@ Section titles in the PDF are in Turkish.
 | Section | Contents |
 |---|---|
 | Summary cards | Messages, participants, chat days, messages per day, longest streak and longest silence, with their dates below |
-| Kişiler | Per person: messages (with a bar), share, average letters, media, emojis, links, polls, deleted messages, plus a total row; then active days, participation and messages per active day; then conversations started, last words and median reply time |
+| Kişiler | Per person: messages (with a bar), share, average letters, media, emojis, links, polls, deleted messages, plus a total row; then active days, participation and messages per active day; then conversations started, last words, median reply time and messages per turn |
 | Aramalar | Voice and video calls by status (direct chats only, when there are calls) |
 | Medya | Stickers, images, videos, audio, documents, GIFs and locations per person, with totals |
 | Zaman | Weekday and hour charts side by side and a month chart when the chat spans several months |
@@ -125,6 +125,7 @@ How the numbers are defined:
 - **Messages per active day** – the person's messages ÷ their own active days.
 - **Conversation** – records with no silence of 3 hours or more between them (set with `--conversation-gap`). The first record after such a silence starts a new conversation; the last record before it is the **last word**.
 - **Distinctive words** – up to ten words a person uses clearly more often than the rest of the chat (weighted log-odds, z > 1.96). Short chats may have none.
+- **Messages per turn** – how many records a person sends in a row before someone else writes or the conversation ends, on average.
 - **Reply time** – the wait before a record that follows someone else's record in the same conversation. The table shows each person's median, so a few long waits do not skew it.
 
 Numbers use Turkish formatting: `1.234` for thousands, `12,5` for decimals and `%45,3` for percentages.

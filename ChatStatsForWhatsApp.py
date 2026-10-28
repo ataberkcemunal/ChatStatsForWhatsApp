@@ -371,10 +371,12 @@ CONVERSATION_GAP_HOURS = 3.0
 
 
 def conversation_stats(df, gap_hours=CONVERSATION_GAP_HOURS):
-    """Count who opens and closes conversations, and how fast each person replies.
+    """Count who opens and closes conversations, how fast each person replies
+    and how many records they send in a row.
 
     A reply is a record whose sender differs from the previous record's sender
     within the same conversation; its reply time is the silence before it.
+    A turn is a run of records by one sender that a start or a reply begins.
     """
     ordered = df.sort_values("datetime", kind="stable")
     silence = ordered["datetime"].diff()
@@ -382,7 +384,10 @@ def conversation_stats(df, gap_hours=CONVERSATION_GAP_HOURS):
     ends = starts.shift(-1, fill_value=True)
     replies = ~starts & (ordered["user"] != ordered["user"].shift())
     reply_seconds = silence[replies].dt.total_seconds()
+    turns = starts | replies
     return {
+        "turns": ordered.loc[turns, "user"].value_counts(),
+        "turns_all": int(turns.sum()),
         "conversations": int(starts.sum()),
         "starts": ordered.loc[starts, "user"].value_counts(),
         "ends": ordered.loc[ends, "user"].value_counts(),
@@ -520,29 +525,32 @@ def compute_stats(
         sorted_users, key=lambda user: flow["starts"].get(user, 0), reverse=True
     )
     report.table(
-        ["Kişi", "Başlattığı sohbet", "Pay", "Son söz", "Ortanca yanıt süresi"],
+        ["Kişi", "Başlattığı sohbet", "Pay", "Son söz", "Ortanca yanıt süresi", "Tur başına mesaj"],
         [
             [
                 user, number(flow["starts"].get(user, 0)),
                 percent(100 * flow["starts"].get(user, 0) / flow["conversations"]),
                 number(flow["ends"].get(user, 0)), duration(flow["reply"].get(user)),
+                decimal(stats_by_user[user]["Messages"] / flow["turns"][user]),
             ]
             for user in flow_rows
         ],
-        numeric=range(1, 5),
+        numeric=range(1, 6),
         title="Sohbet akışı",
         bar_column=1,
         bar_values=[flow["starts"].get(user, 0) for user in flow_rows],
         total=[
             "Toplam", number(flow["conversations"]), percent(100),
             number(flow["conversations"]), duration(flow["reply_all"]),
+            decimal(len(df) / flow["turns_all"]),
         ],
     )
     gap_hours = f"{conversation_gap:g}".replace(".", ",")
     report.paragraph(
         f"En az {gap_hours} saatlik sessizlikten sonraki ilk mesaj yeni bir sohbet başlatır; "
         "sessizlikten önceki son mesaj son sözdür. Yanıt: aynı sohbette başka birinin "
-        "mesajından sonra yazılan mesaj; süre, aradaki beklemenin ortancasıdır.",
+        "mesajından sonra yazılan mesaj; süre, aradaki beklemenin ortancasıdır. "
+        "Tur başına mesaj: söz başkasına geçmeden art arda gönderilen mesajların ortalaması.",
         "note",
     )
 

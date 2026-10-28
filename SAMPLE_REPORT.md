@@ -37,14 +37,14 @@ Ort. harf: yazılı mesaj başına boşluksuz karakter; medya, arama ve silinen 
 
 **Sohbet akışı**
 
-| Kişi | Başlattığı sohbet | Pay | Son söz | Ortanca yanıt süresi |
-|---|---:|---:|---:|---:|
-| Ayşe | 2 | %50,0 | 1 | 1 dk |
-| Deniz | 1 | %25,0 | 0 | 1 dk |
-| Ekin | 1 | %25,0 | 3 | 1 dk |
-| Toplam | 4 | %100,0 | 4 | 1 dk |
+| Kişi | Başlattığı sohbet | Pay | Son söz | Ortanca yanıt süresi | Tur başına mesaj |
+|---|---:|---:|---:|---:|---:|
+| Ayşe | 2 | %50,0 | 1 | 1 dk | 1,0 |
+| Deniz | 1 | %25,0 | 0 | 1 dk | 1,0 |
+| Ekin | 1 | %25,0 | 3 | 1 dk | 1,0 |
+| Toplam | 4 | %100,0 | 4 | 1 dk | 1,0 |
 
-En az 3 saatlik sessizlikten sonraki ilk mesaj yeni bir sohbet başlatır; sessizlikten önceki son mesaj son sözdür. Yanıt: aynı sohbette başka birinin mesajından sonra yazılan mesaj; süre, aradaki beklemenin ortancasıdır.
+En az 3 saatlik sessizlikten sonraki ilk mesaj yeni bir sohbet başlatır; sessizlikten önceki son mesaj son sözdür. Yanıt: aynı sohbette başka birinin mesajından sonra yazılan mesaj; süre, aradaki beklemenin ortancasıdır. Tur başına mesaj: söz başkasına geçmeden art arda gönderilen mesajların ortalaması.
 
 
 ## Medya

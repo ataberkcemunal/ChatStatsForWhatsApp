@@ -108,9 +108,9 @@ Section titles in the PDF are in Turkish.
 | Kişiler | Per person: messages (with a bar), share, average letters, media, emojis, links, polls, deleted messages, plus a total row; then active days, participation and messages per active day |
 | Aramalar | Voice and video calls by status (direct chats only, when there are calls) |
 | Medya | Stickers, images, videos, audio, documents, GIFs and locations per person, with totals |
-| Zaman | Weekday and hour charts side by side, a month chart when the chat spans several months, and the ten busiest days |
+| Zaman | Weekday and hour charts side by side and a month chart when the chat spans several months |
 | Kelimeler ve ifadeler | The 45 most frequent words (4+ letters) in three columns, and the 15 most frequent two- and three-word phrases |
-| Kişi bazında kelimeler | For each person, a highlighted band (messages, share, active days) and their top 10 words, two-word and three-word phrases side by side |
+| Kişi bazında kelimeler | For each person, a highlighted band (messages, share, active days) and their top 15 words, two-word and three-word phrases side by side |
 | Emojiler | Each person's ten most used emojis |
 
 How the numbers are defined:

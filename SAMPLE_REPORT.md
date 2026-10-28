@@ -51,16 +51,6 @@ Ort. harf: yazılı mesaj başına boşluksuz karakter; medya, arama ve silinen 
 
 *Grafik PDF raporunda yer alır.*
 
-**En yoğun 10 gün**
-
-| Tarih | Gün | Mesaj |
-|---|---|---:|
-| 01.10.2026 | Perşembe | 6 |
-| 02.10.2026 | Cuma | 5 |
-| 03.10.2026 | Cumartesi | 4 |
-| 04.10.2026 | Pazar | 3 |
-
-
 ## Kelimeler ve ifadeler
 
 
@@ -173,6 +163,11 @@ Ort. harf: yazılı mesaj başına boşluksuz karakter; medya, arama ve silinen 
 | roman | 1 |
 | yarın | 1 |
 | akşam | 1 |
+| buluşalım | 1 |
+| harika | 1 |
+| notlar | 1 |
+| faydalı | 1 |
+| olmuş | 1 |
 
 | İkili ifade | Sayı |
 |---|---:|
@@ -186,6 +181,11 @@ Ort. harf: yazılı mesaj başına boşluksuz karakter; medya, arama ve silinen 
 | yarın akşam | 1 |
 | akşam buluşalım | 1 |
 | buluşalım mı | 1 |
+| harika notlar | 1 |
+| notlar çok | 1 |
+| çok faydalı | 1 |
+| faydalı olmuş | 1 |
+| haftaya yeniden | 1 |
 
 | Üçlü ifade | Sayı |
 |---|---:|
@@ -199,6 +199,7 @@ Ort. harf: yazılı mesaj başına boşluksuz karakter; medya, arama ve silinen 
 | harika notlar çok | 1 |
 | notlar çok faydalı | 1 |
 | çok faydalı olmuş | 1 |
+| haftaya yeniden görüşürüz | 1 |
 
 
 ### Deniz
@@ -217,6 +218,10 @@ Ort. harf: yazılı mesaj başına boşluksuz karakter; medya, arama ve silinen 
 | buluşalım | 1 |
 | uygunum | 1 |
 | harika | 1 |
+| notlar | 1 |
+| faydalı | 1 |
+| olmuş | 1 |
+| teşekkürler | 1 |
 
 | İkili ifade | Sayı |
 |---|---:|
@@ -230,6 +235,11 @@ Ort. harf: yazılı mesaj başına boşluksuz karakter; medya, arama ve silinen 
 | akşam buluşalım | 1 |
 | buluşalım ben | 1 |
 | ben uygunum | 1 |
+| harika notlar | 1 |
+| notlar çok | 1 |
+| çok faydalı | 1 |
+| faydalı olmuş | 1 |
+| olmuş teşekkürler | 1 |
 
 | Üçlü ifade | Sayı |
 |---|---:|
@@ -243,6 +253,8 @@ Ort. harf: yazılı mesaj başına boşluksuz karakter; medya, arama ve silinen 
 | buluşalım ben uygunum | 1 |
 | harika notlar çok | 1 |
 | notlar çok faydalı | 1 |
+| çok faydalı olmuş | 1 |
+| faydalı olmuş teşekkürler | 1 |
 
 
 ### Ekin
@@ -261,6 +273,11 @@ Ort. harf: yazılı mesaj başına boşluksuz karakter; medya, arama ve silinen 
 | yarın | 1 |
 | akşam | 1 |
 | buluşalım | 1 |
+| kitapları | 1 |
+| getirelim | 1 |
+| merhaba | 1 |
+| arkadaşlar | 1 |
+| toplantı | 1 |
 
 | İkili ifade | Sayı |
 |---|---:|
@@ -274,6 +291,11 @@ Ort. harf: yazılı mesaj başına boşluksuz karakter; medya, arama ve silinen 
 | buluşalım kitapları | 1 |
 | kitapları da | 1 |
 | da getirelim | 1 |
+| merhaba arkadaşlar | 1 |
+| arkadaşlar toplantı | 1 |
+| toplantı notlarını | 1 |
+| notlarını paylaşıyorum | 1 |
+| paylaşıyorum birinci | 1 |
 
 | Üçlü ifade | Sayı |
 |---|---:|
@@ -287,6 +309,11 @@ Ort. harf: yazılı mesaj başına boşluksuz karakter; medya, arama ve silinen 
 | merhaba arkadaşlar toplantı | 1 |
 | arkadaşlar toplantı notlarını | 1 |
 | toplantı notlarını paylaşıyorum | 1 |
+| notlarını paylaşıyorum birinci | 1 |
+| paylaşıyorum birinci bölümde | 1 |
+| birinci bölümde karakterleri | 1 |
+| bölümde karakterleri konuşacağız | 1 |
+| karakterleri konuşacağız ikinci | 1 |
 
 
 ## Emojiler

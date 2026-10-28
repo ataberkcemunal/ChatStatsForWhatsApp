@@ -307,7 +307,7 @@ def create_chart(labels, values, *, kind="bar", size=(5.4, 2.9)):
 # How many entries each list shows; the same for every person.
 TOP_WORDS = 45  # three columns of 15
 TOP_PHRASES = 15
-TOP_PER_PERSON = 10
+TOP_PER_PERSON = 15
 TOP_EMOJIS = 10
 
 
@@ -488,18 +488,6 @@ def compute_stats(
         report.chart_block(
             "Aylara göre", create_chart(month_labels, month_stats.values, size=(10.8, 2.9))
         )
-
-    day_stats = df["date"].value_counts()
-    # Busiest first; on equal counts, the earlier day first.
-    busiest = sorted(day_stats.items(), key=lambda item: (-item[1], item[0]))[:10]
-    report.table(
-        ["Tarih", "Gün", "Mesaj"],
-        [[f"{d:%d.%m.%Y}", list(DAY_NAMES.values())[d.weekday()], number(v)] for d, v in busiest],
-        numeric=[2],
-        title="En yoğun 10 gün",
-        bar_column=2,
-        bar_values=[v for _, v in busiest],
-    )
 
     # Words and phrases were tokenized once per message in parse_chat.
     word_counts = {user: Counter() for user in sorted_users}

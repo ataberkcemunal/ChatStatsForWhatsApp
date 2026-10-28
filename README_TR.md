@@ -106,9 +106,9 @@ Başarılı çalışma sonunda `PDF report generated: <yol>` yazılır ve çık�
 | Kişiler | Kişi başına mesaj (çubukla), pay, ortalama harf, medya, emoji, bağlantı, anket, silinen mesaj ve toplam satırı; ardından aktif gün, katılım ve aktif gün başına mesaj |
 | Aramalar | Duruma göre sesli ve görüntülü aramalar (yalnızca birebir sohbetlerde, arama varsa) |
 | Medya | Kişi başına çıkartma, görsel, video, ses, belge, GIF ve konum; toplamlarla |
-| Zaman | Yan yana gün ve saat grafikleri, sohbet birden çok ayı kapsıyorsa ay grafiği ve en yoğun on gün |
+| Zaman | Yan yana gün ve saat grafikleri ile sohbet birden çok ayı kapsıyorsa ay grafiği |
 | Kelimeler ve ifadeler | Üç sütunda en sık 45 kelime (4+ harf) ile en sık 15 iki ve üç kelimelik ifade |
-| Kişi bazında kelimeler | Her kişi için vurgulu bir bant (mesaj, pay, aktif gün) ve en sık 10 kelime, ikili ve üçlü ifade yan yana |
+| Kişi bazında kelimeler | Her kişi için vurgulu bir bant (mesaj, pay, aktif gün) ve en sık 15 kelime, ikili ve üçlü ifade yan yana |
 | Emojiler | Her kişinin en çok kullandığı on emoji |
 
 Sayıların tanımları:

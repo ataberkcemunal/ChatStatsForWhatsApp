@@ -26,6 +26,16 @@ En uzun seri: her gün yazışılan 01.10.2026 – 04.10.2026
 Ort. harf: yazılı mesaj başına boşluksuz karakter; medya, arama ve silinen mesajlar sayılmaz.
 
 
+**Medya**
+
+| Kişi | Çıkartma | Görsel | Video | Ses | Belge | GIF | Konum | Toplam |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|
+| Deniz | 1 | 1 | 0 | 0 | 0 | 0 | 0 | 2 |
+| Ekin | 0 | 0 | 0 | 0 | 1 | 0 | 0 | 1 |
+| Ayşe | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| Toplam | 1 | 1 | 0 | 0 | 1 | 0 | 0 | 3 |
+
+
 **Etkinlik**
 
 | Kişi | Aktif gün | Katılım | Aktif gün başına mesaj |
@@ -37,14 +47,14 @@ Ort. harf: yazılı mesaj başına boşluksuz karakter; medya, arama ve silinen 
 
 **Üslup**
 
-| Kişi | Yazılı mesaj | Soru | Ünlem | Büyük harf | Gülme |
+| Kişi | Yazılı mesaj | Soru | Soru oranı | Gülme | Gülme oranı |
 |---|---:|---:|---:|---:|---:|
-| Ayşe | 5 | %20,0 | %0,0 | %0,0 | %0,0 |
-| Deniz | 3 | %33,3 | %33,3 | %0,0 | %0,0 |
-| Ekin | 5 | %0,0 | %20,0 | %0,0 | %0,0 |
-| Toplam | 13 | %15,4 | %15,4 | %0,0 | %0,0 |
+| Ayşe | 5 | 1 | %20,0 | 0 | %0,0 |
+| Deniz | 3 | 1 | %33,3 | 0 | %0,0 |
+| Ekin | 5 | 0 | %0,0 | 0 | %0,0 |
+| Toplam | 13 | 2 | %15,4 | 0 | %0,0 |
 
-Yazılı mesajların yüzdesi: soru işareti, ünlem, tamamı büyük harf (en az 4 harf) ve gülme (haha, hehe, ksksks, sjsj, asdf, xd gibi ya da 😂 🤣 içeren) mesajlar.
+Soru: soru işareti içeren yazılı mesaj; "???" gibi birden çok işaret de bir soru sayılır. Gülme: haha, hehe, hohoho, ksksks, sjsj, asdf, xd gibi bir ifade ya da 😂 🤣 içeren mesaj. Oranlar yazılı mesajlara göredir.
 
 
 **Sohbet akışı**
@@ -68,16 +78,6 @@ En az 3 saatlik sessizlikten sonraki ilk mesaj yeni bir sohbet başlatır; sessi
 | Ekin | Deniz | %80,0 | Ayşe | %66,7 |
 
 Yanıt, aynı sohbette sözün bir kişiden diğerine geçmesidir; dışa aktarım kimin kime cevap verdiğini içermediği için bir önceki mesajın sahibi esas alınır. Pay: kişinin verdiği ya da aldığı yanıtlar içinde o kişinin payı.
-
-
-## Medya
-
-| Kişi | Çıkartma | Görsel | Video | Ses | Belge | GIF | Konum | Toplam |
-|---|---:|---:|---:|---:|---:|---:|---:|---:|
-| Deniz | 1 | 1 | 0 | 0 | 0 | 0 | 0 | 2 |
-| Ekin | 0 | 0 | 0 | 0 | 1 | 0 | 0 | 1 |
-| Ayşe | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
-| Toplam | 1 | 1 | 0 | 0 | 1 | 0 | 0 | 3 |
 
 
 ## Zaman

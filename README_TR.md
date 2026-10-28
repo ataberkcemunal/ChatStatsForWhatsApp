@@ -104,12 +104,12 @@ Başarılı çalışma sonunda `PDF report generated: <yol>` yazılır ve çık�
 | Bölüm | İçerik |
 |---|---|
 | Özet kutuları | Mesaj, katılımcı, sohbet günü, günde ortalama mesaj, en uzun seri ve en uzun sessizlik; tarihleri altında |
-| Kişiler | Kişi başına mesaj (çubukla), pay, ortalama harf, medya, emoji, bağlantı, anket, silinen mesaj ve toplam satırı; ardından aktif gün, katılım ve aktif gün başına mesaj; ardından soru, ünlem, büyük harf ve gülme oranları; ardından başlattığı sohbet, son söz, ortanca yanıt süresi ve tur başına mesaj; gruplarda kişinin en çok yanıt verdiği ve en çok yanıt aldığı kişi |
+| Kişiler | Kişi başına mesaj (çubukla), pay, ortalama harf, medya, emoji, bağlantı, anket, silinen mesaj ve toplam satırı; ardından kişi başına çıkartma, görsel, video, ses, belge, GIF ve konum; ardından aktif gün, katılım ve aktif gün başına mesaj; ardından soru ve gülme (sayı ve oran); ardından başlattığı sohbet, son söz, ortanca yanıt süresi ve tur başına mesaj; gruplarda kişinin en çok yanıt verdiği ve en çok yanıt aldığı kişi |
 | Aramalar | Duruma göre sesli ve görüntülü aramalar (yalnızca birebir sohbetlerde, arama varsa) |
-| Medya | Kişi başına çıkartma, görsel, video, ses, belge, GIF ve konum; toplamlarla |
 | Zaman | Yan yana gün ve saat grafikleri; sohbet birden çok ayı kapsıyorsa ay grafiği ve kişilerin aylık mesaj payı (en çok yazan beş kişi, kalanlar "Diğer") |
 | Kelimeler ve ifadeler | Üç sütunda en sık 45 kelime (4+ harf) ile en sık 15 iki ve üç kelimelik ifade |
-| Kişi bazında kelimeler | Her kişi için vurgulu bir bant (mesaj, pay, aktif gün), kendine özgü kelimeleri ve en sık 15 kelime, ikili ve üçlü ifade yan yana |
+| Kişi bazında kelimeler | Her kişi için vurgulu bir bant (mesaj, pay, aktif gün) ve en sık 15 kelime, ikili ve üçlü ifade yan yana |
+| Kendine özgü kelimeler | Her kişinin diğerlerinden belirgin biçimde daha sık kullandığı en fazla on kelime; kendisinin ve diğerlerinin kullanım sayısıyla |
 | Emojiler | Her kişinin en çok kullandığı on emoji |
 
 Sayıların tanımları:
@@ -123,7 +123,7 @@ Sayıların tanımları:
 - **Aktif gün başına mesaj**: Kişinin mesajları ÷ kendi aktif gün sayısı.
 - **Sohbet**: Aralarında 3 saat (`--conversation-gap` ile değiştirilebilir) veya daha uzun sessizlik olmayan kayıtlar. Böyle bir sessizlikten sonraki ilk kayıt yeni bir sohbet başlatır; sessizlikten önceki son kayıt **son söz** sayılır.
 - **Kendine özgü**: Kişinin sohbetin geri kalanından belirgin biçimde daha sık kullandığı en fazla on kelime (ağırlıklı log-odds, z > 1,96). Kısa sohbetlerde hiç çıkmayabilir.
-- **Üslup**: Yazılı mesajlar içinde soru işareti, ünlem, yalnızca büyük harf (en az dört harf; gülme sayılmaz) ya da gülme (haha, hehe, ksksks, sjsj, asdf, xd veya 😂 🤣) içerenlerin oranı.
+- **Soru ve gülme**: Soru işareti ("???" de tek soru sayılır) ya da gülme (haha, hehe, hohoho, ksksks, sjsj, asdf, xd veya 😂 🤣) içeren yazılı mesajlar; her mesaj bir kez sayılır, oran kişinin yazılı mesajlarına göredir.
 - **Kim kime yanıt veriyor**: Dışa aktarım bir mesajın hangi mesaja cevap olduğunu kaydetmez; aynı sohbette bir önceki kaydın sahibi esas alınır.
 - **Tur başına mesaj**: Kişinin söz başkasına geçmeden ya da sohbet bitmeden art arda gönderdiği kayıtların ortalaması.
 - **Yanıt süresi**: Aynı sohbette başka birinin kaydından sonra gelen kayda kadar geçen bekleme. Tabloda kişinin ortancası gösterilir; birkaç uzun bekleme sonucu bozmaz.

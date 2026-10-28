@@ -121,27 +121,20 @@ def clean_message(text):
     ).strip()
 
 
-# Written laughter: haha, ahaha, hehe, hihi, ksksks, sjsjsj, jsjs, asdf..., xd, lol, plus the laughing emojis.
+# Written laughter: haha, ahaha, hehe, hihi, hohoho, ohhohoh, ksksks, sjsjsj, jsjs, asdf..., xd, lol,
+# plus the laughing emojis.
 LAUGH_REGEX = re.compile(
-    r"(?<!\w)(?:a?(?:h+a+){2,}h*|(?:h+e+){2,}h*|(?:h+i+){2,}h*|(?:ks){2,}k?|(?:sj){2,}s?|(?:js){2,}j?"
+    r"(?<!\w)(?:a?(?:h+a+){2,}h*|o?(?:h+o+){2,}h*|(?:h+e+){2,}h*|(?:h+i+){2,}h*|(?:ks){2,}k?|(?:sj){2,}s?|(?:js){2,}j?"
     r"|asd\w*|x+d+|lo+l+|lmao+)(?!\w)|[\U0001F602\U0001F923\U0001F639]"
 )
 
 
 def style_flags(written):
-    """Question, exclamation, all caps and laughter in what someone wrote (links left out)."""
+    """Whether someone asked a question or laughed, once per message (links left out)."""
     text = re.sub(LINK_REGEX, "", written)
-    lower = turkish_lower(text)
-    # "KSKSKS" is loud laughter, not shouting: laughter is left out of the caps check.
-    letters = [
-        char for char, low in zip(text, LAUGH_REGEX.sub(lambda m: " " * len(m[0]), lower))
-        if char.isalpha() and low != " "
-    ] if len(lower) == len(text) else [char for char in text if char.isalpha()]
     return {
         "question": int("?" in text),
-        "exclaim": int("!" in text),
-        "shout": int(len(letters) >= 4 and all(char.isupper() for char in letters)),
-        "laugh": int(bool(LAUGH_REGEX.search(lower))),
+        "laugh": int(bool(LAUGH_REGEX.search(turkish_lower(text)))),
     }
 
 
@@ -577,6 +570,25 @@ def compute_stats(
         "note",
     )
 
+    # Media
+    media_stats = []
+    for user in sorted_users:
+        # Count different media types using standard case-insensitive matching
+        # (Avoids Turkish-specific I/ı issues for these fixed system placeholders)
+        msgs_clean = user_messages(user)["message"].str.replace("\u200e", "", regex=False)
+        counts = [count_contains(msgs_clean, pattern) for pattern in MEDIA_TYPE_PATTERNS.values()]
+        media_stats.append((user, counts))
+    if any(sum(counts) for _, counts in media_stats):
+        media_stats.sort(key=lambda item: sum(item[1]), reverse=True)
+        column_totals = [sum(column) for column in zip(*(counts for _, counts in media_stats))]
+        report.table(
+            ["Kişi", *MEDIA_LABELS.values(), "Toplam"],
+            [[user, *map(number, counts), number(sum(counts))] for user, counts in media_stats],
+            numeric=range(1, len(MEDIA_LABELS) + 2),
+            title="Medya",
+            total=["Toplam", *map(number, column_totals), number(sum(column_totals))],
+        )
+
     by_days = sorted(user_stats, key=lambda x: x["Days Active"], reverse=True)
     report.table(
         ["Kişi", "Aktif gün", "Katılım", "Aktif gün başına mesaj"],
@@ -593,24 +605,31 @@ def compute_stats(
     )
 
     written_df = df[df["has_text"] == 1]
-    style = written_df.groupby("user")[["question", "exclaim", "shout", "laugh"]].mean() * 100
+    style = written_df.groupby("user")[["question", "laugh"]].sum()
     styled_users = [user for user in sorted_users if user in style.index]
+
+    def count_and_share(count, written):
+        return [number(int(count)), percent(100 * count / written)]
+
     if styled_users:
         report.table(
-            ["Kişi", "Yazılı mesaj", "Soru", "Ünlem", "Büyük harf", "Gülme"],
+            ["Kişi", "Yazılı mesaj", "Soru", "Soru oranı", "Gülme", "Gülme oranı"],
             [
                 [user, number(stats_by_user[user]["Written"]),
-                 *(percent(style.at[user, column]) for column in style.columns)]
+                 *count_and_share(style.at[user, "question"], stats_by_user[user]["Written"]),
+                 *count_and_share(style.at[user, "laugh"], stats_by_user[user]["Written"])]
                 for user in styled_users
             ],
             numeric=range(1, 6),
             title="Üslup",
             total=["Toplam", number(len(written_df)),
-                   *(percent(100 * written_df[column].mean()) for column in style.columns)],
+                   *count_and_share(written_df["question"].sum(), len(written_df)),
+                   *count_and_share(written_df["laugh"].sum(), len(written_df))],
         )
         report.paragraph(
-            "Yazılı mesajların yüzdesi: soru işareti, ünlem, tamamı büyük harf (en az 4 harf) ve "
-            "gülme (haha, hehe, ksksks, sjsj, asdf, xd gibi ya da 😂 🤣 içeren) mesajlar.",
+            "Soru: soru işareti içeren yazılı mesaj; \"???\" gibi birden çok işaret de bir soru sayılır. "
+            "Gülme: haha, hehe, hohoho, ksksks, sjsj, asdf, xd gibi bir ifade ya da 😂 🤣 içeren mesaj. "
+            "Oranlar yazılı mesajlara göredir.",
             "note",
         )
 
@@ -704,25 +723,6 @@ def compute_stats(
             numeric=range(1, 6),
         )
 
-    # Media
-    media_stats = []
-    for user in sorted_users:
-        # Count different media types using standard case-insensitive matching
-        # (Avoids Turkish-specific I/ı issues for these fixed system placeholders)
-        msgs_clean = user_messages(user)["message"].str.replace("\u200e", "", regex=False)
-        counts = [count_contains(msgs_clean, pattern) for pattern in MEDIA_TYPE_PATTERNS.values()]
-        media_stats.append((user, counts))
-    if any(sum(counts) for _, counts in media_stats):
-        report.section("Medya")
-        media_stats.sort(key=lambda item: sum(item[1]), reverse=True)
-        column_totals = [sum(column) for column in zip(*(counts for _, counts in media_stats))]
-        report.table(
-            ["Kişi", *MEDIA_LABELS.values(), "Toplam"],
-            [[user, *map(number, counts), number(sum(counts))] for user, counts in media_stats],
-            numeric=range(1, len(MEDIA_LABELS) + 2),
-            total=["Toplam", *map(number, column_totals), number(sum(column_totals))],
-        )
-
     # Time
     report.section("Zaman")
     days = (
@@ -783,16 +783,29 @@ def compute_stats(
             f"{percent(100 * stat['Messages'] / len(df))} pay",
             f"{number(stat['Days Active'])} aktif gün",
         ]
-        with report.person(user, details):
-            distinctive = distinctive_words(word_counts, user)
-            if distinctive:
-                report.paragraph("Kendine özgü: " + ", ".join(distinctive), "note")
-            with report.grid(3):
-                report.table(["Kelime", "Sayı"], _top(word_counts[user], TOP_PER_PERSON), numeric=[1])
-                report.table(["İkili ifade", "Sayı"], _top(bigram_counts[user], TOP_PER_PERSON),
-                             numeric=[1])
-                report.table(["Üçlü ifade", "Sayı"], _top(trigram_counts[user], TOP_PER_PERSON),
-                             numeric=[1])
+        with report.person(user, details), report.grid(3):
+            report.table(["Kelime", "Sayı"], _top(word_counts[user], TOP_PER_PERSON), numeric=[1])
+            report.table(["İkili ifade", "Sayı"], _top(bigram_counts[user], TOP_PER_PERSON), numeric=[1])
+            report.table(["Üçlü ifade", "Sayı"], _top(trigram_counts[user], TOP_PER_PERSON), numeric=[1])
+
+    distinctive = {user: distinctive_words(word_counts, user) for user in sorted_users}
+    if any(distinctive.values()):
+        report.section("Kendine özgü kelimeler")
+        report.paragraph(
+            "Kişinin sohbetin geri kalanından belirgin biçimde daha sık kullandığı kelimeler "
+            "(ağırlıklı log-odds, z > 1,96); en belirgini üstte.",
+            "note",
+        )
+        with report.grid(3):
+            for user, words in distinctive.items():
+                if words:
+                    report.table(
+                        ["Kelime", "Kendisi", "Diğerleri"],
+                        [[word, number(word_counts[user][word]),
+                          number(all_words[word] - word_counts[user][word])] for word in words],
+                        numeric=[1, 2],
+                        title=user,
+                    )
 
     # Emojis
     emoji_data = {}

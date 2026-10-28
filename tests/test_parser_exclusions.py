@@ -219,8 +219,9 @@ class SenderExclusionTests(unittest.TestCase):
             self.assertTrue(compute_stats(self.parse(lines), output_file=root / 'r.pdf',
                                           markdown_output=root / 'r.md'))
             text = (root / 'r.md').read_text(encoding='utf-8')
-        self.assertIn('### Ayşe\n\n20 mesaj · %50,0 pay · 1 aktif gün\n\nKendine özgü: kanka, naber\n', text)
-        self.assertIn('Kendine özgü: hocam, selam\n', text)
+        section = text[text.index('## Kendine özgü kelimeler'):]
+        self.assertIn('**Ayşe**\n\n| Kelime | Kendisi | Diğerleri |\n|---|---:|---:|\n| kanka | 20 | 0 |\n| naber | 20 | 0 |\n', section)
+        self.assertIn('**Bora**\n\n| Kelime | Kendisi | Diğerleri |\n|---|---:|---:|\n| hocam | 20 | 0 |\n| selam | 20 | 0 |\n', section)
 
     def test_day_streaks(self):
         days = [date(2026, 10, d) for d in (1, 2, 2, 3, 8, 9, 10, 11, 13)]
@@ -244,28 +245,30 @@ class SenderExclusionTests(unittest.TestCase):
 
     def test_style_flags(self):
         cases = {
-            'ne zaman?': (1, 0, 0, 0),
-            'OLMAZ!': (0, 1, 1, 0),
-            'hahaha çok iyi': (0, 0, 0, 1),
-            'KSKSKSKS': (0, 0, 0, 1),        # loud laughter is not shouting
-            'NEDEN BÖYLE': (0, 0, 1, 0),
-            'İYİ GECELER': (0, 0, 1, 0),
-            'sjsjsj 😂': (0, 0, 0, 1),
-            'TAMAM': (0, 0, 1, 0),
-            'OK': (0, 0, 0, 0),              # too short to count as shouting
-            'https://x.com/?a=1': (0, 0, 0, 0),
-            'hayırlı akşamlar, şaka şaka': (0, 0, 0, 0),
+            'ne zaman?': (1, 0),
+            'ne??? nasıl???': (1, 0),        # one question per message, however many marks
+            'hahaha çok iyi': (0, 1),
+            'KSKSKSKS': (0, 1),
+            'sjsjsj 😂': (0, 1),
+            'hohoho': (0, 1),
+            'ohohoho': (0, 1),
+            'ohhohoh': (0, 1),
+            'ohhohoho': (0, 1),
+            'OHOHOHO naber?': (1, 1),
+            'oho': (0, 0),
+            'https://x.com/?a=1': (0, 0),
+            'hayırlı akşamlar, şaka şaka, horoz': (0, 0),
         }
         for text, expected in cases.items():
             with self.subTest(text=text):
                 flags = style_flags(text)
-                self.assertEqual((flags['question'], flags['exclaim'], flags['shout'], flags['laugh']), expected)
+                self.assertEqual((flags['question'], flags['laugh']), expected)
 
     def test_style_and_reply_tables(self):
         df = self.parse(
             '[1.10.2026 10:00:00] Ayşe: naber?\n'
             '[1.10.2026 10:01:00] Bora: hahaha iyi\n'
-            '[1.10.2026 10:02:00] Ayşe: SÜPER\n'
+            '[1.10.2026 10:02:00] Ayşe: SÜPER??\n'
             '[1.10.2026 10:03:00] Bora: tamam\n'
             '[1.10.2026 10:04:00] Can: \u200egörüntü dahil edilmedi\n'
             '[1.10.2026 10:05:00] Bora: güzel!\n'
@@ -276,8 +279,12 @@ class SenderExclusionTests(unittest.TestCase):
                                           markdown_output=root / 'r.md'))
             text = (root / 'r.md').read_text(encoding='utf-8')
         # Can wrote nothing, so has no style row.
-        self.assertIn('| Bora | 3 | %0,0 | %33,3 | %0,0 | %33,3 |', text)
-        self.assertIn('| Ayşe | 2 | %50,0 | %0,0 | %50,0 | %0,0 |', text)
+        self.assertIn('| Bora | 3 | 0 | %0,0 | 1 | %33,3 |', text)
+        self.assertIn('| Ayşe | 2 | 2 | %100,0 | 0 | %0,0 |', text)
+        self.assertIn('| Toplam | 5 | 2 | %40,0 | 1 | %20,0 |', text)
+        # The media table follows the people table, before the other people tables.
+        self.assertLess(text.index('**Medya**'), text.index('**Etkinlik**'))
+        self.assertNotIn('## Medya', text)
         style = text[text.index('**Üslup**'):text.index('**Sohbet akışı**')]
         self.assertNotIn('| Can |', style)
         # Replies (from → to): Bora→Ayşe, Ayşe→Bora, Bora→Ayşe, Can→Bora, Bora→Can.

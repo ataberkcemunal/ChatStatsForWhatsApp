@@ -21,7 +21,7 @@ En uzun seri: her gün yazışılan 01.10.2026 – 04.10.2026
 | Ayşe | 6 | %33,3 | 28,0 | 0 | 3 | 0 | 1 | 1 |
 | Deniz | 6 | %33,3 | 38,3 | 2 | 1 | 0 | 0 | 0 |
 | Ekin | 6 | %33,3 | 55,0 | 1 | 2 | 1 | 0 | 0 |
-| Toplam | 18 | %100,0 |  | 3 | 6 | 1 | 1 | 1 |
+| Toplam | 18 |  |  | 3 | 6 | 1 | 1 | 1 |
 
 Ort. harf: yazılı mesaj başına boşluksuz karakter; medya, arama ve silinen mesajlar sayılmaz.
 
@@ -54,19 +54,19 @@ Ort. harf: yazılı mesaj başına boşluksuz karakter; medya, arama ve silinen 
 | Ekin | 5 | 0 | %0,0 | 0 | %0,0 |
 | Toplam | 13 | 2 | %15,4 | 0 | %0,0 |
 
-Soru: soru işareti içeren yazılı mesaj; "???" gibi birden çok işaret de bir soru sayılır. Gülme: haha, hehe, hohoho, ksksks, sjsj, asdf, xd gibi bir ifade ya da 😂 🤣 içeren mesaj. Oranlar yazılı mesajlara göredir.
+Soru: soru işareti, mi/mı/mu/mü soru eki (gelcekmisin gibi bitişik de) ya da nasıl, neden, niye, niçin, kaç, hangi, nerede, kim gibi bir soru kelimesi içeren ya da yalnızca "ne" olan yazılı mesaj; "???" gibi birden çok işaret ya da ifade de bir soru sayılır. Gülme: haha, hehe, hohoho, ksksks, sjsj, zaaa, asdf, xd, :D, :) gibi bir ifade ya da 😂 🤣 içeren mesaj. Oranlar yazılı mesajlara göredir.
 
 
 **Sohbet akışı**
 
-| Kişi | Başlattığı sohbet | Pay | Son söz | Ortanca yanıt süresi | Tur başına mesaj |
-|---|---:|---:|---:|---:|---:|
-| Ayşe | 2 | %50,0 | 1 | 1 dk | 1,0 |
-| Deniz | 1 | %25,0 | 0 | 1 dk | 1,0 |
-| Ekin | 1 | %25,0 | 3 | 1 dk | 1,0 |
-| Toplam | 4 | %100,0 | 4 | 1 dk | 1,0 |
+| Kişi | Başlattığı sohbet | Pay | Son söz |
+|---|---:|---:|---:|
+| Ayşe | 2 | %50,0 | 1 |
+| Deniz | 1 | %25,0 | 0 |
+| Ekin | 1 | %25,0 | 3 |
+| Toplam | 4 |  | 4 |
 
-En az 3 saatlik sessizlikten sonraki ilk mesaj yeni bir sohbet başlatır; sessizlikten önceki son mesaj son sözdür. Yanıt: aynı sohbette başka birinin mesajından sonra yazılan mesaj; süre, aradaki beklemenin ortancasıdır. Tur başına mesaj: söz başkasına geçmeden art arda gönderilen mesajların ortalaması.
+En az 1 saatlik sessizlikten sonraki ilk mesaj yeni bir sohbet başlatır; sessizlikten önceki son mesaj son sözdür.
 
 
 **Kim kime yanıt veriyor**

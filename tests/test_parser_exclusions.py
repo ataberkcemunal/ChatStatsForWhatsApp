@@ -10,7 +10,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 from ChatStatsForWhatsApp import (
-    compute_stats, conversation_stats, day_streaks, distinctive_words, duration, monthly_shares,
+    compute_stats, conversation_stats, day_streaks, distinctive_words, monthly_shares,
     style_flags, main, parse_chat, parse_end_date,
     positive_hours,
 )
@@ -164,13 +164,13 @@ class SenderExclusionTests(unittest.TestCase):
         # "merhaba" is 7 letters; the media placeholder is not written text.
         self.assertIn('| A\\|B &lt;i&gt; | 2 | %66,7 | 7,0 | 1 |', text)
 
-    def test_conversation_starts_ends_and_reply_times(self):
+    def test_conversation_starts_ends_and_replies(self):
         df = self.parse(
             '[1.10.2026 10:00:00] Ayşe: Günaydın\n'
             '[1.10.2026 10:00:30] Ayşe: Kalktın mı?\n'
             '[1.10.2026 10:02:30] Bora: Kalktım\n'
             '[1.10.2026 10:12:30] Ayşe: Süper\n'
-            # Six hours of silence: Bora opens a new conversation and Ayşe answers.
+            # An hour or more of silence: Bora opens a new conversation and Ayşe answers.
             '[1.10.2026 16:12:30] Bora: Akşam?\n'
             '[1.10.2026 16:13:15] Ayşe: Olur\n'
         )
@@ -178,16 +178,16 @@ class SenderExclusionTests(unittest.TestCase):
         self.assertEqual(flow['conversations'], 2)
         self.assertEqual(flow['starts'].to_dict(), {'Ayşe': 1, 'Bora': 1})
         self.assertEqual(flow['ends'].to_dict(), {'Ayşe': 2})
-        # Ayşe answered after 10 min and 45 s; Bora after 2 min. The gap is not a reply.
-        self.assertEqual(flow['reply'].to_dict(), {'Ayşe': 322.5, 'Bora': 120.0})
-        self.assertEqual(flow['reply_all'], 120.0)
-        # Turns: Ayşe 10:00-10:00:30, Bora, Ayşe, Bora, Ayşe.
-        self.assertEqual(flow['turns'].to_dict(), {'Ayşe': 3, 'Bora': 2})
-        self.assertEqual(flow['turns_all'], 5)
+        # Replies as (answered, replier): the gap before Bora's evening message is not one.
+        self.assertEqual(flow['pairs'], Counter({('Ayşe', 'Bora'): 1, ('Bora', 'Ayşe'): 2}))
         # With a longer gap the evening message is Bora's reply, not a new conversation.
         flow = conversation_stats(df, gap_hours=8)
         self.assertEqual(flow['conversations'], 1)
-        self.assertEqual(flow['reply']['Bora'], (120 + 6 * 3600) / 2)
+        self.assertEqual(flow['pairs'][('Ayşe', 'Bora')], 2)
+        # The default gap is one hour: 59 minutes keeps the conversation going.
+        self.assertEqual(conversation_stats(self.parse(
+            '[1.10.2026 10:00:00] Ayşe: a\n[1.10.2026 10:59:00] Bora: b\n[1.10.2026 12:00:00] Ayşe: c\n'
+        ))['conversations'], 2)
 
     def test_conversation_gap_option(self):
         self.assertEqual(positive_hours('1,5'), 1.5)
@@ -255,6 +255,41 @@ class SenderExclusionTests(unittest.TestCase):
             'ohhohoh': (0, 1),
             'ohhohoho': (0, 1),
             'OHOHOHO naber?': (1, 1),
+            'za': (0, 1),
+            'ZAAAA': (0, 1),
+            'zazaza': (0, 1),
+            'tamam :D': (0, 1),
+            'iyi:dd': (0, 1),
+            'peki :)': (0, 1),
+            'zaten zayıf': (0, 0),
+            'saat 10:30, :dakika': (0, 0),
+            'geldin mi': (1, 0),
+            'GELİYOR MUSUN': (1, 0),
+            'yapar misin': (1, 0),
+            'gelcekmisin': (1, 0),
+            'gidiyormuyuz yarın': (1, 0),
+            'orda mıydı': (1, 0),
+            'nasılsın': (1, 0),
+            'nerdesin haha': (1, 1),
+            'kaçta buluşalım': (1, 0),
+            'kime verdin': (1, 0),
+            'ne': (1, 0),
+            'neeee': (1, 0),
+            'evimi sattım, adamı gördüm': (0, 0),
+            'resmi tatil, minimum mutlu müzik': (0, 0),
+            'kalemimiz ve evimiz': (0, 0),
+            'kimse yok, nasılsa gelir': (0, 0),
+            'neredeyse bitti': (0, 0),
+            'nerdeyse geldim': (0, 0),
+            'nerdesin': (1, 0),
+            'buna neden oldu': (0, 0),
+            'neden geldin': (1, 0),
+            'hangisi olursa olsun': (0, 0),
+            'hangi film olursa olsun': (0, 0),
+            'kim olursa olsun': (0, 0),
+            'x.com/?a=1': (0, 0),
+            'neredeyse bitti mi': (1, 0),
+            'ne güzel': (0, 0),
             'oho': (0, 0),
             'https://x.com/?a=1': (0, 0),
             'hayırlı akşamlar, şaka şaka, horoz': (0, 0),
@@ -294,11 +329,6 @@ class SenderExclusionTests(unittest.TestCase):
             root = Path(directory)
             compute_stats(df, chat_type='direct', output_file=root / 'r.pdf', markdown_output=root / 'r.md')
             self.assertNotIn('Kim kime', (root / 'r.md').read_text(encoding='utf-8'))
-
-    def test_duration_format(self):
-        for seconds, text in [(45, '45 sn'), (322.5, '5 dk'), (3600, '1 sa'), (7500, '2 sa 5 dk'),
-                              (float('nan'), '–')]:
-            self.assertEqual(duration(seconds), text)
 
     def test_cli_date_range_and_failure_exit_codes(self):
         with tempfile.TemporaryDirectory() as directory:

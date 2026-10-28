@@ -64,7 +64,7 @@ WhatsApp'ta sohbeti **medya olmadan** dışa aktarın. ZIP gelirse içindeki `.t
 [1.10.2026 10:31:05] Deniz: Selam
 ```
 
-Tarihten sonra virgül ve saniyesiz saat (`[1.10.2026, 10:30]`) de kabul edilir. Birden çok satıra yayılan mesajlar desteklenir. Başka diller ve tarih biçimleri tanınmaz. Medya dosyaları okunmaz; medya “görüntü dahil edilmedi” gibi yer tutuculardan sayılır.
+Tarihten sonra virgül ve saniyesiz saat (`[1.10.2026, 10:30]`) de kabul edilir. Birden çok satıra yayılan mesajlar desteklenir. Başka bir sohbetten yapıştırılmış satırlar (önceki mesajlardan bir günden daha eski tarihli başlıklar) yapıştırıldıkları mesajın parçası sayılır. Başka diller ve tarih biçimleri tanınmaz. Medya dosyaları okunmaz; medya “görüntü dahil edilmedi” gibi yer tutuculardan sayılır.
 
 ## Kullanım
 
@@ -78,7 +78,7 @@ Tarihten sonra virgül ve saniyesiz saat (`[1.10.2026, 10:30]`) de kabul edilir.
 | `--start-date`, `-s` | Yalnızca bu andan itibarenki kayıtlar (o an dahil). `GG.AA.YYYY`, `"GG.AA.YYYY SS:DD"` veya `"GG.AA.YYYY SS:DD:SS"` | tüm sohbet |
 | `--end-date`, `-e` | Yalnızca bu ana kadarki kayıtlar (o an dahil). Saatsiz tarih o günün tamamını kapsar | tüm sohbet |
 | `--chat-type` | `auto`, `group` veya `direct` | `auto` |
-| `--conversation-gap` | Kaç saatlik sessizlikten sonraki kaydın yeni sohbet başlatacağı (ör. `1.5`) | `3` |
+| `--conversation-gap` | Kaç saatlik sessizlikten sonraki kaydın yeni sohbet başlatacağı (ör. `0.5`) | `1` |
 | `--min-messages N` | Yalnızca dönemde (tarih filtresinden sonra) en az N kaydı olan kişileri dahil et; diğerleri kişiler tablosunun altında yazılır | `1` (herkes) |
 | `--output`, `-o` | PDF yolu | `chat_stats.pdf` |
 | `--markdown-output` | Raporu Markdown olarak da yaz (grafikler PDF'te kalır) | kapalı |
@@ -105,7 +105,7 @@ Başarılı çalışma sonunda `PDF report generated: <yol>` yazılır ve çık�
 | Bölüm | İçerik |
 |---|---|
 | Özet kutuları | Mesaj, katılımcı, sohbet günü, günde ortalama mesaj, en uzun seri ve en uzun sessizlik; tarihleri altında |
-| Kişiler | Kişi başına mesaj (çubukla), pay, ortalama harf, medya, emoji, bağlantı, anket, silinen mesaj ve toplam satırı; ardından kişi başına çıkartma, görsel, video, ses, belge, GIF ve konum; ardından aktif gün, katılım ve aktif gün başına mesaj; ardından soru ve gülme (sayı ve oran); ardından başlattığı sohbet, son söz, ortanca yanıt süresi ve tur başına mesaj; gruplarda kişinin en çok yanıt verdiği ve en çok yanıt aldığı kişi |
+| Kişiler | Kişi başına mesaj (çubukla), pay, ortalama harf, medya, emoji, bağlantı, anket, silinen mesaj ve toplam satırı; ardından kişi başına çıkartma, görsel, video, ses, belge, GIF ve konum; ardından aktif gün, katılım ve aktif gün başına mesaj; ardından soru ve gülme (sayı ve oran); ardından başlattığı sohbet ve son söz; gruplarda kişinin en çok yanıt verdiği ve en çok yanıt aldığı kişi |
 | Aramalar | Duruma göre sesli ve görüntülü aramalar (yalnızca birebir sohbetlerde, arama varsa) |
 | Zaman | Yan yana gün ve saat grafikleri; sohbet birden çok ayı kapsıyorsa ay grafiği ve kişilerin aylık mesaj payı (en çok yazan beş kişi, kalanlar "Diğer") |
 | Kelimeler ve ifadeler | Üç sütunda en sık 45 kelime (4+ harf) ile en sık 15 iki ve üç kelimelik ifade |
@@ -122,12 +122,10 @@ Sayıların tanımları:
 - **En uzun seri**: Her gün en az bir kayıt olan en uzun ardışık takvim günü dizisi. **En uzun sessizlik**: İlk ve son kayıt arasında hiç kayıt olmayan en uzun ardışık gün dizisi.
 - **Katılım**: Kişinin aktif günleri ÷ sohbet günü (mesaj payı değildir).
 - **Aktif gün başına mesaj**: Kişinin mesajları ÷ kendi aktif gün sayısı.
-- **Sohbet**: Aralarında 3 saat (`--conversation-gap` ile değiştirilebilir) veya daha uzun sessizlik olmayan kayıtlar. Böyle bir sessizlikten sonraki ilk kayıt yeni bir sohbet başlatır; sessizlikten önceki son kayıt **son söz** sayılır.
+- **Sohbet**: Aralarında 1 saat (`--conversation-gap` ile değiştirilebilir) veya daha uzun sessizlik olmayan kayıtlar. Böyle bir sessizlikten sonraki ilk kayıt yeni bir sohbet başlatır; sessizlikten önceki son kayıt **son söz** sayılır.
 - **Kendine özgü**: Kişinin sohbetin geri kalanından belirgin biçimde daha sık kullandığı en fazla on kelime (ağırlıklı log-odds, z > 1,96). Kısa sohbetlerde hiç çıkmayabilir.
-- **Soru ve gülme**: Soru işareti ("???" de tek soru sayılır) ya da gülme (haha, hehe, hohoho, ksksks, sjsj, asdf, xd veya 😂 🤣) içeren yazılı mesajlar; her mesaj bir kez sayılır, oran kişinin yazılı mesajlarına göredir.
+- **Soru ve gülme**: Soru (soru işareti, gelcekmisin gibi bitişik yazılanlar dahil mi/mı/mu/mü soru eki, nasıl, neden, niye, niçin, kaç, hangi, nerede, kim gibi bir soru kelimesi ya da yalnızca "ne" olan mesaj; "???" de tek soru sayılır; neredeyse, neden olmak, "hangisi/kim/ne olursa olsun" ve linklerdeki ? sayılmaz) ya da gülme (haha, hehe, hohoho, ksksks, sjsj, zaaa, asdf, xd, :D, :) veya 😂 🤣) içeren yazılı mesajlar; her mesaj bir kez sayılır, oran kişinin yazılı mesajlarına göredir.
 - **Kim kime yanıt veriyor**: Dışa aktarım bir mesajın hangi mesaja cevap olduğunu kaydetmez; aynı sohbette bir önceki kaydın sahibi esas alınır.
-- **Tur başına mesaj**: Kişinin söz başkasına geçmeden ya da sohbet bitmeden art arda gönderdiği kayıtların ortalaması.
-- **Yanıt süresi**: Aynı sohbette başka birinin kaydından sonra gelen kayda kadar geçen bekleme. Tabloda kişinin ortancası gösterilir; birkaç uzun bekleme sonucu bozmaz.
 
 Sayılar Türkçe biçimde yazılır: binlik için `1.234`, ondalık için `12,5`, yüzde için `%45,3`.
 

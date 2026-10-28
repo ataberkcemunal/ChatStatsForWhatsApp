@@ -121,20 +121,45 @@ def clean_message(text):
     ).strip()
 
 
-# Written laughter: haha, ahaha, hehe, hihi, hohoho, ohhohoh, ksksks, sjsjsj, jsjs, asdf..., xd, lol,
-# plus the laughing emojis.
+# Written laughter: haha, ahaha, hehe, hihi, hohoho, ohhohoh, ksksks, sjsjsj, jsjs, za, zaaa, zazaza,
+# asdf..., xd, lol, plus :D, :DD, :) and the laughing emojis.
 LAUGH_REGEX = re.compile(
     r"(?<!\w)(?:a?(?:h+a+){2,}h*|o?(?:h+o+){2,}h*|(?:h+e+){2,}h*|(?:h+i+){2,}h*|(?:ks){2,}k?|(?:sj){2,}s?|(?:js){2,}j?"
-    r"|asd\w*|x+d+|lo+l+|lmao+)(?!\w)|[\U0001F602\U0001F923\U0001F639]"
+    r"|(?:z+a+)+|asd\w*|x+d+|lo+l+|lmao+)(?!\w)|:d+(?!\w)|:\)|[\U0001F602\U0001F923\U0001F639]"
 )
+
+
+# Questions without a question mark. Vowels are not harmony-checked, so ASCII typing (misin for mısın)
+# also counts. The particle counts as a separate word in any form (mi, mısın, miydi) and attached only
+# with a personal or tense ending (gelcekmisin), since a bare attached -mi is usually an accusative
+# (evimi, adamı).
+_V = "[iıuü]"
+_QUESTION_SUFFIX = rf"(?:y{_V}[mz]|s{_V}n(?:{_V}z)?|yd{_V}(?:[mnk]|n{_V}z)?|ym{_V}[şs](?:{_V}m|s{_V}n|{_V}z)?)"
+QUESTION_REGEX = re.compile(
+    rf"(?<!\w)m{_V}{_QUESTION_SUFFIX}?(?!\w)|(?<=\w)m{_V}{_QUESTION_SUFFIX}(?!\w)"
+    r"|(?<!\w)(?:nas[ıi]l(?!sa(?!\w))\w*|neden|niye|ni[çc]in|ka[çc](?:ta|tan|[ıi]|[ıi]nc[ıi])?|hangi\w*"
+    r"|nere\w*|nerde\w*|nerden\w*|kim(?:in|e|den|le|ler|sin|di|mi[şs])?)(?!\w)"
+)
+# "ne" counts only as a whole message (ne, neee), since inside a sentence it is often not a question.
+ONLY_NE_REGEX = re.compile(r"n+e+[\s!.]*")
+# Phrases built on question words that are not questions: neredeyse (almost), neden olmak
+# (to cause), hangisi/kim/ne olursa olsun (whichever/whoever/whatever).
+NOT_QUESTION_REGEX = re.compile(
+    r"(?<!\w)(?:nere?deyse|neden\s+ol\w*|(?:hangi\w*|kim\w*|ne)(?:\s+\w+)?\s+olursa\s+olsun)(?!\w)"
+)
+# Links written without http (x.com/?a=1): their ? is not a question mark.
+BARE_LINK_REGEX = re.compile(r"(?<!\w)(?:www\.)?[\w-]+(?:\.[\w-]+)+/\S*")
 
 
 def style_flags(written):
     """Whether someone asked a question or laughed, once per message (links left out)."""
-    text = re.sub(LINK_REGEX, "", written)
+    text = BARE_LINK_REGEX.sub("", re.sub(LINK_REGEX, "", written))
+    lower = turkish_lower(text)
+    asked = NOT_QUESTION_REGEX.sub(" ", lower)
+    question = "?" in text or QUESTION_REGEX.search(asked) or ONLY_NE_REGEX.fullmatch(lower.strip())
     return {
-        "question": int("?" in text),
-        "laugh": int(bool(LAUGH_REGEX.search(turkish_lower(text)))),
+        "question": int(bool(question)),
+        "laugh": int(bool(LAUGH_REGEX.search(lower))),
     }
 
 
@@ -429,49 +454,27 @@ def day_streaks(dates):
 
 
 # Hours of silence that end one conversation; the next record opens a new one.
-CONVERSATION_GAP_HOURS = 3.0
+CONVERSATION_GAP_HOURS = 1.0
 
 
 def conversation_stats(df, gap_hours=CONVERSATION_GAP_HOURS):
-    """Count who opens and closes conversations, how fast each person replies
-    and how many records they send in a row.
+    """Count who opens and closes conversations, and who replies to whom.
 
     A reply is a record whose sender differs from the previous record's sender
-    within the same conversation; its reply time is the silence before it.
-    A turn is a run of records by one sender that a start or a reply begins.
+    within the same conversation.
     """
     ordered = df.sort_values("datetime", kind="stable")
     silence = ordered["datetime"].diff()
     starts = silence.isna() | (silence >= pd.Timedelta(hours=gap_hours))
     ends = starts.shift(-1, fill_value=True)
     replies = ~starts & (ordered["user"] != ordered["user"].shift())
-    reply_seconds = silence[replies].dt.total_seconds()
-    turns = starts | replies
     pairs = Counter(zip(ordered["user"].shift()[replies], ordered.loc[replies, "user"]))
     return {
         "pairs": pairs,
-        "turns": ordered.loc[turns, "user"].value_counts(),
-        "turns_all": int(turns.sum()),
         "conversations": int(starts.sum()),
         "starts": ordered.loc[starts, "user"].value_counts(),
         "ends": ordered.loc[ends, "user"].value_counts(),
-        "reply": reply_seconds.groupby(ordered.loc[replies, "user"]).median(),
-        "reply_all": reply_seconds.median(),
     }
-
-
-def duration(seconds):
-    """Write a duration briefly in Turkish: 45 sn, 12 dk, 2 sa 5 dk."""
-    if pd.isna(seconds):
-        return "–"
-    seconds = round(seconds)
-    if seconds < 60:
-        return f"{seconds} sn"
-    minutes = round(seconds / 60)
-    if minutes < 60:
-        return f"{minutes} dk"
-    hours, minutes = divmod(minutes, 60)
-    return f"{hours} sa {minutes} dk" if minutes else f"{hours} sa"
 
 
 # Compute and print statistics
@@ -560,7 +563,7 @@ def compute_stats(
         bar_column=1,
         bar_values=[s["Messages"] for s in user_stats],
         total=[
-            "Toplam", number(len(df)), percent(100), "", number(df["media"].sum()),
+            "Toplam", number(len(df)), "", "", number(df["media"].sum()),
             number(df["emoji_count"].sum()), number(df["links"].sum()),
             number(df["poll"].sum()), number(df["deleted"].sum()),
         ],
@@ -633,8 +636,10 @@ def compute_stats(
                    *count_and_share(written_df["laugh"].sum(), len(written_df))],
         )
         report.paragraph(
-            "Soru: soru işareti içeren yazılı mesaj; \"???\" gibi birden çok işaret de bir soru sayılır. "
-            "Gülme: haha, hehe, hohoho, ksksks, sjsj, asdf, xd gibi bir ifade ya da 😂 🤣 içeren mesaj. "
+            "Soru: soru işareti, mi/mı/mu/mü soru eki (gelcekmisin gibi bitişik de) ya da nasıl, neden, niye, "
+            "niçin, kaç, hangi, nerede, kim gibi bir soru kelimesi içeren ya da yalnızca \"ne\" olan yazılı mesaj; "
+            "\"???\" gibi birden çok işaret ya da ifade de bir soru sayılır. "
+            "Gülme: haha, hehe, hohoho, ksksks, sjsj, zaaa, asdf, xd, :D, :) gibi bir ifade ya da 😂 🤣 içeren mesaj. "
             "Oranlar yazılı mesajlara göredir.",
             "note",
         )
@@ -644,32 +649,27 @@ def compute_stats(
         sorted_users, key=lambda user: flow["starts"].get(user, 0), reverse=True
     )
     report.table(
-        ["Kişi", "Başlattığı sohbet", "Pay", "Son söz", "Ortanca yanıt süresi", "Tur başına mesaj"],
+        ["Kişi", "Başlattığı sohbet", "Pay", "Son söz"],
         [
             [
                 user, number(flow["starts"].get(user, 0)),
                 percent(100 * flow["starts"].get(user, 0) / flow["conversations"]),
-                number(flow["ends"].get(user, 0)), duration(flow["reply"].get(user)),
-                decimal(stats_by_user[user]["Messages"] / flow["turns"][user]),
+                number(flow["ends"].get(user, 0)),
             ]
             for user in flow_rows
         ],
-        numeric=range(1, 6),
+        numeric=range(1, 4),
         title="Sohbet akışı",
         bar_column=1,
         bar_values=[flow["starts"].get(user, 0) for user in flow_rows],
         total=[
-            "Toplam", number(flow["conversations"]), percent(100),
-            number(flow["conversations"]), duration(flow["reply_all"]),
-            decimal(len(df) / flow["turns_all"]),
+            "Toplam", number(flow["conversations"]), "", number(flow["conversations"]),
         ],
     )
     gap_hours = f"{conversation_gap:g}".replace(".", ",")
     report.paragraph(
         f"En az {gap_hours} saatlik sessizlikten sonraki ilk mesaj yeni bir sohbet başlatır; "
-        "sessizlikten önceki son mesaj son sözdür. Yanıt: aynı sohbette başka birinin "
-        "mesajından sonra yazılan mesaj; süre, aradaki beklemenin ortancasıdır. "
-        "Tur başına mesaj: söz başkasına geçmeden art arda gönderilen mesajların ortalaması.",
+        "sessizlikten önceki son mesaj son sözdür.",
         "note",
     )
 

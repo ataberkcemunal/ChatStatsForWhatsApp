@@ -64,7 +64,7 @@ In WhatsApp, export the chat **without media**. If you get a ZIP, extract the `.
 [1.10.2026 10:31:05] Deniz: Selam
 ```
 
-A comma after the date and times without seconds (`[1.10.2026, 10:30]`) are also accepted. Messages that span several lines are supported. Other languages and date formats are not recognised. Media files are not read; media is counted from placeholders such as “görüntü dahil edilmedi”.
+A comma after the date and times without seconds (`[1.10.2026, 10:30]`) are also accepted. Messages that span several lines are supported. A pasted line from an older chat (a header more than a day older than the messages before it) stays part of the message it was pasted into. Other languages and date formats are not recognised. Media files are not read; media is counted from placeholders such as “görüntü dahil edilmedi”.
 
 ## Usage
 
@@ -78,7 +78,7 @@ A comma after the date and times without seconds (`[1.10.2026, 10:30]`) are also
 | `--start-date`, `-s` | Only include records from this moment on (inclusive). `DD.MM.YYYY`, `"DD.MM.YYYY HH:MM"` or `"DD.MM.YYYY HH:MM:SS"` | whole chat |
 | `--end-date`, `-e` | Only include records up to this moment (inclusive). A date without a time covers that whole day | whole chat |
 | `--chat-type` | `auto`, `group` or `direct` | `auto` |
-| `--conversation-gap` | Hours of silence after which the next record starts a new conversation (e.g. `1.5`) | `3` |
+| `--conversation-gap` | Hours of silence after which the next record starts a new conversation (e.g. `0.5`) | `1` |
 | `--min-messages N` | Only include people with at least N records in the period (after the date filter); the others are named under the people table | `1` (everyone) |
 | `--output`, `-o` | PDF path | `chat_stats.pdf` |
 | `--markdown-output` | Also write the report as Markdown (charts stay in the PDF) | off |
@@ -107,7 +107,7 @@ Section titles in the PDF are in Turkish.
 | Section | Contents |
 |---|---|
 | Summary cards | Messages, participants, chat days, messages per day, longest streak and longest silence, with their dates below |
-| Kişiler | Per person: messages (with a bar), share, average letters, media, emojis, links, polls, deleted messages, plus a total row; then stickers, images, videos, audio, documents, GIFs and locations per person; then active days, participation and messages per active day; then questions and laughter (count and share); then conversations started, last words, median reply time and messages per turn; in groups, whom each person replies to most and who replies to them most |
+| Kişiler | Per person: messages (with a bar), share, average letters, media, emojis, links, polls, deleted messages, plus a total row; then stickers, images, videos, audio, documents, GIFs and locations per person; then active days, participation and messages per active day; then questions and laughter (count and share); then conversations started and last words; in groups, whom each person replies to most and who replies to them most |
 | Aramalar | Voice and video calls by status (direct chats only, when there are calls) |
 | Zaman | Weekday and hour charts side by side; when the chat spans several months, a month chart and each person's monthly share (the five most active people, the rest as "Diğer") |
 | Kelimeler ve ifadeler | The 45 most frequent words (4+ letters) in three columns, and the 15 most frequent two- and three-word phrases |
@@ -124,12 +124,10 @@ How the numbers are defined:
 - **Longest streak** – the most calendar days in a row with at least one record. **Longest silence** – the most calendar days in a row with none, between the first and last record.
 - **Participation** – the person's active days ÷ chat days (not their share of messages).
 - **Messages per active day** – the person's messages ÷ their own active days.
-- **Conversation** – records with no silence of 3 hours or more between them (set with `--conversation-gap`). The first record after such a silence starts a new conversation; the last record before it is the **last word**.
+- **Conversation** – records with no silence of an hour or more between them (set with `--conversation-gap`). The first record after such a silence starts a new conversation; the last record before it is the **last word**.
 - **Distinctive words** – up to ten words a person uses clearly more often than the rest of the chat (weighted log-odds, z > 1.96). Short chats may have none.
-- **Questions and laughter** – written messages with a question mark ("???" still counts as one question) or with laughter (haha, hehe, hohoho, ksksks, sjsj, asdf, xd or 😂 🤣), each counted once per message; the share is of the person's written messages.
+- **Questions and laughter** – written messages with a question (a question mark, the particle mi/mı/mu/mü, also attached as in gelcekmisin, a question word such as nasıl, neden, niye, niçin, kaç, hangi, nerede, kim, or a message that is only "ne"; "???" still counts as one question; neredeyse, neden olmak, "hangisi/kim/ne olursa olsun" and the ? in a link do not count) or with laughter (haha, hehe, hohoho, ksksks, sjsj, zaaa, asdf, xd, :D, :) or 😂 🤣), each counted once per message; the share is of the person's written messages.
 - **Who replies to whom** – the export does not record which message a reply answers, so the sender of the previous record in the same conversation is used.
-- **Messages per turn** – how many records a person sends in a row before someone else writes or the conversation ends, on average.
-- **Reply time** – the wait before a record that follows someone else's record in the same conversation. The table shows each person's median, so a few long waits do not skew it.
 
 Numbers use Turkish formatting: `1.234` for thousands, `12,5` for decimals and `%45,3` for percentages.
 

@@ -121,12 +121,25 @@ def clean_message(text):
     ).strip()
 
 
-# Written laughter: haha, ahaha, hehe, hihi, hohoho, ohhohoh, ksksks, sjsjsj, jsjs, za, zaaa, zazaza,
-# asdf..., xd, lol, plus :D, :DD, :) and the laughing emojis.
+# Written laughter: haha, ahaha, hehe, hihi, hohoho, ohhohoh, jajaja, ksksks, sksksk, sjsjsj, jsjs,
+# hshshs, kdkdkd, za, zaaa, zazaza, asdf..., xd, lol, plus :D, :DD, :), :P and the laughing emojis.
 LAUGH_REGEX = re.compile(
-    r"(?<!\w)(?:a?(?:h+a+){2,}h*|o?(?:h+o+){2,}h*|(?:h+e+){2,}h*|(?:h+i+){2,}h*|(?:ks){2,}k?|(?:sj){2,}s?|(?:js){2,}j?"
-    r"|(?:z+a+)+|asd\w*|x+d+|lo+l+|lmao+)(?!\w)|:d+(?!\w)|:\)|[\U0001F602\U0001F923\U0001F639]"
+    r"(?<!\w)(?:a?(?:h+a+){2,}h*|o?(?:h+o+){2,}h*|(?:h+e+){2,}h*|(?:h+i+){2,}h*|(?:j+a+){2,}j*"
+    r"|(?:ks){2,}k?|(?:sk){2,}s?|(?:sj){2,}s?|(?:js){2,}j?|(?:hs){2,}h?|(?:sh){2,}s?|(?:kd){2,}k?|(?:dk){2,}d?"
+    r"|(?:z+a+)+|asd\w*|x+d+|lo+l+|lmao+)(?!\w)|:[dp]+(?!\w)|:\)|[\U0001F602\U0001F606\U0001F923\U0001F639]"
 )
+# Keyboard mashes (asjdkasjd, skdjfhs, pğsdlf): a long word typed mostly on the home row of a
+# Turkish Q keyboard with four home-row consonants in a row, which real words almost never have.
+HOME_ROW = set("asdfghjklşi")
+CONSONANT_RUN_REGEX = re.compile(r"[sdfghjklş]{4}")
+
+
+def is_keyboard_mash(word):
+    return (
+        len(word) >= 6
+        and bool(CONSONANT_RUN_REGEX.search(word))
+        and 3 * sum(char in HOME_ROW for char in word) >= 2 * len(word)
+    )
 
 
 # Questions without a question mark. Vowels are not harmony-checked, so ASCII typing (misin for mısın)
@@ -162,7 +175,8 @@ def style_flags(written):
         "question": int(bool(question)),
         # A reply made of question marks only: "?", "???".
         "only_question_mark": int(bool(re.fullmatch(r"\?+", "".join(text.split())))),
-        "laugh": int(bool(LAUGH_REGEX.search(lower))),
+        "laugh": int(bool(LAUGH_REGEX.search(lower))
+                     or any(is_keyboard_mash(word) for word in re.findall(r"[^\W\d_]+", lower))),
     }
 
 
@@ -645,7 +659,8 @@ def compute_stats(
             "niçin, kaç, hangi, nerede, kim gibi bir soru kelimesi içeren ya da yalnızca \"ne\" olan yazılı mesaj; "
             "\"???\" gibi birden çok işaret ya da ifade de bir soru sayılır. "
             "Yalnız ?: yalnızca soru işaretinden oluşan mesaj (\"?\", \"???\"); bunlar Soru'ya da dahildir. "
-            "Gülme: haha, hehe, hohoho, ksksks, sjsj, zaaa, asdf, xd, :D, :) gibi bir ifade ya da 😂 🤣 içeren mesaj. "
+            "Gülme: haha, hehe, hohoho, jajaja, ksksks, sksksk, sjsj, zaaa, asdf, xd, :D, :), :P gibi bir ifade, "
+            "asjdkasjd gibi rastgele klavye yazımı ya da 😂 🤣 😆 içeren mesaj. "
             "Oranlar yazılı mesajlara göredir.",
             "note",
         )

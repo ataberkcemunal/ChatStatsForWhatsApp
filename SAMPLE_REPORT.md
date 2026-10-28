@@ -54,7 +54,7 @@ Ort. harf: yazılı mesaj başına boşluksuz karakter; medya, arama ve silinen 
 | Ekin | 5 | 0 | %0,0 | 0 | 0 | %0,0 |
 | Toplam | 13 | 2 | %15,4 | 0 | 0 | %0,0 |
 
-Soru: soru işareti, mi/mı/mu/mü soru eki (gelcekmisin gibi bitişik de) ya da nasıl, neden, niye, niçin, kaç, hangi, nerede, kim gibi bir soru kelimesi içeren ya da yalnızca "ne" olan yazılı mesaj; "???" gibi birden çok işaret ya da ifade de bir soru sayılır. Yalnız ?: yalnızca soru işaretinden oluşan mesaj ("?", "???"); bunlar Soru'ya da dahildir. Gülme: haha, hehe, hohoho, ksksks, sjsj, zaaa, asdf, xd, :D, :) gibi bir ifade ya da 😂 🤣 içeren mesaj. Oranlar yazılı mesajlara göredir.
+Soru: soru işareti, mi/mı/mu/mü soru eki (gelcekmisin gibi bitişik de) ya da nasıl, neden, niye, niçin, kaç, hangi, nerede, kim gibi bir soru kelimesi içeren ya da yalnızca "ne" olan yazılı mesaj; "???" gibi birden çok işaret ya da ifade de bir soru sayılır. Yalnız ?: yalnızca soru işaretinden oluşan mesaj ("?", "???"); bunlar Soru'ya da dahildir. Gülme: haha, hehe, hohoho, jajaja, ksksks, sksksk, sjsj, zaaa, asdf, xd, :D, :), :P gibi bir ifade, asjdkasjd gibi rastgele klavye yazımı ya da 😂 🤣 😆 içeren mesaj. Oranlar yazılı mesajlara göredir.
 
 
 **Sohbet akışı**

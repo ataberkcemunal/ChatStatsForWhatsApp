@@ -1,8 +1,7 @@
 """Read Turkish WhatsApp chat exports into classified records.
 
-Shared by Chat Stats and Profanity Stats so both count the same messages.
-The copy in Chat Stats is the original; after editing it, run
-``Tools/sync_shared.sh`` in the parent folder to update Profanity Stats.
+The copy in Chat Stats is the original. Other local projects may carry a
+copy; ``Tools/sync_shared.sh`` in the parent folder updates them.
 Uses only the standard library.
 """
 from __future__ import annotations

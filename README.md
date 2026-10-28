@@ -100,7 +100,7 @@ When the run succeeds it prints `PDF report generated: <path>` and exits with co
 
 ## What is in the report
 
-The PDF has the same look as the Profanity Stats report; section titles are in Turkish.
+Section titles in the PDF are in Turkish.
 
 | Section | Contents |
 |---|---|
@@ -142,8 +142,6 @@ Call records still count towards message totals in both cases; call status phras
 - Invisible formatting characters in sender names.
 
 Deleted messages are counted, but their content cannot be recovered. “Siz” is not linked to a real person, and the same person written in two different ways is not merged.
-
-Reading the export is done by `whatsapp_chat.py`, which Profanity Stats for WhatsApp shares, so both reports count the same messages.
 
 ## Sample report
 

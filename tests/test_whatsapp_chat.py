@@ -8,7 +8,6 @@ import whatsapp_chat
 from whatsapp_chat import CALL, DELETED, EXCLUDED, MESSAGE, SYSTEM, classify, read_chat
 
 PROJECT = Path(__file__).resolve().parents[1]
-SIBLINGS = ('Chat Stats for WhatsApp', 'Profanity Stats for WhatsApp')
 
 
 class ReadChatTests(unittest.TestCase):
@@ -85,12 +84,12 @@ class ReadChatTests(unittest.TestCase):
 
 class SharedCopyTests(unittest.TestCase):
     def test_copies_in_sibling_projects_are_identical(self):
-        for sibling in SIBLINGS:
-            other = PROJECT.parent / sibling
-            if other.resolve() == PROJECT or not other.is_dir():
+        # Any folder next to this project that carries the shared parser is a copy.
+        for other in sorted(PROJECT.parent.iterdir()):
+            if other.resolve() == PROJECT or not (other / 'whatsapp_chat.py').is_file():
                 continue
             for name in ('whatsapp_chat.py', 'report_style.py', 'tests/test_whatsapp_chat.py'):
-                with self.subTest(project=sibling, file=name):
+                with self.subTest(project=other.name, file=name):
                     self.assertEqual(
                         (PROJECT / name).read_bytes(), (other / name).read_bytes(),
                         'Run Tools/sync_shared.sh in the parent folder after editing a shared file.',

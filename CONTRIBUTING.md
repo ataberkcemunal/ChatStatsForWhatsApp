@@ -38,7 +38,7 @@ GitHub Actions runs the test suite and sample PDF generation on Ubuntu with Pyth
 
 ## Shared files
 
-`whatsapp_chat.py` (the export parser), `report_style.py` (the PDF look shared by both reports) and `tests/test_whatsapp_chat.py` are also used by Profanity Stats for WhatsApp, which lives next to this project. The copies here are the originals: edit them here, then run `Tools/sync_shared.sh` in the parent folder. A test fails while the two copies differ (it is skipped when the sibling project is not present). Keep these modules standard-library only.
+`whatsapp_chat.py` (the export parser), `report_style.py` (the PDF look) and `tests/test_whatsapp_chat.py` may be copied into other projects next to this one. The copies here are the originals. A test fails while a copy in a sibling folder differs; it is skipped when there is none. Keep these modules standard-library only.
 
 ## Sample data
 

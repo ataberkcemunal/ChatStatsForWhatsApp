@@ -100,8 +100,6 @@ Başarılı çalışma sonunda `PDF report generated: <yol>` yazılır ve çık�
 
 ## Raporun içeriği
 
-PDF, Profanity Stats raporuyla aynı görünümü kullanır.
-
 | Bölüm | İçerik |
 |---|---|
 | Özet kutuları | Mesaj, katılımcı, sohbet günü ve günde ortalama mesaj |
@@ -142,8 +140,6 @@ Her iki durumda da arama kayıtları mesaj toplamına girer; arama durum ifadele
 - Gönderen adlarındaki görünmez biçimlendirme karakterleri.
 
 Silinen mesajlar sayılır ama içerikleri geri getirilemez. “Siz” gerçek bir kişiyle eşleştirilmez; aynı kişinin farklı yazılmış adları birleştirilmez.
-
-Dışa aktarımı `whatsapp_chat.py` okur. Bu dosya Profanity Stats for WhatsApp ile ortaktır; böylece iki rapor aynı mesajları sayar.
 
 ## Örnek rapor
 

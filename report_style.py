@@ -1,8 +1,7 @@
 """Shared look for the WhatsApp PDF reports, plus a Markdown copy of the same content.
 
-Shared by Chat Stats and Profanity Stats so both reports look alike.
-The copy in Chat Stats is the original; after editing it, run
-``Tools/sync_shared.sh`` in the parent folder to update Profanity Stats.
+The copy in Chat Stats is the original. Other local projects may carry a
+copy; ``Tools/sync_shared.sh`` in the parent folder updates them.
 Uses only the standard library.
 """
 from __future__ import annotations

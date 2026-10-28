@@ -477,7 +477,7 @@ def duration(seconds):
 # Compute and print statistics
 def compute_stats(
     df, *, chat_type="auto", output_file="chat_stats.pdf", markdown_output=None, source_name=None,
-    conversation_gap=CONVERSATION_GAP_HOURS,
+    conversation_gap=CONVERSATION_GAP_HOURS, min_messages=1, excluded_senders=(),
 ):
     number, decimal, percent = report_style.number, report_style.decimal, report_style.percent
     is_group_chat = (
@@ -569,6 +569,12 @@ def compute_stats(
         "Ort. harf: yazılı mesaj başına boşluksuz karakter; medya, arama ve silinen mesajlar sayılmaz.",
         "note",
     )
+    if excluded_senders:
+        report.paragraph(
+            f"{number(min_messages)} mesajın altında kalan {number(len(excluded_senders))} kişi "
+            f"rapora dahil edilmedi: {', '.join(excluded_senders)}",
+            "note",
+        )
 
     # Media
     media_stats = []
@@ -872,6 +878,16 @@ def positive_hours(value):
     return hours
 
 
+def positive_count(value):
+    try:
+        count = int(value)
+    except ValueError:
+        count = 0
+    if count < 1:
+        raise argparse.ArgumentTypeError("use a whole number of at least 1")
+    return count
+
+
 def main():
     parser = argparse.ArgumentParser(description="WhatsApp chat statistics")
     parser.add_argument(
@@ -904,6 +920,13 @@ def main():
         default=CONVERSATION_GAP_HOURS,
         metavar="HOURS",
         help="Hours of silence that start a new conversation (default: 3)",
+    )
+    parser.add_argument(
+        "--min-messages",
+        type=positive_count,
+        default=1,
+        metavar="N",
+        help="Only include people with at least N records in the period (default: 1, everyone)",
     )
     parser.add_argument(
         "--output",
@@ -962,12 +985,24 @@ def main():
         print("No messages found for the given criteria.", file=sys.stderr)
         return 1
 
+    # The threshold applies after the date filter; the chat type was decided on the whole file.
+    counts = df["user"].value_counts()
+    excluded_senders = sorted(counts[counts < args.min_messages].index)
+    if excluded_senders:
+        df = df[~df["user"].isin(excluded_senders)]
+        print(f"Left out {len(excluded_senders)} people with fewer than {args.min_messages} records.")
+    if df.empty:
+        print(f"Nobody has at least {args.min_messages} records in this period.", file=sys.stderr)
+        return 1
+
     return (
         0
         if compute_stats(
             df,
             chat_type=args.chat_type,
             conversation_gap=args.conversation_gap,
+            min_messages=args.min_messages,
+            excluded_senders=excluded_senders,
             output_file=args.output,
             markdown_output=args.markdown_output,
             source_name=Path(args.chat_file).name,

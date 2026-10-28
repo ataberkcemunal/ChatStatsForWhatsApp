@@ -79,6 +79,7 @@ Tarihten sonra virgül ve saniyesiz saat (`[1.10.2026, 10:30]`) de kabul edilir.
 | `--end-date`, `-e` | Yalnızca bu ana kadarki kayıtlar (o an dahil). Saatsiz tarih o günün tamamını kapsar | tüm sohbet |
 | `--chat-type` | `auto`, `group` veya `direct` | `auto` |
 | `--conversation-gap` | Kaç saatlik sessizlikten sonraki kaydın yeni sohbet başlatacağı (ör. `1.5`) | `3` |
+| `--min-messages N` | Yalnızca dönemde (tarih filtresinden sonra) en az N kaydı olan kişileri dahil et; diğerleri kişiler tablosunun altında yazılır | `1` (herkes) |
 | `--output`, `-o` | PDF yolu | `chat_stats.pdf` |
 | `--markdown-output` | Raporu Markdown olarak da yaz (grafikler PDF'te kalır) | kapalı |
 | `--help` | Tüm seçenekleri göster | |

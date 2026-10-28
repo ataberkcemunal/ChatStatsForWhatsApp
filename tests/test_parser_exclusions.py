@@ -328,5 +328,47 @@ class SenderExclusionTests(unittest.TestCase):
                         self.assertEqual(len(compute.call_args.args[0]), rows)
 
 
+    def test_cli_min_messages_leaves_out_people_after_the_date_filter(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            source, output = root / 'chat.txt', root / 'report.pdf'
+            source.write_text(
+                '[1.10.2026 10:00:00] Ayşe: a\n'
+                '[2.10.2026 10:00:00] Ayşe: b\n'
+                '[2.10.2026 10:01:00] Bora: c\n'
+                '[3.10.2026 10:00:00] Ayşe: d\n'
+                '[3.10.2026 10:01:00] Bora: e\n',
+                encoding='utf-8',
+            )
+            cases = [
+                (['--min-messages', '3'], 0, ['Ayşe'], ['Bora']),
+                (['--min-messages', '2', '--start-date', '02.10.2026'], 0, ['Ayşe', 'Bora'], []),
+                (['--min-messages', '3', '--start-date', '02.10.2026'], 1, None, None),
+                (['--min-messages', '0'], 2, None, None),
+            ]
+            for options, code, kept, left_out in cases:
+                with self.subTest(options=options), patch('ChatStatsForWhatsApp.compute_stats', return_value=True) as compute, \
+                        patch.object(sys, 'argv', ['app', str(source), '--output', str(output), *options]), \
+                        redirect_stdout(io.StringIO()), redirect_stderr(io.StringIO()):
+                    try:
+                        result = main()
+                    except SystemExit as exit:
+                        result = exit.code
+                    self.assertEqual(result, code)
+                    if kept is None:
+                        compute.assert_not_called()
+                    else:
+                        self.assertEqual(sorted(compute.call_args.args[0]['user'].unique()), kept)
+                        self.assertEqual(compute.call_args.kwargs['excluded_senders'], left_out)
+
+    def test_report_names_people_below_the_threshold(self):
+        df = self.parse('[1.10.2026 10:00:00] Ayşe: merhaba\n')
+        with tempfile.TemporaryDirectory() as directory, patch('ChatStatsForWhatsApp.HTML'):
+            root = Path(directory)
+            compute_stats(df, output_file=root / 'r.pdf', markdown_output=root / 'r.md',
+                          min_messages=2000, excluded_senders=['Bora', 'Can'])
+            text = (root / 'r.md').read_text(encoding='utf-8')
+        self.assertIn('2.000 mesajın altında kalan 2 kişi rapora dahil edilmedi: Bora, Can', text)
+
 if __name__ == '__main__':
     unittest.main()

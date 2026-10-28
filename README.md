@@ -79,6 +79,7 @@ A comma after the date and times without seconds (`[1.10.2026, 10:30]`) are also
 | `--end-date`, `-e` | Only include records up to this moment (inclusive). A date without a time covers that whole day | whole chat |
 | `--chat-type` | `auto`, `group` or `direct` | `auto` |
 | `--conversation-gap` | Hours of silence after which the next record starts a new conversation (e.g. `1.5`) | `3` |
+| `--min-messages N` | Only include people with at least N records in the period (after the date filter); the others are named under the people table | `1` (everyone) |
 | `--output`, `-o` | PDF path | `chat_stats.pdf` |
 | `--markdown-output` | Also write the report as Markdown (charts stay in the PDF) | off |
 | `--help` | Show all options | |

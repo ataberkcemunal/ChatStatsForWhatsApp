@@ -35,6 +35,18 @@ Ort. harf: yazılı mesaj başına boşluksuz karakter; medya, arama ve silinen 
 | Ekin | 4 / 4 | %100,0 | 1,5 |
 
 
+**Üslup**
+
+| Kişi | Yazılı mesaj | Soru | Ünlem | Büyük harf | Gülme |
+|---|---:|---:|---:|---:|---:|
+| Ayşe | 5 | %20,0 | %0,0 | %0,0 | %0,0 |
+| Deniz | 3 | %33,3 | %33,3 | %0,0 | %0,0 |
+| Ekin | 5 | %0,0 | %20,0 | %0,0 | %0,0 |
+| Toplam | 13 | %15,4 | %15,4 | %0,0 | %0,0 |
+
+Yazılı mesajların yüzdesi: soru işareti, ünlem, tamamı büyük harf (en az 4 harf) ve gülme (haha, hehe, ksksks, sjsj, asdf, xd gibi ya da 😂 🤣 içeren) mesajlar.
+
+
 **Sohbet akışı**
 
 | Kişi | Başlattığı sohbet | Pay | Son söz | Ortanca yanıt süresi | Tur başına mesaj |
@@ -45,6 +57,17 @@ Ort. harf: yazılı mesaj başına boşluksuz karakter; medya, arama ve silinen 
 | Toplam | 4 | %100,0 | 4 | 1 dk | 1,0 |
 
 En az 3 saatlik sessizlikten sonraki ilk mesaj yeni bir sohbet başlatır; sessizlikten önceki son mesaj son sözdür. Yanıt: aynı sohbette başka birinin mesajından sonra yazılan mesaj; süre, aradaki beklemenin ortancasıdır. Tur başına mesaj: söz başkasına geçmeden art arda gönderilen mesajların ortalaması.
+
+
+**Kim kime yanıt veriyor**
+
+| Kişi | En çok yanıt verdiği | Pay | En çok yanıt aldığı | Pay |
+|---|---|---:|---|---:|
+| Ayşe | Ekin | %50,0 | Deniz | %80,0 |
+| Deniz | Ayşe | %80,0 | Ekin | %66,7 |
+| Ekin | Deniz | %80,0 | Ayşe | %66,7 |
+
+Yanıt, aynı sohbette sözün bir kişiden diğerine geçmesidir; dışa aktarım kimin kime cevap verdiğini içermediği için bir önceki mesajın sahibi esas alınır. Pay: kişinin verdiği ya da aldığı yanıtlar içinde o kişinin payı.
 
 
 ## Medya

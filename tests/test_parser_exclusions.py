@@ -10,7 +10,8 @@ from pathlib import Path
 from unittest.mock import patch
 
 from ChatStatsForWhatsApp import (
-    compute_stats, conversation_stats, day_streaks, distinctive_words, duration, main, parse_chat, parse_end_date,
+    compute_stats, conversation_stats, day_streaks, distinctive_words, duration, monthly_shares,
+    style_flags, main, parse_chat, parse_end_date,
     positive_hours,
 )
 
@@ -227,6 +228,65 @@ class SenderExclusionTests(unittest.TestCase):
         self.assertEqual(streak, (4, date(2026, 10, 8), date(2026, 10, 11)))
         self.assertEqual(silence, (4, date(2026, 10, 4), date(2026, 10, 7)))
         self.assertEqual(day_streaks([date(2026, 10, 5)]), ((1, date(2026, 10, 5), date(2026, 10, 5)), None))
+
+    def test_monthly_shares_group_people_after_the_limit(self):
+        df = self.parse(
+            '[1.09.2026 10:00:00] Ayşe: a\n'
+            '[2.09.2026 10:00:00] Ayşe: b\n'
+            '[3.09.2026 10:00:00] Bora: c\n'
+            '[4.09.2026 10:00:00] Can: d\n'
+            '[1.10.2026 10:00:00] Bora: e\n'
+        )
+        shares = monthly_shares(df, ['Ayşe', 'Bora', 'Can'], limit=2)
+        self.assertEqual(shares.columns.tolist(), ['Ayşe', 'Bora', 'Diğer'])
+        self.assertEqual(shares.loc['2026-09'].tolist(), [50.0, 25.0, 25.0])
+        self.assertEqual(shares.loc['2026-10'].tolist(), [0.0, 100.0, 0.0])
+
+    def test_style_flags(self):
+        cases = {
+            'ne zaman?': (1, 0, 0, 0),
+            'OLMAZ!': (0, 1, 1, 0),
+            'hahaha çok iyi': (0, 0, 0, 1),
+            'KSKSKSKS': (0, 0, 0, 1),        # loud laughter is not shouting
+            'NEDEN BÖYLE': (0, 0, 1, 0),
+            'İYİ GECELER': (0, 0, 1, 0),
+            'sjsjsj 😂': (0, 0, 0, 1),
+            'TAMAM': (0, 0, 1, 0),
+            'OK': (0, 0, 0, 0),              # too short to count as shouting
+            'https://x.com/?a=1': (0, 0, 0, 0),
+            'hayırlı akşamlar, şaka şaka': (0, 0, 0, 0),
+        }
+        for text, expected in cases.items():
+            with self.subTest(text=text):
+                flags = style_flags(text)
+                self.assertEqual((flags['question'], flags['exclaim'], flags['shout'], flags['laugh']), expected)
+
+    def test_style_and_reply_tables(self):
+        df = self.parse(
+            '[1.10.2026 10:00:00] Ayşe: naber?\n'
+            '[1.10.2026 10:01:00] Bora: hahaha iyi\n'
+            '[1.10.2026 10:02:00] Ayşe: SÜPER\n'
+            '[1.10.2026 10:03:00] Bora: tamam\n'
+            '[1.10.2026 10:04:00] Can: \u200egörüntü dahil edilmedi\n'
+            '[1.10.2026 10:05:00] Bora: güzel!\n'
+        )
+        with tempfile.TemporaryDirectory() as directory, patch('ChatStatsForWhatsApp.HTML'):
+            root = Path(directory)
+            self.assertTrue(compute_stats(df, chat_type='group', output_file=root / 'r.pdf',
+                                          markdown_output=root / 'r.md'))
+            text = (root / 'r.md').read_text(encoding='utf-8')
+        # Can wrote nothing, so has no style row.
+        self.assertIn('| Bora | 3 | %0,0 | %33,3 | %0,0 | %33,3 |', text)
+        self.assertIn('| Ayşe | 2 | %50,0 | %0,0 | %50,0 | %0,0 |', text)
+        style = text[text.index('**Üslup**'):text.index('**Sohbet akışı**')]
+        self.assertNotIn('| Can |', style)
+        # Replies (from → to): Bora→Ayşe, Ayşe→Bora, Bora→Ayşe, Can→Bora, Bora→Can.
+        self.assertIn('| Bora | Ayşe | %66,7 | Ayşe | %50,0 |', text)
+        self.assertIn('| Can | Bora | %100,0 | Bora | %100,0 |', text)
+        with tempfile.TemporaryDirectory() as directory, patch('ChatStatsForWhatsApp.HTML'):
+            root = Path(directory)
+            compute_stats(df, chat_type='direct', output_file=root / 'r.pdf', markdown_output=root / 'r.md')
+            self.assertNotIn('Kim kime', (root / 'r.md').read_text(encoding='utf-8'))
 
     def test_duration_format(self):
         for seconds, text in [(45, '45 sn'), (322.5, '5 dk'), (3600, '1 sa'), (7500, '2 sa 5 dk'),

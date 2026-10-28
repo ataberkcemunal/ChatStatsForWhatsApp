@@ -106,10 +106,10 @@ Section titles in the PDF are in Turkish.
 | Section | Contents |
 |---|---|
 | Summary cards | Messages, participants, chat days, messages per day, longest streak and longest silence, with their dates below |
-| Kişiler | Per person: messages (with a bar), share, average letters, media, emojis, links, polls, deleted messages, plus a total row; then active days, participation and messages per active day; then conversations started, last words, median reply time and messages per turn |
+| Kişiler | Per person: messages (with a bar), share, average letters, media, emojis, links, polls, deleted messages, plus a total row; then active days, participation and messages per active day; then question, exclamation, all-caps and laughter rates; then conversations started, last words, median reply time and messages per turn; in groups, whom each person replies to most and who replies to them most |
 | Aramalar | Voice and video calls by status (direct chats only, when there are calls) |
 | Medya | Stickers, images, videos, audio, documents, GIFs and locations per person, with totals |
-| Zaman | Weekday and hour charts side by side and a month chart when the chat spans several months |
+| Zaman | Weekday and hour charts side by side; when the chat spans several months, a month chart and each person's monthly share (the five most active people, the rest as "Diğer") |
 | Kelimeler ve ifadeler | The 45 most frequent words (4+ letters) in three columns, and the 15 most frequent two- and three-word phrases |
 | Kişi bazında kelimeler | For each person, a highlighted band (messages, share, active days), the words they use distinctly more than the others, and their top 15 words, two-word and three-word phrases side by side |
 | Emojiler | Each person's ten most used emojis |
@@ -125,6 +125,8 @@ How the numbers are defined:
 - **Messages per active day** – the person's messages ÷ their own active days.
 - **Conversation** – records with no silence of 3 hours or more between them (set with `--conversation-gap`). The first record after such a silence starts a new conversation; the last record before it is the **last word**.
 - **Distinctive words** – up to ten words a person uses clearly more often than the rest of the chat (weighted log-odds, z > 1.96). Short chats may have none.
+- **Style** – shares of written messages with a question mark, an exclamation mark, only capital letters (at least four letters, laughter left out) or laughter (haha, hehe, ksksks, sjsj, asdf, xd or 😂 🤣).
+- **Who replies to whom** – the export does not record which message a reply answers, so the sender of the previous record in the same conversation is used.
 - **Messages per turn** – how many records a person sends in a row before someone else writes or the conversation ends, on average.
 - **Reply time** – the wait before a record that follows someone else's record in the same conversation. The table shows each person's median, so a few long waits do not skew it.
 

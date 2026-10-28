@@ -121,6 +121,30 @@ def clean_message(text):
     ).strip()
 
 
+# Written laughter: haha, ahaha, hehe, hihi, ksksks, sjsjsj, jsjs, asdf..., xd, lol, plus the laughing emojis.
+LAUGH_REGEX = re.compile(
+    r"(?<!\w)(?:a?(?:h+a+){2,}h*|(?:h+e+){2,}h*|(?:h+i+){2,}h*|(?:ks){2,}k?|(?:sj){2,}s?|(?:js){2,}j?"
+    r"|asd\w*|x+d+|lo+l+|lmao+)(?!\w)|[\U0001F602\U0001F923\U0001F639]"
+)
+
+
+def style_flags(written):
+    """Question, exclamation, all caps and laughter in what someone wrote (links left out)."""
+    text = re.sub(LINK_REGEX, "", written)
+    lower = turkish_lower(text)
+    # "KSKSKS" is loud laughter, not shouting: laughter is left out of the caps check.
+    letters = [
+        char for char, low in zip(text, LAUGH_REGEX.sub(lambda m: " " * len(m[0]), lower))
+        if char.isalpha() and low != " "
+    ] if len(lower) == len(text) else [char for char in text if char.isalpha()]
+    return {
+        "question": int("?" in text),
+        "exclaim": int("!" in text),
+        "shout": int(len(letters) >= 4 and all(char.isupper() for char in letters)),
+        "laugh": int(bool(LAUGH_REGEX.search(lower))),
+    }
+
+
 def clean_message_lower(text):
     return turkish_lower(clean_message(text))
 
@@ -145,6 +169,7 @@ def get_message_stats(text, kind=whatsapp_chat.MESSAGE):
         "emojis": emojis,
         "emoji_count": len(emojis),
         "media": 1 if has_media_placeholder(cleaned_text) else 0,
+        **style_flags(written),
     }
 
 
@@ -305,6 +330,49 @@ def create_chart(labels, values, *, kind="bar", size=(5.4, 2.9)):
     return "data:image/svg+xml;base64," + base64.b64encode(buf.getvalue()).decode("ascii")
 
 
+# Colours for people in the share chart; the most active person gets the accent.
+PERSON_COLOURS = [report_style.ACCENT, "#f59e0b", "#6366f1", "#e11d48", "#0ea5e9"]
+OTHERS_COLOUR = "#cbd5e1"
+
+
+def monthly_shares(df, users, limit=len(PERSON_COLOURS)):
+    """Each month's message share per person in percent; people after ``limit`` become "Diğer"."""
+    table = pd.crosstab(df["month"], df["user"]).reindex(columns=users, fill_value=0)
+    shares = table.div(table.sum(axis=1), axis=0) * 100
+    if len(users) > limit:
+        others = shares[users[limit:]].sum(axis=1)
+        shares = shares[users[:limit]].assign(Diğer=others)
+    return shares
+
+
+def share_chart(labels, shares, size=(10.8, 3.2)):
+    """Stacked 100% bars of monthly shares as an SVG data URI, with a legend on top."""
+    fig, ax = plt.subplots(figsize=size)
+    bottom = [0.0] * len(labels)
+    for index, name in enumerate(shares.columns):
+        colour = PERSON_COLOURS[index] if index < len(PERSON_COLOURS) else OTHERS_COLOUR
+        values = shares[name].tolist()
+        ax.bar(labels, values, bottom=bottom, color=colour, label=name,
+               width=0.7 if len(labels) > 3 else 0.4)
+        bottom = [b + v for b, v in zip(bottom, values)]
+    ax.set_ylim(0, 100)
+    ax.yaxis.set_major_formatter(lambda value, _: f"%{value:.0f}")
+    for side in ("top", "right", "left"):
+        ax.spines[side].set_visible(False)
+    ax.spines["bottom"].set_color("#94a3b8")
+    ax.tick_params(colors="#475569", labelsize=8, length=0)
+    if len(labels) > 8:
+        ax.tick_params(axis="x", labelrotation=45)
+    ax.legend(loc="lower center", bbox_to_anchor=(0.5, 1.0), ncol=len(shares.columns),
+              frameon=False, fontsize=8, labelcolor="#475569")
+    fig.tight_layout()
+
+    buf = io.BytesIO()
+    fig.savefig(buf, format="svg", transparent=True)
+    plt.close(fig)
+    return "data:image/svg+xml;base64," + base64.b64encode(buf.getvalue()).decode("ascii")
+
+
 # How many entries each list shows; the same for every person.
 TOP_WORDS = 45  # three columns of 15
 TOP_PHRASES = 15
@@ -334,9 +402,10 @@ def distinctive_words(word_counts, user, limit=TOP_DISTINCTIVE):
     scores = []
     for word, count in mine.items():
         alpha, other = prior[word], others[word]
-        delta = math.log((count + alpha) / (n_mine + n_prior - count - alpha)) - math.log(
-            (other + alpha) / (n_others + n_prior - other - alpha)
-        )
+        rest_mine, rest_others = n_mine + n_prior - count - alpha, n_others + n_prior - other - alpha
+        if rest_mine <= 0 or rest_others <= 0:
+            continue  # the only word anyone used: nothing to compare against
+        delta = math.log((count + alpha) / rest_mine) - math.log((other + alpha) / rest_others)
         z = delta / math.sqrt(1 / (count + alpha) + 1 / (other + alpha))
         if z > 1.96:
             scores.append((-z, -count, word))
@@ -385,7 +454,9 @@ def conversation_stats(df, gap_hours=CONVERSATION_GAP_HOURS):
     replies = ~starts & (ordered["user"] != ordered["user"].shift())
     reply_seconds = silence[replies].dt.total_seconds()
     turns = starts | replies
+    pairs = Counter(zip(ordered["user"].shift()[replies], ordered.loc[replies, "user"]))
     return {
+        "pairs": pairs,
         "turns": ordered.loc[turns, "user"].value_counts(),
         "turns_all": int(turns.sum()),
         "conversations": int(starts.sum()),
@@ -474,6 +545,7 @@ def compute_stats(
                 "Polls": user_df["poll"].sum(),
                 "Deleted": user_df["deleted"].sum(),
                 "Days Active": user_df["date"].nunique(),
+                "Written": written,
             }
         )
     user_stats.sort(key=lambda x: x["Messages"], reverse=True)
@@ -520,6 +592,28 @@ def compute_stats(
         title="Etkinlik",
     )
 
+    written_df = df[df["has_text"] == 1]
+    style = written_df.groupby("user")[["question", "exclaim", "shout", "laugh"]].mean() * 100
+    styled_users = [user for user in sorted_users if user in style.index]
+    if styled_users:
+        report.table(
+            ["Kişi", "Yazılı mesaj", "Soru", "Ünlem", "Büyük harf", "Gülme"],
+            [
+                [user, number(stats_by_user[user]["Written"]),
+                 *(percent(style.at[user, column]) for column in style.columns)]
+                for user in styled_users
+            ],
+            numeric=range(1, 6),
+            title="Üslup",
+            total=["Toplam", number(len(written_df)),
+                   *(percent(100 * written_df[column].mean()) for column in style.columns)],
+        )
+        report.paragraph(
+            "Yazılı mesajların yüzdesi: soru işareti, ünlem, tamamı büyük harf (en az 4 harf) ve "
+            "gülme (haha, hehe, ksksks, sjsj, asdf, xd gibi ya da 😂 🤣 içeren) mesajlar.",
+            "note",
+        )
+
     flow = conversation_stats(df, conversation_gap)
     flow_rows = sorted(
         sorted_users, key=lambda user: flow["starts"].get(user, 0), reverse=True
@@ -553,6 +647,32 @@ def compute_stats(
         "Tur başına mesaj: söz başkasına geçmeden art arda gönderilen mesajların ortalaması.",
         "note",
     )
+
+    if is_group_chat and len(sorted_users) > 2:
+        given = {user: Counter() for user in sorted_users}
+        received = {user: Counter() for user in sorted_users}
+        for (previous, user), count in flow["pairs"].items():
+            given[user][previous] += count
+            received[previous][user] += count
+
+        def favourite(counter):
+            if not counter:
+                return ["–", ""]
+            name, count = counter.most_common(1)[0]
+            return [name, percent(100 * count / counter.total())]
+
+        report.table(
+            ["Kişi", "En çok yanıt verdiği", "Pay", "En çok yanıt aldığı", "Pay"],
+            [[user, *favourite(given[user]), *favourite(received[user])] for user in sorted_users],
+            numeric=[2, 4],
+            title="Kim kime yanıt veriyor",
+        )
+        report.paragraph(
+            "Yanıt, aynı sohbette sözün bir kişiden diğerine geçmesidir; dışa aktarım kimin kime "
+            "cevap verdiğini içermediği için bir önceki mesajın sahibi esas alınır. Pay: kişinin "
+            "verdiği ya da aldığı yanıtlar içinde o kişinin payı.",
+            "note",
+        )
 
     call_stats = []
     for user in [] if is_group_chat else sorted_users:
@@ -628,6 +748,11 @@ def compute_stats(
         report.chart_block(
             "Aylara göre", create_chart(month_labels, month_stats.values, size=(10.8, 2.9))
         )
+        if len(sorted_users) > 1:
+            report.chart_block(
+                "Aylara göre mesaj payı",
+                share_chart(month_labels, monthly_shares(df, sorted_users)),
+            )
 
     # Words and phrases were tokenized once per message in parse_chat.
     word_counts = {user: Counter() for user in sorted_users}

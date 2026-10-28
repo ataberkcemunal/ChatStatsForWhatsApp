@@ -316,9 +316,49 @@ def _top(counter, limit):
             for item, count in counter.most_common(limit)]
 
 
+# Hours of silence that end one conversation; the next record opens a new one.
+CONVERSATION_GAP_HOURS = 3.0
+
+
+def conversation_stats(df, gap_hours=CONVERSATION_GAP_HOURS):
+    """Count who opens and closes conversations, and how fast each person replies.
+
+    A reply is a record whose sender differs from the previous record's sender
+    within the same conversation; its reply time is the silence before it.
+    """
+    ordered = df.sort_values("datetime", kind="stable")
+    silence = ordered["datetime"].diff()
+    starts = silence.isna() | (silence >= pd.Timedelta(hours=gap_hours))
+    ends = starts.shift(-1, fill_value=True)
+    replies = ~starts & (ordered["user"] != ordered["user"].shift())
+    reply_seconds = silence[replies].dt.total_seconds()
+    return {
+        "conversations": int(starts.sum()),
+        "starts": ordered.loc[starts, "user"].value_counts(),
+        "ends": ordered.loc[ends, "user"].value_counts(),
+        "reply": reply_seconds.groupby(ordered.loc[replies, "user"]).median(),
+        "reply_all": reply_seconds.median(),
+    }
+
+
+def duration(seconds):
+    """Write a duration briefly in Turkish: 45 sn, 12 dk, 2 sa 5 dk."""
+    if pd.isna(seconds):
+        return "–"
+    seconds = round(seconds)
+    if seconds < 60:
+        return f"{seconds} sn"
+    minutes = round(seconds / 60)
+    if minutes < 60:
+        return f"{minutes} dk"
+    hours, minutes = divmod(minutes, 60)
+    return f"{hours} sa {minutes} dk" if minutes else f"{hours} sa"
+
+
 # Compute and print statistics
 def compute_stats(
-    df, *, chat_type="auto", output_file="chat_stats.pdf", markdown_output=None, source_name=None
+    df, *, chat_type="auto", output_file="chat_stats.pdf", markdown_output=None, source_name=None,
+    conversation_gap=CONVERSATION_GAP_HOURS,
 ):
     number, decimal, percent = report_style.number, report_style.decimal, report_style.percent
     is_group_chat = (
@@ -412,6 +452,37 @@ def compute_stats(
         ],
         numeric=range(1, 4),
         title="Etkinlik",
+    )
+
+    flow = conversation_stats(df, conversation_gap)
+    flow_rows = sorted(
+        sorted_users, key=lambda user: flow["starts"].get(user, 0), reverse=True
+    )
+    report.table(
+        ["Kişi", "Başlattığı sohbet", "Pay", "Son söz", "Ortanca yanıt süresi"],
+        [
+            [
+                user, number(flow["starts"].get(user, 0)),
+                percent(100 * flow["starts"].get(user, 0) / flow["conversations"]),
+                number(flow["ends"].get(user, 0)), duration(flow["reply"].get(user)),
+            ]
+            for user in flow_rows
+        ],
+        numeric=range(1, 5),
+        title="Sohbet akışı",
+        bar_column=1,
+        bar_values=[flow["starts"].get(user, 0) for user in flow_rows],
+        total=[
+            "Toplam", number(flow["conversations"]), percent(100),
+            number(flow["conversations"]), duration(flow["reply_all"]),
+        ],
+    )
+    gap_hours = f"{conversation_gap:g}".replace(".", ",")
+    report.paragraph(
+        f"En az {gap_hours} saatlik sessizlikten sonraki ilk mesaj yeni bir sohbet başlatır; "
+        "sessizlikten önceki son mesaj son sözdür. Yanıt: aynı sohbette başka birinin "
+        "mesajından sonra yazılan mesaj; süre, aradaki beklemenin ortancasıdır.",
+        "note",
     )
 
     call_stats = []
@@ -578,6 +649,16 @@ def _temporary_sibling(path, temporary_files):
     return Path(name)
 
 
+def positive_hours(value):
+    try:
+        hours = float(value.replace(",", "."))
+    except ValueError:
+        hours = 0
+    if not 0 < hours < float("inf"):
+        raise argparse.ArgumentTypeError("use a positive number of hours, e.g. 3 or 1.5")
+    return hours
+
+
 def main():
     parser = argparse.ArgumentParser(description="WhatsApp chat statistics")
     parser.add_argument(
@@ -603,6 +684,13 @@ def main():
         choices=["auto", "group", "direct"],
         default="auto",
         help="Chat type: auto-detect (default), group, or direct",
+    )
+    parser.add_argument(
+        "--conversation-gap",
+        type=positive_hours,
+        default=CONVERSATION_GAP_HOURS,
+        metavar="HOURS",
+        help="Hours of silence that start a new conversation (default: 3)",
     )
     parser.add_argument(
         "--output",
@@ -666,6 +754,7 @@ def main():
         if compute_stats(
             df,
             chat_type=args.chat_type,
+            conversation_gap=args.conversation_gap,
             output_file=args.output,
             markdown_output=args.markdown_output,
             source_name=Path(args.chat_file).name,

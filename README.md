@@ -78,6 +78,7 @@ A comma after the date and times without seconds (`[1.10.2026, 10:30]`) are also
 | `--start-date`, `-s` | Only include records from this moment on (inclusive). `DD.MM.YYYY`, `"DD.MM.YYYY HH:MM"` or `"DD.MM.YYYY HH:MM:SS"` | whole chat |
 | `--end-date`, `-e` | Only include records up to this moment (inclusive). A date without a time covers that whole day | whole chat |
 | `--chat-type` | `auto`, `group` or `direct` | `auto` |
+| `--conversation-gap` | Hours of silence after which the next record starts a new conversation (e.g. `1.5`) | `3` |
 | `--output`, `-o` | PDF path | `chat_stats.pdf` |
 | `--markdown-output` | Also write the report as Markdown (charts stay in the PDF) | off |
 | `--help` | Show all options | |
@@ -105,7 +106,7 @@ Section titles in the PDF are in Turkish.
 | Section | Contents |
 |---|---|
 | Summary cards | Messages, participants, chat days and messages per day |
-| Kişiler | Per person: messages (with a bar), share, average letters, media, emojis, links, polls, deleted messages, plus a total row; then active days, participation and messages per active day |
+| Kişiler | Per person: messages (with a bar), share, average letters, media, emojis, links, polls, deleted messages, plus a total row; then active days, participation and messages per active day; then conversations started, last words and median reply time |
 | Aramalar | Voice and video calls by status (direct chats only, when there are calls) |
 | Medya | Stickers, images, videos, audio, documents, GIFs and locations per person, with totals |
 | Zaman | Weekday and hour charts side by side and a month chart when the chat spans several months |
@@ -121,6 +122,8 @@ How the numbers are defined:
 - **Chat days** – days with at least one record in the chat; silent days do not count.
 - **Participation** – the person's active days ÷ chat days (not their share of messages).
 - **Messages per active day** – the person's messages ÷ their own active days.
+- **Conversation** – records with no silence of 3 hours or more between them (set with `--conversation-gap`). The first record after such a silence starts a new conversation; the last record before it is the **last word**.
+- **Reply time** – the wait before a record that follows someone else's record in the same conversation. The table shows each person's median, so a few long waits do not skew it.
 
 Numbers use Turkish formatting: `1.234` for thousands, `12,5` for decimals and `%45,3` for percentages.
 

@@ -30,6 +30,18 @@ Ort. harf: yazılı mesaj başına boşluksuz karakter; medya, arama ve silinen 
 | Ekin | 4 / 4 | %100,0 | 1,5 |
 
 
+**Sohbet akışı**
+
+| Kişi | Başlattığı sohbet | Pay | Son söz | Ortanca yanıt süresi |
+|---|---:|---:|---:|---:|
+| Ayşe | 2 | %50,0 | 1 | 1 dk |
+| Deniz | 1 | %25,0 | 0 | 1 dk |
+| Ekin | 1 | %25,0 | 3 | 1 dk |
+| Toplam | 4 | %100,0 | 4 | 1 dk |
+
+En az 3 saatlik sessizlikten sonraki ilk mesaj yeni bir sohbet başlatır; sessizlikten önceki son mesaj son sözdür. Yanıt: aynı sohbette başka birinin mesajından sonra yazılan mesaj; süre, aradaki beklemenin ortancasıdır.
+
+
 ## Medya
 
 | Kişi | Çıkartma | Görsel | Video | Ses | Belge | GIF | Konum | Toplam |

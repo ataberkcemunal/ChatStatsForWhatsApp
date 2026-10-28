@@ -78,6 +78,7 @@ Tarihten sonra virgül ve saniyesiz saat (`[1.10.2026, 10:30]`) de kabul edilir.
 | `--start-date`, `-s` | Yalnızca bu andan itibarenki kayıtlar (o an dahil). `GG.AA.YYYY`, `"GG.AA.YYYY SS:DD"` veya `"GG.AA.YYYY SS:DD:SS"` | tüm sohbet |
 | `--end-date`, `-e` | Yalnızca bu ana kadarki kayıtlar (o an dahil). Saatsiz tarih o günün tamamını kapsar | tüm sohbet |
 | `--chat-type` | `auto`, `group` veya `direct` | `auto` |
+| `--conversation-gap` | Kaç saatlik sessizlikten sonraki kaydın yeni sohbet başlatacağı (ör. `1.5`) | `3` |
 | `--output`, `-o` | PDF yolu | `chat_stats.pdf` |
 | `--markdown-output` | Raporu Markdown olarak da yaz (grafikler PDF'te kalır) | kapalı |
 | `--help` | Tüm seçenekleri göster | |
@@ -103,7 +104,7 @@ Başarılı çalışma sonunda `PDF report generated: <yol>` yazılır ve çık�
 | Bölüm | İçerik |
 |---|---|
 | Özet kutuları | Mesaj, katılımcı, sohbet günü ve günde ortalama mesaj |
-| Kişiler | Kişi başına mesaj (çubukla), pay, ortalama harf, medya, emoji, bağlantı, anket, silinen mesaj ve toplam satırı; ardından aktif gün, katılım ve aktif gün başına mesaj |
+| Kişiler | Kişi başına mesaj (çubukla), pay, ortalama harf, medya, emoji, bağlantı, anket, silinen mesaj ve toplam satırı; ardından aktif gün, katılım ve aktif gün başına mesaj; ardından başlattığı sohbet, son söz ve ortanca yanıt süresi |
 | Aramalar | Duruma göre sesli ve görüntülü aramalar (yalnızca birebir sohbetlerde, arama varsa) |
 | Medya | Kişi başına çıkartma, görsel, video, ses, belge, GIF ve konum; toplamlarla |
 | Zaman | Yan yana gün ve saat grafikleri ile sohbet birden çok ayı kapsıyorsa ay grafiği |
@@ -119,6 +120,8 @@ Sayıların tanımları:
 - **Sohbet günü**: Sohbette en az bir kayıt olan gün; sessiz günler sayılmaz.
 - **Katılım**: Kişinin aktif günleri ÷ sohbet günü (mesaj payı değildir).
 - **Aktif gün başına mesaj**: Kişinin mesajları ÷ kendi aktif gün sayısı.
+- **Sohbet**: Aralarında 3 saat (`--conversation-gap` ile değiştirilebilir) veya daha uzun sessizlik olmayan kayıtlar. Böyle bir sessizlikten sonraki ilk kayıt yeni bir sohbet başlatır; sessizlikten önceki son kayıt **son söz** sayılır.
+- **Yanıt süresi**: Aynı sohbette başka birinin kaydından sonra gelen kayda kadar geçen bekleme. Tabloda kişinin ortancası gösterilir; birkaç uzun bekleme sonucu bozmaz.
 
 Sayılar Türkçe biçimde yazılır: binlik için `1.234`, ondalık için `12,5`, yüzde için `%45,3`.
 

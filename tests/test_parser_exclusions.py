@@ -1,3 +1,4 @@
+import argparse
 import io
 import tempfile
 import unittest
@@ -7,7 +8,9 @@ from datetime import datetime
 from pathlib import Path
 from unittest.mock import patch
 
-from ChatStatsForWhatsApp import parse_chat, parse_end_date, compute_stats, main
+from ChatStatsForWhatsApp import (
+    compute_stats, conversation_stats, duration, main, parse_chat, parse_end_date, positive_hours,
+)
 
 
 class SenderExclusionTests(unittest.TestCase):
@@ -157,6 +160,40 @@ class SenderExclusionTests(unittest.TestCase):
         self.assertIn('Can_', rendered)
         # "merhaba" is 7 letters; the media placeholder is not written text.
         self.assertIn('| A\\|B &lt;i&gt; | 2 | %66,7 | 7,0 | 1 |', text)
+
+    def test_conversation_starts_ends_and_reply_times(self):
+        df = self.parse(
+            '[1.10.2026 10:00:00] Ayşe: Günaydın\n'
+            '[1.10.2026 10:00:30] Ayşe: Kalktın mı?\n'
+            '[1.10.2026 10:02:30] Bora: Kalktım\n'
+            '[1.10.2026 10:12:30] Ayşe: Süper\n'
+            # Six hours of silence: Bora opens a new conversation and Ayşe answers.
+            '[1.10.2026 16:12:30] Bora: Akşam?\n'
+            '[1.10.2026 16:13:15] Ayşe: Olur\n'
+        )
+        flow = conversation_stats(df)
+        self.assertEqual(flow['conversations'], 2)
+        self.assertEqual(flow['starts'].to_dict(), {'Ayşe': 1, 'Bora': 1})
+        self.assertEqual(flow['ends'].to_dict(), {'Ayşe': 2})
+        # Ayşe answered after 10 min and 45 s; Bora after 2 min. The gap is not a reply.
+        self.assertEqual(flow['reply'].to_dict(), {'Ayşe': 322.5, 'Bora': 120.0})
+        self.assertEqual(flow['reply_all'], 120.0)
+        # With a longer gap the evening message is Bora's reply, not a new conversation.
+        flow = conversation_stats(df, gap_hours=8)
+        self.assertEqual(flow['conversations'], 1)
+        self.assertEqual(flow['reply']['Bora'], (120 + 6 * 3600) / 2)
+
+    def test_conversation_gap_option(self):
+        self.assertEqual(positive_hours('1,5'), 1.5)
+        self.assertEqual(positive_hours('3'), 3.0)
+        for value in ['0', '-2', 'abc', 'nan', 'inf']:
+            with self.subTest(value=value), self.assertRaises(argparse.ArgumentTypeError):
+                positive_hours(value)
+
+    def test_duration_format(self):
+        for seconds, text in [(45, '45 sn'), (322.5, '5 dk'), (3600, '1 sa'), (7500, '2 sa 5 dk'),
+                              (float('nan'), '–')]:
+            self.assertEqual(duration(seconds), text)
 
     def test_cli_date_range_and_failure_exit_codes(self):
         with tempfile.TemporaryDirectory() as directory:

@@ -108,7 +108,7 @@ Başarılı çalışma sonunda `PDF report generated: <yol>` yazılır ve çık�
 | Kişiler | Kişi başına mesaj (çubukla), pay, ortalama harf, medya, emoji, bağlantı, anket, silinen mesaj ve toplam satırı; ardından kişi başına çıkartma, görsel, video, ses, belge, GIF ve konum; ardından aktif gün, katılım ve aktif gün başına mesaj; ardından soru (sayı, oran ve yalnızca soru işaretinden oluşan mesajlar) ve gülme (sayı ve oran); ardından başlattığı sohbet ve son söz; gruplarda kişinin en çok yanıt verdiği ve en çok yanıt aldığı kişi |
 | Aramalar | Duruma göre sesli ve görüntülü aramalar (yalnızca birebir sohbetlerde, arama varsa) |
 | Zaman | Yan yana gün ve saat grafikleri; sohbet birden çok ayı kapsıyorsa ay grafiği ve kişilerin aylık mesaj payı (en çok yazan beş kişi, kalanlar "Diğer") |
-| Kelimeler ve ifadeler | Üç sütunda en sık 45 kelime (4+ harf) ile en sık 15 iki ve üç kelimelik ifade |
+| Kelimeler ve ifadeler | Üç sütunda en sık 45 kelime (4+ harf) ile en sık 15 iki ve üç kelimelik ifade. İfade bir cümle içinde kalır, bir mesajda bir kez sayılır; gülmeler ifade sayılmaz |
 | Kişi bazında kelimeler | Her kişi için vurgulu bir bant (mesaj, pay, aktif gün) ve en sık 15 kelime, ikili ve üçlü ifade yan yana |
 | Kendine özgü kelimeler | Her kişinin diğerlerinden belirgin biçimde daha sık kullandığı en fazla on kelime; kendisinin ve diğerlerinin kullanım sayısıyla |
 | Emojiler | Her kişinin en çok kullandığı on emoji |
@@ -116,7 +116,7 @@ Başarılı çalışma sonunda `PDF report generated: <yol>` yazılır ve çık�
 Sayıların tanımları:
 
 - **Mesaj**: Filtrelemeden sonra kalan her kayıt; medya ve silinen mesaj kayıtları dahil.
-- **Ort. harf**: Boşluklar hariç, yazılı mesaj başına ortalama karakter (noktalama ve semboller sayılır). Medya yer tutucuları, anket söz dizimi, aramalar ve silinen mesajlar yazılı metin sayılmaz; ne harflere ne de mesaj sayısına katılır.
+- **Ort. harf**: Boşluklar hariç, yazılı mesaj başına ortalama karakter (noktalama ve semboller sayılır). Medya yer tutucuları, gönderilen belgenin dosya adı ve sayfa sayısı, linkler, anket söz dizimi, aramalar ve silinen mesajlar yazılı metin sayılmaz; ne harflere ne de mesaj sayısına katılır.
 - **Aktif gün**: Kişinin en az bir kaydı olan gün.
 - **Sohbet günü**: Sohbette en az bir kayıt olan gün; sessiz günler sayılmaz.
 - **En uzun seri**: Her gün en az bir kayıt olan en uzun ardışık takvim günü dizisi. **En uzun sessizlik**: İlk ve son kayıt arasında hiç kayıt olmayan en uzun ardışık gün dizisi.

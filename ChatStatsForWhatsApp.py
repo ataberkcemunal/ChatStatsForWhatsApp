@@ -2,7 +2,6 @@ import argparse
 import base64
 import io
 import logging
-import itertools
 import math
 import os
 import re
@@ -56,6 +55,21 @@ MEDIA_TYPE_PATTERNS = {
 
 # Regex for links, tags and system indicators (edited/deleted)
 LINK_REGEX = r"https?://\S+"
+# Links typed without http: www.…, a domain with a path (x.com/…), or a bare domain
+# with a common ending (google.com). Ratings such as 3.5/10 are not links.
+BARE_LINK_REGEX = re.compile(
+    r"(?<![\w@])(?:www\.\S+|[\w-]+(?:\.[\w-]+)*\.[a-zA-Z]{2,}/\S*"
+    r"|[\w-]+(?:\.[\w-]+)*\.(?:com|net|org|io|co|me|ly|be|tv|app|dev|gg|ai|tr)(?![\w.]))"
+)
+
+
+def strip_links(text):
+    return BARE_LINK_REGEX.sub(" ", re.sub(LINK_REGEX, " ", text))
+
+
+def count_links(text):
+    without_http = re.sub(LINK_REGEX, " ", text)
+    return len(re.findall(LINK_REGEX, text)) + len(BARE_LINK_REGEX.findall(without_http))
 TAG_REGEX = r"@\u2068(.*?)\u2069"
 CLEANUP_REGEX = re.compile(
     r"\u200e?<.*?(?:mesaj düzenlendi|message was edited)>|\u200e?Bu mesajı sildiniz\.|\u200e?Bu mesaj silindi\.",
@@ -95,6 +109,10 @@ def clean_media_placeholders(text):
 
     # Remove pasted WhatsApp headers from quoted chat snippets.
     res = QUOTED_CHAT_HEADER_REGEX.sub(" ", res)
+
+    # A document opens its message with "name.pdf • 5 sayfa belge dahil edilmedi"; the
+    # file name and page count are not written text. A caption after it is kept.
+    res = re.sub(r"^.*?belge dahil edilmedi", " ", res, flags=re.IGNORECASE | re.DOTALL)
 
     # Remove standard media placeholders
     for pat in MEDIA_PATTERNS:
@@ -160,14 +178,12 @@ ONLY_NE_REGEX = re.compile(r"n+e+[\s!.]*")
 NOT_QUESTION_REGEX = re.compile(
     r"(?<!\w)(?:nere?deyse|neden\s+ol\w*|(?:hangi\w*|kim\w*|ne)(?:\s+\w+)?\s+olursa\s+olsun)(?!\w)"
 )
-# Links written without http (x.com/?a=1): their ? is not a question mark.
-BARE_LINK_REGEX = re.compile(r"(?<!\w)(?:www\.)?[\w-]+(?:\.[\w-]+)+/\S*")
 
 
 def style_flags(written):
     """Whether someone asked a question (or wrote only question marks) or laughed,
     once per message (links left out)."""
-    text = BARE_LINK_REGEX.sub("", re.sub(LINK_REGEX, "", written))
+    text = strip_links(written)
     lower = turkish_lower(text)
     asked = NOT_QUESTION_REGEX.sub(" ", lower)
     question = "?" in text or QUESTION_REGEX.search(asked) or ONLY_NE_REGEX.fullmatch(lower.strip())
@@ -192,20 +208,52 @@ def get_message_stats(text, kind=whatsapp_chat.MESSAGE):
     cleaned_text = clean_message_lower(text)
     written = "" if kind != whatsapp_chat.MESSAGE else clean_media_placeholders(text)
     emojis = [em["emoji"] for em in emoji.emoji_list(text)]
+    # Links are shared, not typed: they count as links, not as letters or words.
+    typed = " ".join(strip_links(written).split())
 
     # Only what the person wrote counts: media placeholders, poll syntax and
     # call status text are not letters someone typed.
     return {
-        "letter_count": len(written.replace(" ", "")),
-        "has_text": int(bool(written)),
-        "words": _get_tokens(written, min_len=4, keep_apostrophes=True),
-        "phrase_words": _get_tokens(written, min_len=2, keep_apostrophes=True),
-        "links": len(re.findall(LINK_REGEX, text)),
+        "letter_count": len(typed.replace(" ", "")),
+        "has_text": int(bool(typed)),
+        "words": _get_tokens(typed, min_len=4, keep_apostrophes=True),
+        **phrases(typed),
+        "links": count_links(text),
         "emojis": emojis,
         "emoji_count": len(emojis),
         "media": 1 if has_media_placeholder(cleaned_text) else 0,
-        **style_flags(written),
+        **style_flags(typed),
     }
+
+
+# Phrases stop at sentence punctuation and line ends: "tamam. ben de" holds no "tamam ben".
+SENTENCE_BREAK_REGEX = re.compile(r"[.,;:!?…\n()\[\]\"“”]+")
+
+
+def is_laughter(word):
+    return bool(LAUGH_REGEX.fullmatch(word)) or is_keyboard_mash(word)
+
+
+def phrases(typed):
+    """The two- and three-word phrases of a message, each counted once per message.
+
+    Phrases stay within a sentence and leave out laughter and keyboard mashes.
+    Repeats such as "yavaş yavaş" count: counting once per message keeps
+    "çok çok çok çok" from filling the list.
+    """
+    found = {"bigrams": set(), "trigrams": set()}
+    for sentence in SENTENCE_BREAK_REGEX.split(typed):
+        # Laughter also breaks a phrase: "geliyorum haha ben" holds no "geliyorum ben".
+        runs = [[]]
+        for word in _get_tokens(sentence, min_len=2, keep_apostrophes=True):
+            if is_laughter(word):
+                runs.append([])
+            else:
+                runs[-1].append(word)
+        for words in runs:
+            for size, key in ((2, "bigrams"), (3, "trigrams")):
+                found[key].update(zip(*(words[i:] for i in range(size))))
+    return {key: sorted(value) for key, value in found.items()}
 
 
 def update_message_stats(entry):
@@ -244,7 +292,7 @@ def _get_tokens(text, min_len=2, keep_apostrophes=False):
         return token
 
     # Remove links and system indicators
-    text = re.sub(LINK_REGEX, "", text)
+    text = strip_links(text)
     text = CLEANUP_REGEX.sub("", text)
 
     # Replace tags with placeholders BEFORE tokenization
@@ -586,7 +634,7 @@ def compute_stats(
         ],
     )
     report.paragraph(
-        "Ort. harf: yazılı mesaj başına boşluksuz karakter; medya, arama ve silinen mesajlar sayılmaz.",
+        "Ort. harf: yazılı mesaj başına boşluksuz karakter; medya, belge adı, link, arama ve silinen mesajlar sayılmaz.",
         "note",
     )
     if excluded_senders:
@@ -785,10 +833,10 @@ def compute_stats(
     word_counts = {user: Counter() for user in sorted_users}
     bigram_counts = {user: Counter() for user in sorted_users}
     trigram_counts = {user: Counter() for user in sorted_users}
-    for user, words, phrase_words in zip(df["user"], df["words"], df["phrase_words"]):
+    for user, words, bigrams, trigrams in zip(df["user"], df["words"], df["bigrams"], df["trigrams"]):
         word_counts[user].update(words)
-        bigram_counts[user].update(itertools.pairwise(phrase_words))
-        trigram_counts[user].update(zip(phrase_words, phrase_words[1:], phrase_words[2:]))
+        bigram_counts[user].update(bigrams)
+        trigram_counts[user].update(trigrams)
     all_words = sum(word_counts.values(), Counter())
 
     report.section("Kelimeler ve ifadeler")

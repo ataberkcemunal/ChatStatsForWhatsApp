@@ -20,10 +20,10 @@ En uzun seri: her gün yazışılan 01.10.2026 – 04.10.2026
 |---|---:|---:|---:|---:|---:|---:|---:|---:|
 | Ayşe | 6 | %33,3 | 28,0 | 0 | 3 | 0 | 1 | 1 |
 | Deniz | 6 | %33,3 | 38,3 | 2 | 1 | 0 | 0 | 0 |
-| Ekin | 6 | %33,3 | 55,0 | 1 | 2 | 1 | 0 | 0 |
+| Ekin | 6 | %33,3 | 49,4 | 1 | 2 | 1 | 0 | 0 |
 | Toplam | 18 |  |  | 3 | 6 | 1 | 1 | 1 |
 
-Ort. harf: yazılı mesaj başına boşluksuz karakter; medya, arama ve silinen mesajlar sayılmaz.
+Ort. harf: yazılı mesaj başına boşluksuz karakter; medya, belge adı, link, arama ve silinen mesajlar sayılmaz.
 
 
 **Medya**
@@ -147,20 +147,20 @@ Yanıt, aynı sohbette sözün bir kişiden diğerine geçmesidir; dışa aktar�
 | İfade | Sayı |
 |---|---:|
 | merhaba arkadaşlar | 3 |
-| yarın akşam | 3 |
 | akşam buluşalım | 3 |
-| arkadaşlar bu | 2 |
-| harika notlar | 2 |
+| yarın akşam | 3 |
+| faydalı olmuş | 2 |
 | notlar çok | 2 |
 | çok faydalı | 2 |
-| faydalı olmuş | 2 |
 | haftaya yeniden | 2 |
 | yeniden görüşürüz | 2 |
 | bu dosyadaki | 1 |
-| dosyadaki bütün | 1 |
 | bütün konuşmalar | 1 |
+| dosyadaki bütün | 1 |
 | konuşmalar kurgudur | 1 |
 | öykü roman | 1 |
+| buluşalım mı | 1 |
+| ay hangi | 1 |
 
 
 **Üçlü ifadeler**
@@ -168,20 +168,20 @@ Yanıt, aynı sohbette sözün bir kişiden diğerine geçmesidir; dışa aktar�
 | İfade | Sayı |
 |---|---:|
 | yarın akşam buluşalım | 3 |
-| merhaba arkadaşlar bu | 2 |
-| harika notlar çok | 2 |
 | notlar çok faydalı | 2 |
 | çok faydalı olmuş | 2 |
 | haftaya yeniden görüşürüz | 2 |
-| arkadaşlar bu dosyadaki | 1 |
 | bu dosyadaki bütün | 1 |
-| dosyadaki bütün konuşmalar | 1 |
 | bütün konuşmalar kurgudur | 1 |
+| dosyadaki bütün konuşmalar | 1 |
 | akşam buluşalım mı | 1 |
-| arkadaşlar bu ay | 1 |
-| bu ay hangi | 1 |
 | ay hangi kitabı | 1 |
+| bu ay hangi | 1 |
 | hangi kitabı okuyalım | 1 |
+| bence kısa öyküler | 1 |
+| kısa öyküler okuyalım | 1 |
+| adresine de bakalım | 1 |
+| kitapları da getirelim | 1 |
 
 
 ## Kişi bazında kelimeler
@@ -211,32 +211,28 @@ Yanıt, aynı sohbette sözün bir kişiden diğerine geçmesidir; dışa aktar�
 
 | İkili ifade | Sayı |
 |---|---:|
-| merhaba arkadaşlar | 1 |
-| arkadaşlar bu | 1 |
 | bu dosyadaki | 1 |
-| dosyadaki bütün | 1 |
 | bütün konuşmalar | 1 |
+| dosyadaki bütün | 1 |
 | konuşmalar kurgudur | 1 |
+| merhaba arkadaşlar | 1 |
 | öykü roman | 1 |
-| yarın akşam | 1 |
 | akşam buluşalım | 1 |
 | buluşalım mı | 1 |
-| harika notlar | 1 |
+| yarın akşam | 1 |
+| faydalı olmuş | 1 |
 | notlar çok | 1 |
 | çok faydalı | 1 |
-| faydalı olmuş | 1 |
 | haftaya yeniden | 1 |
+| yeniden görüşürüz | 1 |
 
 | Üçlü ifade | Sayı |
 |---|---:|
-| merhaba arkadaşlar bu | 1 |
-| arkadaşlar bu dosyadaki | 1 |
 | bu dosyadaki bütün | 1 |
-| dosyadaki bütün konuşmalar | 1 |
 | bütün konuşmalar kurgudur | 1 |
-| yarın akşam buluşalım | 1 |
+| dosyadaki bütün konuşmalar | 1 |
 | akşam buluşalım mı | 1 |
-| harika notlar çok | 1 |
+| yarın akşam buluşalım | 1 |
 | notlar çok faydalı | 1 |
 | çok faydalı olmuş | 1 |
 | haftaya yeniden görüşürüz | 1 |
@@ -265,36 +261,26 @@ Yanıt, aynı sohbette sözün bir kişiden diğerine geçmesidir; dışa aktar�
 
 | İkili ifade | Sayı |
 |---|---:|
-| merhaba arkadaşlar | 1 |
-| arkadaşlar bu | 1 |
-| bu ay | 1 |
 | ay hangi | 1 |
+| bu ay | 1 |
 | hangi kitabı | 1 |
 | kitabı okuyalım | 1 |
-| yarın akşam | 1 |
+| merhaba arkadaşlar | 1 |
 | akşam buluşalım | 1 |
-| buluşalım ben | 1 |
 | ben uygunum | 1 |
-| harika notlar | 1 |
+| yarın akşam | 1 |
+| faydalı olmuş | 1 |
 | notlar çok | 1 |
 | çok faydalı | 1 |
-| faydalı olmuş | 1 |
-| olmuş teşekkürler | 1 |
 
 | Üçlü ifade | Sayı |
 |---|---:|
-| merhaba arkadaşlar bu | 1 |
-| arkadaşlar bu ay | 1 |
-| bu ay hangi | 1 |
 | ay hangi kitabı | 1 |
+| bu ay hangi | 1 |
 | hangi kitabı okuyalım | 1 |
 | yarın akşam buluşalım | 1 |
-| akşam buluşalım ben | 1 |
-| buluşalım ben uygunum | 1 |
-| harika notlar çok | 1 |
 | notlar çok faydalı | 1 |
 | çok faydalı olmuş | 1 |
-| faydalı olmuş teşekkürler | 1 |
 
 
 ### Ekin
@@ -326,34 +312,31 @@ Yanıt, aynı sohbette sözün bir kişiden diğerine geçmesidir; dışa aktar�
 | öyküler okuyalım | 1 |
 | adresine de | 1 |
 | de bakalım | 1 |
-| yarın akşam | 1 |
 | akşam buluşalım | 1 |
-| buluşalım kitapları | 1 |
-| kitapları da | 1 |
 | da getirelim | 1 |
+| kitapları da | 1 |
+| yarın akşam | 1 |
+| birinci bölümde | 1 |
+| bölümde karakterleri | 1 |
+| bölümde öykünün | 1 |
+| ikinci bölümde | 1 |
+| karakterleri konuşacağız | 1 |
 | merhaba arkadaşlar | 1 |
-| arkadaşlar toplantı | 1 |
-| toplantı notlarını | 1 |
-| notlarını paylaşıyorum | 1 |
-| paylaşıyorum birinci | 1 |
 
 | Üçlü ifade | Sayı |
 |---|---:|
 | bence kısa öyküler | 1 |
 | kısa öyküler okuyalım | 1 |
 | adresine de bakalım | 1 |
-| yarın akşam buluşalım | 1 |
-| akşam buluşalım kitapları | 1 |
-| buluşalım kitapları da | 1 |
 | kitapları da getirelim | 1 |
-| merhaba arkadaşlar toplantı | 1 |
-| arkadaşlar toplantı notlarını | 1 |
-| toplantı notlarını paylaşıyorum | 1 |
-| notlarını paylaşıyorum birinci | 1 |
-| paylaşıyorum birinci bölümde | 1 |
+| yarın akşam buluşalım | 1 |
 | birinci bölümde karakterleri | 1 |
 | bölümde karakterleri konuşacağız | 1 |
-| karakterleri konuşacağız ikinci | 1 |
+| bölümde öykünün sonunu | 1 |
+| ikinci bölümde öykünün | 1 |
+| toplantı notlarını paylaşıyorum | 1 |
+| öykünün sonunu tartışacağız | 1 |
+| haftaya yeniden görüşürüz | 1 |
 
 
 ## Emojiler

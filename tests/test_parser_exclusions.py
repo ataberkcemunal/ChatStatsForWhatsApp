@@ -10,7 +10,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 from ChatStatsForWhatsApp import (
-    compute_stats, conversation_stats, day_streaks, distinctive_words, monthly_shares,
+    compute_stats, conversation_stats, day_streaks, distinctive_words, get_message_stats, monthly_shares,
     style_flags, main, parse_chat, parse_end_date,
     positive_hours,
 )
@@ -346,6 +346,40 @@ class SenderExclusionTests(unittest.TestCase):
             root = Path(directory)
             compute_stats(df, chat_type='direct', output_file=root / 'r.pdf', markdown_output=root / 'r.md')
             self.assertNotIn('Kim kime', (root / 'r.md').read_text(encoding='utf-8'))
+
+    def test_documents_and_links_are_not_written_text(self):
+        cases = {
+            # text: (letters, written, links, words)
+            '\u200echat_stats.pdf • \u200e5 sayfa \u200ebelge dahil edilmedi': (0, 0, 0, []),
+            'Rapor 2026.pdf • 3 sayfa belge dahil edilmedi bunu oku': (7, 1, 0, ['bunu']),
+            'https://x.com/someone/status/1839283746537281?s=46&t=AbCd': (0, 0, 1, []),
+            'bak https://youtu.be/abc123 çok komik': (11, 1, 1, ['komik']),
+            'x.com/someone/status/123': (0, 0, 1, []),
+            'www.google.com': (0, 0, 1, []),
+            'google.com adresine bak': (11, 1, 1, ['adresine']),
+            'puan 3.5/10 verdim': (16, 1, 0, ['puan', 'verdim']),
+        }
+        for text, expected in cases.items():
+            with self.subTest(text=text):
+                stats = get_message_stats(text)
+                self.assertEqual((stats['letter_count'], stats['has_text'], stats['links'], stats['words']), expected)
+
+    def test_phrases_stay_in_a_sentence_and_count_once(self):
+        def phrases(text):
+            stats = get_message_stats(text)
+            return [' '.join(p) for p in stats['bigrams']], [' '.join(p) for p in stats['trigrams']]
+
+        self.assertEqual(phrases('tamam. ben de geliyorum, sen de gel'),
+                         (['ben de', 'de gel', 'de geliyorum', 'sen de'], ['ben de geliyorum', 'sen de gel']))
+        # Laughter and keyboard mashes are not phrases and break one; a phrase written
+        # twice in one message counts once; repeats such as "yavaş yavaş" count.
+        self.assertEqual(phrases('evet evet haha haha ben de geliyorum hahaha ben de geliyorum'),
+                         (['ben de', 'de geliyorum', 'evet evet'], ['ben de geliyorum']))
+        self.assertEqual(phrases('çok çok çok çok yavaş yavaş'),
+                         (['yavaş yavaş', 'çok yavaş', 'çok çok'],
+                          ['çok yavaş yavaş', 'çok çok yavaş', 'çok çok çok']))
+        self.assertEqual(phrases('asjdkasjd ne diyorsun'), (['ne diyorsun'], []))
+        self.assertEqual(phrases('chat_stats.pdf • 5 sayfa belge dahil edilmedi'), ([], []))
 
     def test_cli_date_range_and_failure_exit_codes(self):
         with tempfile.TemporaryDirectory() as directory:

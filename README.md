@@ -110,7 +110,7 @@ Section titles in the PDF are in Turkish.
 | Kişiler | Per person: messages (with a bar), share, average letters, media, emojis, links, polls, deleted messages, plus a total row; then stickers, images, videos, audio, documents, GIFs and locations per person; then active days, participation and messages per active day; then questions (count, share and messages that are only question marks) and laughter (count and share); then conversations started and last words; in groups, whom each person replies to most and who replies to them most |
 | Aramalar | Voice and video calls by status (direct chats only, when there are calls) |
 | Zaman | Weekday and hour charts side by side; when the chat spans several months, a month chart and each person's monthly share (the five most active people, the rest as "Diğer") |
-| Kelimeler ve ifadeler | The 45 most frequent words (4+ letters) in three columns, and the 15 most frequent two- and three-word phrases |
+| Kelimeler ve ifadeler | The 45 most frequent words (4+ letters) in three columns, and the 15 most frequent two- and three-word phrases. A phrase stays within one sentence, counts once per message, and leaves out laughter |
 | Kişi bazında kelimeler | For each person, a highlighted band (messages, share, active days) and their top 15 words, two-word and three-word phrases side by side |
 | Kendine özgü kelimeler | For each person, up to ten words they use distinctly more than the others, with how often they and the others used them |
 | Emojiler | Each person's ten most used emojis |
@@ -118,7 +118,7 @@ Section titles in the PDF are in Turkish.
 How the numbers are defined:
 
 - **Messages** – every record left after filtering, including media and deleted-message records.
-- **Ort. harf** – average characters per written message, spaces excluded (punctuation and symbols count). Media placeholders, poll syntax, calls and deleted messages are not written text, so they are left out of both the letters and the message count.
+- **Ort. harf** – average characters per written message, spaces excluded (punctuation and symbols count). Media placeholders, a shared document's file name and page count, links, poll syntax, calls and deleted messages are not written text, so they are left out of both the letters and the message count.
 - **Active day** – a day on which the person has at least one record.
 - **Chat days** – days with at least one record in the chat; silent days do not count.
 - **Longest streak** – the most calendar days in a row with at least one record. **Longest silence** – the most calendar days in a row with none, between the first and last record.

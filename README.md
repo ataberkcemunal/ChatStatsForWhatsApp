@@ -107,26 +107,30 @@ Section titles in the PDF are in Turkish.
 | Section | Contents |
 |---|---|
 | Summary cards | Messages, participants, chat days, messages per day, longest streak and longest silence, with their dates below |
-| Kişiler | Per person: messages (with a bar), share, average letters, media, emojis, links, polls, deleted messages, plus a total row; then stickers, images, videos, audio, documents, GIFs and locations per person; then active days, participation and messages per active day; then questions (count, share and messages that are only question marks) and laughter (count and share); then conversations started and last words; in groups, whom each person replies to most and who replies to them most |
-| Aramalar | Voice and video calls by status (direct chats only, when there are calls) |
+| Kişiler | Per person: messages (with a bar), share, active days, participation, messages per active day and deleted messages, plus a total row; then **Paylaşımlar**: images, videos, audio, stickers, GIFs, documents, locations, polls and links per person with a total (with a bar), the most shared kind first and kinds nobody shared left out; then **Aramalar** (when there are calls) by caller: total, voice, video and length, plus answered and missed in direct chats or the average number of people who joined in groups; then conversations started and last words; in groups, whom each person replies to most and who replies to them most; then **Etiketleme** (when anyone tags with @): tags made and received (each with a bar) and the people each person tags most |
+| Yazış tarzı | **Sorular**: questions per person (share, count and messages that are only question marks), highest share first; **Gülme**: laughing messages (share and count) and each person's styles (haha, hehe / hihi, hoho, Random for ksksks, sjsj and keyboard mashes, za, xd, lol, :D / :d, emoji), the highest share and the style used most first; **Emoji**: messages with an emoji (share and count) and each person's eight most used emojis in rank columns, with the chat's own in the total row. All counted once per message ("😂😂😂" is one) |
+| Kelimeler ve ifadeler | The 45 most frequent words (4+ letters) in three columns, and the 30 most frequent phrases in two |
+| Kişi bazında kelimeler | For each person, a highlighted band (messages, share, active days) and their top 15 words and phrases side by side |
+| Kendine özgü kelimeler ve ifadeler | For each person, up to ten words and ten phrases they use distinctly more than the others, with how many of their and the others' messages contain them |
+| Linkler | One row per person (the person who shares the most links first): links (with a bar) and their five most linked sites in rank columns, the site's count below its name; the total row has the chat's five. Then **İçerik türü**: links by what the address shows they hold (video, short video, post, music, map) |
 | Zaman | Weekday and hour charts side by side; when the chat spans several months, a month chart and each person's monthly share (the five most active people, the rest as "Diğer") |
-| Kelimeler ve ifadeler | The 45 most frequent words (4+ letters) in three columns, and the 15 most frequent two- and three-word phrases. A phrase stays within one sentence, counts once per message, and leaves out laughter |
-| Kişi bazında kelimeler | For each person, a highlighted band (messages, share, active days) and their top 15 words, two-word and three-word phrases side by side |
-| Kendine özgü kelimeler | For each person, up to ten words they use distinctly more than the others, with how often they and the others used them |
-| Emojiler | Each person's ten most used emojis |
 
 How the numbers are defined:
 
-- **Messages** – every record left after filtering, including media and deleted-message records.
-- **Ort. harf** – average characters per written message, spaces excluded (punctuation and symbols count). Media placeholders, a shared document's file name and page count, links, poll syntax, calls and deleted messages are not written text, so they are left out of both the letters and the message count.
+- **Messages** – every record left after filtering, including media and deleted-message records; calls are not messages.
+- **Location** – a location sent with WhatsApp's location feature; its map link is not counted as a link, and typing "konum:" is not a location.
 - **Active day** – a day on which the person has at least one record.
 - **Chat days** – days with at least one record in the chat; silent days do not count.
 - **Longest streak** – the most calendar days in a row with at least one record. **Longest silence** – the most calendar days in a row with none, between the first and last record.
 - **Participation** – the person's active days ÷ chat days (not their share of messages).
 - **Messages per active day** – the person's messages ÷ their own active days.
 - **Conversation** – records with no silence of an hour or more between them (set with `--conversation-gap`). The first record after such a silence starts a new conversation; the last record before it is the **last word**.
-- **Distinctive words** – up to ten words a person uses clearly more often than the rest of the chat (weighted log-odds, z > 1.96). Short chats may have none.
-- **Questions and laughter** – written messages with a question (a question mark, the particle mi/mı/mu/mü, also attached as in gelcekmisin, a question word such as nasıl, neden, niye, niçin, kaç, hangi, nerede, kim, or a message that is only "ne"; "???" still counts as one question; neredeyse, neden olmak, "hangisi/kim/ne olursa olsun" and the ? in a link do not count) or with laughter (haha, hehe, hohoho, jajaja, ksksks, sksksk, sjsj, hshs, kdkd, zaaa, asdf, xd, :D, :), :P, 😂 🤣 😆, or a keyboard mash such as asjdkasjd: a word of six or more letters typed mostly on the home row with four home-row consonants in a row), each counted once per message; the share is of the person's written messages. The table also counts messages that are only question marks ("?", "???"), which are included in the questions too.
+- **Phrases** – patterns of 2 to 6 words within one sentence, found in at least 3 messages. A phrase that mostly appears inside a longer one is shown only as the longer one ("doğum günün kutlu olsun", not "kutlu olsun" as well). Phrases made only of words such as "ben de" or "o zaman", or only of tags, are left out; laughter breaks a phrase. Words and phrases count the messages they appear in, so a repeat in one message counts once.
+- **Distinctive words and phrases** – up to ten each that a person uses clearly more often than the rest of the chat (weighted log-odds, z > 1.96). Short chats may have none.
+- **Sites** – well-known sites are shown by name (instagram.com is Instagram, sahibinden.com is Sahibinden), others by their address (gib.gov.tr). Subdomains and endings count with their site (open.spotify.com and spotify.com are Spotify), a site's own short links with it (youtu.be is YouTube, t.co and twitter.com are X). Shorteners such as bit.ly hide where they lead, so they count as Kısa link; chat.whatsapp.com links are WhatsApp grup daveti. Google links are named by service (Google Haritalar, including goo.gl location links, Google Drive, Google Dokümanlar, Google Formlar, otherwise Google). Each link counts, so two links in one message are two.
+- **Calls** – counted by the person who started them, never as messages. Calls the exporter made from another device (such as a computer) are written as “Siz” in the export; they are given the exporter's name, found from the “Bu mesajı sildiniz” lines only the exporter's own deleted messages have, or stay as “Siz” when that is unknown.
+- **Tags** – an @ tag in a message; the same person tagged twice in one message counts once, and tagging yourself or Meta AI does not count. WhatsApp's tag for the whole group is shown as Herkes.
+- **Questions and laughter** – written messages with a question (a question mark, the particle mi/mı/mu/mü, also attached as in gelcekmisin, a question word such as nasıl, neden, niye, niçin, kaç, hangi, nerede, kim, or a message that is only "ne"; "ne???" still counts as one question; neredeyse, neden olmak, "hangisi/kim/ne olursa olsun" and the ? in a link do not count) or with laughter (haha, hehe, hohoho, jajaja, ksksks, sksksk, sjsj, hshs, kdkd, zaaa, asdf, xd, :D, 😀 😃 😄 😁 😆 😅 🤣 😂 😹 (smiles such as :), :P, 🙂 😊 🙃 do not count), or a keyboard mash such as asjdkasjd: a word of six or more letters typed mostly on the home row with four home-row consonants in a row), each counted once per message; the share is of the person's written messages. The table also counts messages that are only question marks ("?", "???"); these are reactions and are not counted as questions.
 - **Who replies to whom** – the export does not record which message a reply answers, so the sender of the previous record in the same conversation is used.
 
 Numbers use Turkish formatting: `1.234` for thousands, `12,5` for decimals and `%45,3` for percentages.
@@ -137,18 +141,15 @@ With `--start-date` or `--end-date`, every figure covers only the selected perio
 
 `--chat-type auto` treats a chat as a group when it finds group system events or more than two participants. This is decided on the whole file, before the date filter. If an export is incomplete, or a group has only two active members, choose `group` or `direct` yourself.
 
-- **Group:** the call table is hidden.
-- **Direct:** the call table appears if there are call records. Statuses come from the exporting phone; “answered” means total calls minus missed calls, not who picked up.
-
-Call records still count towards message totals in both cases; call status phrases are removed from the word analysis. Only actual call records are counted as calls, so a message such as “sesli arama yapalım mı?” is not.
+The call table differs: a direct chat shows answered and missed calls; a group shows how many people joined on average instead, since in a group “missed” only means the exporting phone did not join. Only actual call records are counted as calls, so a message such as “sesli arama yapalım mı?” is not; call status phrases are not part of the word analysis.
 
 ### What is filtered out
 
-- Records sent by **“Siz”** or **“Meta AI”**, including calls attributed to “Siz”. Mentions of these names inside other people's messages are kept.
+- Records sent by **“Siz”** or **“Meta AI”**, except calls written as “Siz” (see Calls). Mentions of these names inside other people's messages are kept.
 - Recognised group and system notifications, empty records, and timestamped lines without a sender. “Edited” markers are removed from the text.
-- Invisible formatting characters in sender names.
+- Invisible formatting characters in names. A name written with a no-break space, a double space or differently encoded letters is the same name.
 
-Deleted messages are counted, but their content cannot be recovered. “Siz” is not linked to a real person, and the same person written in two different ways is not merged.
+Deleted messages are counted, but their content cannot be recovered. The same person saved under two different names is not merged.
 
 ## Sample report
 
@@ -168,7 +169,7 @@ Deleted messages are counted, but their content cannot be recovered. “Siz” i
 | Pango, `libgobject` or WeasyPrint error | macOS: `brew install pango`, then use `./run.sh`. Windows: check MSYS2 Pango and `WEASYPRINT_DLL_DIRECTORIES`. |
 | `ModuleNotFoundError` | Run the setup script again. |
 | `Permission denied` on a `.sh` file | Use `sh setup.sh` / `sh run.sh`. |
-| Call table appears in a group report | Run again with `--chat-type group`. |
+| Call table shows answered and missed calls in a group | Run again with `--chat-type group`. |
 | `Error generating PDF` | Read the error; the HTML is saved as `debug_output.html` for inspection. Existing reports with the same names are left untouched. |
 
 The first run can be slow while Matplotlib builds its font cache. The PDF and the Markdown file are only replaced together, after both are ready. If a run fails, the reports already in the folder stay as they were, so check the success message and the file's modification time.

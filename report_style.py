@@ -35,6 +35,21 @@ p { margin: 6px 0; }
 .kpis .label { display: block; font-size: 7.5pt; color: #475569; margin-top: 2px; }
 table.data { border-collapse: collapse; width: 100%; margin: 4px 0 12px; font-size: 8.5pt; }
 table.data th, table.data td { border-bottom: 1px solid #e2e8f0; padding: 3.5px 7px; text-align: left; }
+/* Ranked "site count" cells share the width evenly: the site on top, its count below;
+   a long address wraps after a dot, or mid-word if it must. */
+table.sites { table-layout: fixed; }
+.ranked-count { color: #3f736e; }
+table.sites .ranked-count, table.tags .ranked-count { display: block; font-size: 7pt; }
+table.sites th:first-child { width: 15%; }
+table.sites th:nth-child(2) { width: 10%; }
+table.sites td:nth-child(2), table.sites th:nth-child(2) { padding-right: 14px; }
+table.sites td:nth-child(n+3), table.sites th:nth-child(n+3) { font-size: 7.5pt; padding: 3.5px 4px; overflow-wrap: anywhere; }
+/* The tag table: the same, with two count columns before the ranks. */
+table.tags { table-layout: fixed; }
+table.tags th:first-child { width: 15%; }
+table.tags th:nth-child(2), table.tags th:nth-child(3) { width: 11%; }
+table.tags td:nth-child(3), table.tags th:nth-child(3) { padding-right: 14px; }
+table.tags td:nth-child(n+4), table.tags th:nth-child(n+4) { font-size: 7.5pt; padding: 3.5px 4px; overflow-wrap: anywhere; }
 table.data th { background: #e6f2f1; color: #10253f; font-weight: bold; }
 table.data tr { break-inside: avoid; }
 table.data tbody tr:nth-child(even) td { background: #f8fafc; }
@@ -136,29 +151,39 @@ class Report:
         self._md.append(f"{md_text(text)}\n\n")
 
     def table(self, headers, rows, numeric=(), title=None, total=None, bar_column=None, bar_values=None,
-              css_class=""):
+              css_class="", bars=None):
         """Add a table; ``numeric`` holds the right-aligned column indexes.
 
         ``total`` is an optional bold last row. With ``bar_column`` and one
         number per row in ``bar_values``, that column also gets a small bar so
-        the rows can be compared at a glance (PDF only).
+        the rows can be compared at a glance (PDF only); ``bars`` maps further
+        columns to their values, each scaled on its own. A ``(label, count)``
+        pair in a cell is written "label count", the count in its own colour.
         """
         numeric = set(numeric)
-        top = max(bar_values) if bar_values else 0
+        bars = dict(bars or {})
+        if bar_column is not None and bar_values:
+            bars[bar_column] = bar_values
+        tops = {column: max(values) for column, values in bars.items() if values}
 
         def cell(tag, index, value, bar=None):
             css = ' class="num"' if index in numeric else ""
-            content = escape(value)
-            if bar is not None and top:
-                width = max(1, round(44 * bar / top))
+            if isinstance(value, tuple):
+                # A no-break space keeps the count next to the end of a long label.
+                # A zero-width space after each dot lets a long address wrap there.
+                label = escape(value[0]).replace(".", ".\u200b")
+                content = f'{label}\u00a0<span class="ranked-count">{escape(value[1])}</span>'
+            else:
+                content = escape(value)
+            if bar is not None and tops.get(index):
+                width = max(1, round(44 * bar / tops[index]))
                 content = f'<span class="bar" style="width:{width}px"></span> {content}'
             return f"<{tag}{css}>{content}</{tag}>"
 
         body = []
         for row_index, row in enumerate(rows):
-            bar = bar_values[row_index] if bar_values else None
             body.append("<tr>" + "".join(
-                cell("td", i, v, bar if i == bar_column else None) for i, v in enumerate(row)
+                cell("td", i, v, bars[i][row_index] if i in bars else None) for i, v in enumerate(row)
             ) + "</tr>")
         if total:
             body.append('<tr class="total">' + "".join(cell("td", i, v) for i, v in enumerate(total)) + "</tr>")
@@ -176,7 +201,8 @@ class Report:
         self._md.append("| " + " | ".join(md_text(h) for h in headers) + " |\n")
         self._md.append("|" + "|".join("---:" if i in numeric else "---" for i in range(len(headers))) + "|\n")
         for row in [*rows, *([total] if total else [])]:
-            self._md.append("| " + " | ".join(md_text(v) for v in row) + " |\n")
+            self._md.append("| " + " | ".join(md_text(" ".join(v) if isinstance(v, tuple) else v)
+                                              for v in row) + " |\n")
         self._md.append("\n")
 
     def term_list(self, headers, rows, title=None, columns=3, more=0):

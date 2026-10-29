@@ -8,7 +8,8 @@ from __future__ import annotations
 
 import re
 import unicodedata
-from dataclasses import dataclass
+from collections import Counter
+from dataclasses import dataclass, replace
 from datetime import datetime, timedelta
 from pathlib import Path
 
@@ -105,7 +106,12 @@ def turkish_lower(text: str) -> str:
 
 
 def clean_sender(sender: str) -> str:
-    return "".join(c for c in sender if unicodedata.category(c) != "Cf").strip()
+    """A name as one form: invisible marks removed, any kind of space (a no-break space
+    too) made one plain space, and letters in one Unicode form, so the same name written
+    by a header and by an @ tag matches."""
+    name = unicodedata.normalize("NFC", sender)
+    name = "".join(c for c in name if not unicodedata.category(c).startswith("C") or c.isspace())
+    return " ".join(name.split())
 
 
 def is_excluded_sender(sender: str) -> bool:
@@ -148,6 +154,10 @@ def classify(sender: str, text: str, marked: bool | None = None) -> str:
     if marked is None:
         marked = "\u200e" in text or "\u200f" in text
     if is_excluded_sender(sender):
+        # Calls the exporter made from another device ("Siz: Görüntülü arama, Başka bir
+        # cihazda cevaplandı") are written as "Siz"; they are real calls.
+        if turkish_lower(clean_sender(sender)) == "siz" and CALL_TEXT.match(_plain_text(text.split("\n", 1)[0])):
+            return CALL
         return EXCLUDED
     if not _plain_text(text):
         return SYSTEM
@@ -205,8 +215,18 @@ def _raw_records(path):
         yield (*current, "\n".join(lines))
 
 
+def exporter_name(records):
+    """The exporting person's name, or None: only their own deleted messages read
+    "Bu mesajı sildiniz" (others' read "Bu mesaj silindi")."""
+    names = Counter(record.sender for record in records
+                    if record.kind == DELETED and "sildiniz" in turkish_lower(_plain_text(record.text)))
+    return names.most_common(1)[0][0] if names else None
+
+
 def read_chat(path) -> Chat:
-    """Read an export; system notices and "Siz"/"Meta AI" records are left out."""
+    """Read an export; system notices and "Siz"/"Meta AI" records are left out,
+    except calls the exporter made from another device. Those are written as "Siz" and
+    are given the exporter's name when the chat shows it, else they keep "Siz"."""
     records = []
     group_names = set()
     has_group_event = False
@@ -223,5 +243,10 @@ def read_chat(path) -> Chat:
             records.append(Record(timestamp, sender, text, kind))
     # Some exports attribute notices to the group's own name.
     records = [record for record in records if record.sender not in group_names]
-    senders = {record.sender for record in records}
+    me = exporter_name(records)
+    if me:
+        records = [replace(record, sender=me) if record.kind == CALL and turkish_lower(record.sender) == "siz"
+                   else record for record in records]
+    # Calls do not decide who takes part: "Siz" only ever appears on calls.
+    senders = {record.sender for record in records if record.kind != CALL}
     return Chat(records, bool(has_group_event or group_names or len(senders) > 2))

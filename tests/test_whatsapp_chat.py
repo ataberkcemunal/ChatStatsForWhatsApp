@@ -62,7 +62,28 @@ class ReadChatTests(unittest.TestCase):
             '[1.10.2026 10:01:00] \u200fMeta AI\u200e: bot yanıtı\n'
             '[1.10.2026 10:02:00] Meta AI Seven: Merhaba\n'
         )
-        self.assertEqual([(r.sender, r.text) for r in chat.records], [('Meta AI Seven', 'Merhaba')])
+        # The exporting phone's own calls are kept as calls.
+        self.assertEqual([(r.sender, r.text, r.kind) for r in chat.records],
+                         [('Siz', 'Görüntülü arama\ndevam', CALL), ('Meta AI Seven', 'Merhaba', MESSAGE)])
+        self.assertEqual(self.read('[1.10.2026 10:00:00] Siz: Merhaba\n').records, [])
+
+    def test_exporter_calls_take_the_exporter_name(self):
+        # Only the exporter's own deleted messages read "Bu mesajı sildiniz".
+        chat = self.read(
+            '[1.10.2026 10:00:00] Ayşe: \u200eBu mesaj silindi.\n'
+            '[1.10.2026 10:01:00] Bora: \u200eBu mesajı sildiniz.\n'
+            '[1.10.2026 10:02:00] \u200eSiz: \u200eSesli arama, 2 dk.\n'
+            '[1.10.2026 10:03:00] Bora: Selam\n'
+        )
+        self.assertEqual([(r.sender, r.kind) for r in chat.records],
+                         [('Ayşe', DELETED), ('Bora', DELETED), ('Bora', CALL), ('Bora', MESSAGE)])
+        self.assertFalse(chat.is_group_chat)
+
+    def test_names_written_differently_are_one_name(self):
+        # A no-break space, a double space or decomposed letters do not make a second person.
+        self.assertEqual(whatsapp_chat.clean_sender('\u200eBurak\u00a0Batman '), 'Burak Batman')
+        self.assertEqual(whatsapp_chat.clean_sender('Ayşe  Yılmaz'), 'Ayşe Yılmaz')
+        self.assertEqual(whatsapp_chat.clean_sender('Ays\u0327e'), 'Ayşe')
 
     def test_record_kinds(self):
         chat = self.read(

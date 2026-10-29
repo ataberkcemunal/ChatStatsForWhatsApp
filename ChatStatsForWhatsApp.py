@@ -50,8 +50,10 @@ MEDIA_TYPE_PATTERNS = {
     "Audio": "ses dahil edilmedi",
     "Documents": "belge dahil edilmedi",
     "GIFs": "GIF dahil edilmedi",
-    "Locations": "konum:",
+    "Locations": "konum: https://maps.google.com",
 }
+# WhatsApp's own location share; its map link is part of the share, not a shared link.
+LOCATION_REGEX = re.compile(r"konum:\s*https://maps\.google\.com/\S*", re.IGNORECASE)
 
 # Regex for links, tags and system indicators (edited/deleted)
 LINK_REGEX = r"https?://\S+"
@@ -67,9 +69,137 @@ def strip_links(text):
     return BARE_LINK_REGEX.sub(" ", re.sub(LINK_REGEX, " ", text))
 
 
-def count_links(text):
+# Second-level endings under a country code: example.com.tr is one site, not com.tr.
+SECOND_LEVEL = {"com", "co", "org", "net", "gov", "edu", "gen", "web", "bel", "k12", "av", "ac"}
+# One name per site where it has several addresses.
+SITE_ALIASES = {
+    "youtu.be": "youtube.com", "twitter.com": "x.com", "fxtwitter.com": "x.com",
+    "vxtwitter.com": "x.com", "fixupx.com": "x.com", "t.co": "x.com", "instagr.am": "instagram.com",
+    "t.me": "telegram.org", "wa.me": "whatsapp.com", "fb.com": "facebook.com", "fb.watch": "facebook.com",
+    "redd.it": "reddit.com", "amzn.to": "amazon.com", "amzn.eu": "amazon.com", "spoti.fi": "spotify.com",
+    "apple.co": "apple.com", "x.co": "x.com",
+}
+# Link shorteners hide where a link goes, so they are counted together.
+SHORTENERS = {"bit.ly", "tinyurl.com", "cutt.ly", "ow.ly", "is.gd", "shorturl.at", "rb.gy", "tiny.cc", "t.ly",
+              "s.id", "buff.ly", "rebrand.ly"}
+# Well-known sites are shown by name (instagram.com: Instagram); any other site by its
+# address (gib.gov.tr), which says more than a made-up name would.
+SITE_NAMES = {
+    # global
+    "youtube": "YouTube", "x": "X", "instagram": "Instagram", "tiktok": "TikTok", "facebook": "Facebook",
+    "reddit": "Reddit", "threads": "Threads", "pinterest": "Pinterest", "snapchat": "Snapchat",
+    "tumblr": "Tumblr", "linkedin": "LinkedIn", "telegram": "Telegram", "whatsapp": "WhatsApp",
+    "discord": "Discord", "twitch": "Twitch", "kick": "Kick", "vimeo": "Vimeo", "dailymotion": "Dailymotion",
+    "netflix": "Netflix", "disneyplus": "Disney+", "primevideo": "Prime Video", "spotify": "Spotify",
+    "soundcloud": "SoundCloud", "deezer": "Deezer", "shazam": "Shazam", "apple": "Apple", "icloud": "iCloud",
+    "microsoft": "Microsoft", "live": "Microsoft", "office": "Microsoft Office", "github": "GitHub",
+    "stackoverflow": "Stack Overflow", "wikipedia": "Wikipedia", "medium": "Medium", "quora": "Quora",
+    "imdb": "IMDb", "letterboxd": "Letterboxd", "goodreads": "Goodreads", "wattpad": "Wattpad",
+    "chatgpt": "ChatGPT", "openai": "OpenAI", "claude": "Claude", "gemini": "Gemini", "deepl": "DeepL",
+    "canva": "Canva", "notion": "Notion", "zoom": "Zoom", "dropbox": "Dropbox", "wetransfer": "WeTransfer",
+    "amazon": "Amazon", "ebay": "eBay", "aliexpress": "AliExpress", "temu": "Temu", "shein": "Shein",
+    "paypal": "PayPal", "booking": "Booking.com", "airbnb": "Airbnb", "tripadvisor": "Tripadvisor",
+    "duolingo": "Duolingo", "change": "Change.org", "9gag": "9GAG", "bbc": "BBC", "cnn": "CNN",
+    "nasa": "NASA", "yandex": "Yandex", "bing": "Bing", "steampowered": "Steam", "steamcommunity": "Steam",
+    "epicgames": "Epic Games", "transfermarkt": "Transfermarkt", "chess": "Chess.com", "lichess": "Lichess",
+    # Turkish
+    "eksisozluk": "Ekşi Sözlük", "sahibinden": "Sahibinden", "hepsiburada": "Hepsiburada",
+    "trendyol": "Trendyol", "n11": "n11", "yemeksepeti": "Yemeksepeti", "getir": "Getir", "dolap": "Dolap",
+    "letgo": "letgo", "ciceksepeti": "Çiçeksepeti", "akakce": "Akakçe", "cimri": "Cimri", "iddaa": "İddaa",
+    "nesine": "Nesine", "bilyoner": "Bilyoner", "mackolik": "Maçkolik", "sahadan": "Sahadan",
+    "turkiye": "e-Devlet", "obilet": "obilet", "enuygun": "Enuygun", "hurriyet": "Hürriyet",
+    "milliyet": "Milliyet", "sozcu": "Sözcü", "haberturk": "Habertürk", "cnnturk": "CNN Türk", "ntv": "NTV",
+    "trt": "TRT", "trthaber": "TRT Haber", "onedio": "Onedio", "webtekno": "Webtekno",
+    "shiftdelete": "ShiftDelete", "donanimhaber": "DonanımHaber", "technopat": "Technopat", "blutv": "BluTV",
+    "exxen": "Exxen", "tabii": "tabii", "beinconnect": "beIN Connect", "puhutv": "puhutv", "fizy": "fizy",
+    "muud": "Muud",
+}
+
+
+def google_service(host, path):
+    """Google's address alone says little (goo.gl is mostly shared map locations), so its
+    main services are named: maps.app.goo.gl/… is Google Haritalar."""
+    if host == "forms.gle" or (host.startswith("docs.google.") and path.startswith("/forms")):
+        return "Google Formlar"
+    if host.startswith("maps.") or path.startswith("/maps"):
+        return "Google Haritalar"
+    if host.startswith("drive.google."):
+        return "Google Drive"
+    if host.startswith("docs.google."):
+        return "Google Dokümanlar"
+    return "Google"
+
+
+def _host_path(link):
+    """A link's host (without www., port or a final dot) and its path, in lower case."""
+    address = re.sub(r"^https?://", "", link, flags=re.IGNORECASE)
+    host, path = re.match(r"([^/?#]*)(.*)", address, re.DOTALL).groups()
+    host = host.split(":")[0].lower().rstrip(".")
+    return re.sub(r"^www\.", "", host), path.lower()
+
+
+def _site_address(host):
+    """The address a host belongs to: open.spotify.com is spotify.com, ivd.gib.gov.tr is gib.gov.tr."""
+    labels = host.split(".")
+    keep = 3 if len(labels) >= 3 and labels[-2] in SECOND_LEVEL and len(labels[-1]) == 2 else 2
+    site = ".".join(labels[-keep:])
+    return SITE_ALIASES.get(site, site)
+
+
+def site_of(link):
+    """The site a link points to: by name when it is well known (https://open.spotify.com/track/…
+    is Spotify), otherwise by its address (https://ivd.gib.gov.tr/… is gib.gov.tr)."""
+    host, path = _host_path(link)
+    if re.fullmatch(r"[\d.]+", host):
+        return host  # an IP address
+    site = _site_address(host)
+    # share.google is Google's own ending, used for its share links.
+    if site in {"goo.gl", "g.co", "forms.gle"} or "google" in (host.split(".")[-1], site.split(".")[0]):
+        return google_service(host, path)
+    if site in SHORTENERS:
+        return "Kısa link"
+    if host == "chat.whatsapp.com":
+        return "WhatsApp grup daveti"
+    # The name before the ending, so youtube.com and youtube.com.tr are one site.
+    return SITE_NAMES.get(site.split(".")[0], site)
+
+
+# What a link holds, read from its address; links that fit none (profiles, news, shops) have none.
+LINK_KINDS = ["Video", "Kısa video", "Gönderi", "Müzik", "Harita"]
+
+
+def link_kind(link):
+    """Video, Kısa video, Gönderi, Müzik or Harita, or None when the address does not say."""
+    host, path = _host_path(link)
+    name = _site_address(host).split(".")[0]
+    if host.startswith("music.") or name in {"spotify", "soundcloud", "deezer", "shazam", "fizy", "muud"}:
+        return "Müzik"
+    if site_of(link) == "Google Haritalar" or host == "maps.apple.com" or (name == "yandex" and "/maps" in path):
+        return "Harita"
+    if name == "tiktok" or path.startswith(("/shorts/", "/reel/", "/reels/")):
+        return "Kısa video"
+    if ((name == "youtube" and (host == "youtu.be" or path.startswith(("/watch", "/live", "/embed"))))
+            or name in {"twitch", "kick", "vimeo", "dailymotion"} or host == "fb.watch"
+            or (name in {"instagram", "facebook"} and path.startswith(("/tv/", "/watch", "/videos")))):
+        return "Video"
+    if ((name == "x" and "/status/" in path) or (name == "instagram" and path.startswith("/p/"))
+            or (name == "reddit" and (host == "redd.it" or "/comments/" in path or "/s/" in path))
+            or (name == "threads" and "/post/" in path)
+            or (name == "facebook" and ("/posts/" in path or path.startswith(("/share/p/", "/photo"))))):
+        return "Gönderi"
+    return None
+
+
+def shared_links(text):
+    """The links in a message, typed with http or without; a location share is not one."""
+    text = LOCATION_REGEX.sub(" ", text.replace("\u200e", ""))
     without_http = re.sub(LINK_REGEX, " ", text)
-    return len(re.findall(LINK_REGEX, text)) + len(BARE_LINK_REGEX.findall(without_http))
+    return re.findall(LINK_REGEX, text) + BARE_LINK_REGEX.findall(without_http)
+
+
+def link_sites(text):
+    """The site of each link in a message."""
+    return [site_of(link) for link in shared_links(text)]
 TAG_REGEX = r"@\u2068(.*?)\u2069"
 CLEANUP_REGEX = re.compile(
     r"\u200e?<.*?(?:mesaj düzenlendi|message was edited)>|\u200e?Bu mesajı sildiniz\.|\u200e?Bu mesaj silindi\.",
@@ -114,6 +244,9 @@ def clean_media_placeholders(text):
     # file name and page count are not written text. A caption after it is kept.
     res = re.sub(r"^.*?belge dahil edilmedi", " ", res, flags=re.IGNORECASE | re.DOTALL)
 
+    # A location share with its map link is not written text.
+    res = LOCATION_REGEX.sub(" ", res)
+
     # Remove standard media placeholders
     for pat in MEDIA_PATTERNS:
         res = re.sub(re.escape(pat), "", res, flags=re.IGNORECASE)
@@ -139,13 +272,27 @@ def clean_message(text):
     ).strip()
 
 
-# Written laughter: haha, ahaha, hehe, hihi, hohoho, ohhohoh, jajaja, ksksks, sksksk, sjsjsj, jsjs,
-# hshshs, kdkdkd, za, zaaa, zazaza, asdf..., xd, lol, plus :D, :DD, :), :P and the laughing emojis.
-LAUGH_REGEX = re.compile(
-    r"(?<!\w)(?:a?(?:h+a+){2,}h*|o?(?:h+o+){2,}h*|(?:h+e+){2,}h*|(?:h+i+){2,}h*|(?:j+a+){2,}j*"
-    r"|(?:ks){2,}k?|(?:sk){2,}s?|(?:sj){2,}s?|(?:js){2,}j?|(?:hs){2,}h?|(?:sh){2,}s?|(?:kd){2,}k?|(?:dk){2,}d?"
-    r"|(?:z+a+)+|asd\w*|x+d+|lo+l+|lmao+)(?!\w)|:[dp]+(?!\w)|:\)|[\U0001F602\U0001F606\U0001F923\U0001F639]"
-)
+# Written laughter by style, as the report shows it. Keyboard mashes (see is_keyboard_mash)
+# also count as "Random".
+_WORD_LAUGHS = {
+    "haha": r"a?(?:h+a+){2,}h*|(?:j+a+){2,}j*",
+    "hehe / hihi": r"(?:h+e+){2,}h*|(?:h+i+){2,}h*",
+    "hoho": r"o?(?:h+o+){2,}h*",
+    "Random": r"(?:ks){2,}k?|(?:sk){2,}s?|(?:sj){2,}s?|(?:js){2,}j?|asd\w*"
+              r"|(?:hs){2,}h?|(?:sh){2,}s?|(?:kd){2,}k?|(?:dk){2,}d?",
+    "za": r"(?:z+a+)+",
+    "xd": r"x+d+",
+    "lol": r"lo+l+|lmao+",
+}
+# Open-mouthed smiles and laughing faces; 🙂 😊 🙃 and the like are smiles, not laughter.
+LAUGHING_EMOJIS = "😀😃😄😁😆😅🤣😂😹"
+LAUGH_STYLES = {
+    **{name: re.compile(rf"(?<!\w)(?:{pattern})(?!\w)") for name, pattern in _WORD_LAUGHS.items()},
+    # :D is an open-mouthed laugh; :) and :P are a smile and a tongue, like 🙂 and 😛.
+    ":D / :d": re.compile(r":d+(?!\w)"),
+    "Emoji": re.compile(f"[{LAUGHING_EMOJIS}]"),
+}
+LAUGH_REGEX = re.compile("|".join(regex.pattern for regex in LAUGH_STYLES.values()))
 # Keyboard mashes (asjdkasjd, skdjfhs, pğsdlf): a long word typed mostly on the home row of a
 # Turkish Q keyboard with four home-row consonants in a row, which real words almost never have.
 HOME_ROW = set("asdfghjklşi")
@@ -180,19 +327,32 @@ NOT_QUESTION_REGEX = re.compile(
 )
 
 
+def laugh_styles(lower):
+    """Which laughter styles a message uses, each once."""
+    styles = [name for name, regex in LAUGH_STYLES.items() if regex.search(lower)]
+    # A word that already has a style (ksksks, sjsjsj) is not also a keyboard mash.
+    if "Random" not in styles and any(
+        is_keyboard_mash(word) and not LAUGH_REGEX.fullmatch(word) for word in re.findall(r"[^\W\d_]+", lower)
+    ):
+        styles.append("Random")
+    return {"laugh": int(bool(styles)), "laugh_styles": tuple(styles)}
+
+
 def style_flags(written):
-    """Whether someone asked a question (or wrote only question marks) or laughed,
+    """Whether someone asked a question, wrote only question marks or laughed,
     once per message (links left out)."""
     text = strip_links(written)
     lower = turkish_lower(text)
     asked = NOT_QUESTION_REGEX.sub(" ", lower)
-    question = "?" in text or QUESTION_REGEX.search(asked) or ONLY_NE_REGEX.fullmatch(lower.strip())
+    # A reply made of question marks only ("?", "???") is a reaction, counted on its own.
+    only_question_mark = bool(re.fullmatch(r"\?+", "".join(text.split())))
+    question = not only_question_mark and (
+        "?" in text or QUESTION_REGEX.search(asked) or ONLY_NE_REGEX.fullmatch(lower.strip())
+    )
     return {
         "question": int(bool(question)),
-        # A reply made of question marks only: "?", "???".
-        "only_question_mark": int(bool(re.fullmatch(r"\?+", "".join(text.split())))),
-        "laugh": int(bool(LAUGH_REGEX.search(lower))
-                     or any(is_keyboard_mash(word) for word in re.findall(r"[^\W\d_]+", lower))),
+        "only_question_mark": int(only_question_mark),
+        **laugh_styles(lower),
     }
 
 
@@ -210,20 +370,30 @@ def get_message_stats(text, kind=whatsapp_chat.MESSAGE):
     emojis = [em["emoji"] for em in emoji.emoji_list(text)]
     # Links are shared, not typed: they count as links, not as letters or words.
     typed = " ".join(strip_links(written).split())
+    links = shared_links(text)
 
     # Only what the person wrote counts: media placeholders, poll syntax and
     # call status text are not letters someone typed.
     return {
-        "letter_count": len(typed.replace(" ", "")),
         "has_text": int(bool(typed)),
         "words": _get_tokens(typed, min_len=4, keep_apostrophes=True),
         **phrases(typed),
-        "links": count_links(text),
+        "link_sites": [site_of(link) for link in links],
+        "link_kinds": [kind for kind in map(link_kind, links) if kind],
+        "links": len(links),
+        "tags": tagged_names(text),
         "emojis": emojis,
         "emoji_count": len(emojis),
         "media": 1 if has_media_placeholder(cleaned_text) else 0,
         **style_flags(typed),
     }
+
+
+def tagged_names(text):
+    """The people a message tags with @, as their names are written in the chat; each once.
+    WhatsApp's tag for the whole group, @herkes, is shown as Herkes."""
+    names = {whatsapp_chat.clean_sender(name) for name in re.findall(TAG_REGEX, text)} - {""}
+    return sorted("Herkes" if whatsapp_chat.turkish_lower(name) == "herkes" else name for name in names)
 
 
 # Phrases stop at sentence punctuation and line ends: "tamam. ben de" holds no "tamam ben".
@@ -234,26 +404,57 @@ def is_laughter(word):
     return bool(LAUGH_REGEX.fullmatch(word)) or is_keyboard_mash(word)
 
 
-def phrases(typed):
-    """The two- and three-word phrases of a message, each counted once per message.
+# Words that carry no meaning of their own: a phrase made only of these ("ben de",
+# "o zaman") says nothing about a chat, so it is not counted.
+FUNCTION_WORDS = set("""
+a e o ben sen biz siz onlar bu şu bunlar şunlar bana sana ona bize size onlara beni seni onu bizi sizi
+onları benim senin onun bizim sizin onların bunu şunu bunun şunun buna şuna bende sende onda bizde
+sizde bundan ondan bir iki de da ki mi mı mu mü ne ve veya ya yada ama fakat ile için gibi kadar
+daha en çok az var yok değil diye ise her hep şey şeyi şeyler sonra önce şimdi zaten artık bile hala
+hâlâ yani işte bi nasıl neden niye nerede zaman olan olarak
+""".split())
+MAX_PHRASE_WORDS = 6
+MIN_PHRASE_MESSAGES = 3  # fewer could be chance
 
-    Phrases stay within a sentence and leave out laughter and keyboard mashes.
-    Repeats such as "yavaş yavaş" count: counting once per message keeps
-    "çok çok çok çok" from filling the list.
+
+def phrases(typed):
+    """The 2- to 6-word phrases of a message, each counted once per message.
+
+    Phrases stay within a sentence; laughter and keyboard mashes break them.
+    Phrases made only of function words or tags ("ben de", "@Ali @Veli") are
+    left out. Counting once per message keeps "çok çok çok çok" from filling
+    the list; repeats such as "yavaş yavaş" count.
     """
-    found = {"bigrams": set(), "trigrams": set()}
+    found = set()
     for sentence in SENTENCE_BREAK_REGEX.split(typed):
         # Laughter also breaks a phrase: "geliyorum haha ben" holds no "geliyorum ben".
         runs = [[]]
-        for word in _get_tokens(sentence, min_len=2, keep_apostrophes=True):
+        for word in _get_tokens(sentence, min_len=1, keep_apostrophes=True):
             if is_laughter(word):
                 runs.append([])
             else:
                 runs[-1].append(word)
         for words in runs:
-            for size, key in ((2, "bigrams"), (3, "trigrams")):
-                found[key].update(zip(*(words[i:] for i in range(size))))
-    return {key: sorted(value) for key, value in found.items()}
+            for size in range(2, MAX_PHRASE_WORDS + 1):
+                for gram in zip(*(words[i:] for i in range(size))):
+                    if not all(word in FUNCTION_WORDS or word.startswith("@") for word in gram):
+                        found.add(gram)
+    return {"phrases": sorted(found)}
+
+
+def maximal_phrases(counts, min_count=MIN_PHRASE_MESSAGES, cover=0.8):
+    """The phrases worth showing: used in at least ``min_count`` messages and not just
+    a part of a longer phrase. "kutlu olsun" is left out when "doğum günün kutlu olsun"
+    holds at least ``cover`` of its uses; used often on its own as well, both stay.
+    """
+    frequent = {phrase: count for phrase, count in counts.items() if count >= min_count}
+    longest_cover = Counter()
+    for phrase, count in frequent.items():
+        for size in range(2, len(phrase)):
+            for part in zip(*(phrase[i:] for i in range(size))):
+                longest_cover[part] = max(longest_cover[part], count)
+    return Counter({phrase: count for phrase, count in frequent.items()
+                    if longest_cover[phrase] < cover * count})
 
 
 def update_message_stats(entry):
@@ -279,11 +480,8 @@ def _get_tokens(text, min_len=2, keep_apostrophes=False):
     def repl(m):
         # Extract name, remove all spaces and control characters
         raw_name = m.group(1)
-        # Remove invisible/control characters and spaces
-        clean_name = "".join(
-            c for c in raw_name if not unicodedata.category(c).startswith("C")
-        )
-        clean_name = clean_name.replace(" ", "")
+        # The name in one form, as in the headers, then without spaces: one token.
+        clean_name = whatsapp_chat.clean_sender(raw_name).replace(" ", "")
 
         token = f"ZXTG{len(placeholders)}TX"
         formatted_name = f"@{clean_name}"
@@ -458,10 +656,24 @@ def share_chart(labels, shares, size=(10.8, 3.2)):
 
 # How many entries each list shows; the same for every person.
 TOP_WORDS = 45  # three columns of 15
-TOP_PHRASES = 15
+TOP_PHRASES = 30  # two columns of 15
 TOP_PER_PERSON = 15
 TOP_DISTINCTIVE = 10
-TOP_EMOJIS = 10
+TOP_EMOJIS = 8  # one line per person in the Emoji table
+TOP_SITES = 5
+TOP_TAGGED = 5
+
+
+def rank_range(size):
+    """How the rank columns are named in a note: "1.–5.", or "1." for one."""
+    return "1." if size == 1 else f"1.–{size}."
+
+
+def ranked_cells(counter, size):
+    """The ``size`` largest entries as ("name", "count") cells, one column per rank, so the
+    rows line up; on equal counts, alphabetical. Empty cells fill a short list."""
+    ranked = sorted(counter.items(), key=lambda item: (-item[1], item[0]))[:size]
+    return [(name, report_style.number(count)) for name, count in ranked] + [""] * (size - len(ranked))
 
 
 def _top(counter, limit):
@@ -469,22 +681,25 @@ def _top(counter, limit):
             for item, count in counter.most_common(limit)]
 
 
-def distinctive_words(word_counts, user, limit=TOP_DISTINCTIVE):
-    """Words this person uses clearly more often than everyone else.
+def distinctive_words(word_counts, user, limit=TOP_DISTINCTIVE, prior=None):
+    """Words (or phrases) this person uses clearly more often than everyone else.
 
     Weighted log-odds with the whole chat as an informative Dirichlet prior
     (Monroe, Colaresi & Quinn, 2008): each word gets a z-score, and only words
-    above 1.96 (about 95% confidence) are kept, highest first.
+    above 1.96 (about 95% confidence) are kept, highest first. ``prior`` is
+    everyone's counts together; pass it to avoid adding them up for each person.
     """
     mine = word_counts[user]
-    others = sum((counts for name, counts in word_counts.items() if name != user), Counter())
-    prior = mine + others
-    n_mine, n_others, n_prior = mine.total(), others.total(), prior.total()
+    if prior is None:
+        prior = sum(word_counts.values(), Counter())
+    n_mine, n_prior = mine.total(), prior.total()
+    n_others = n_prior - n_mine
     if not n_mine or not n_others:
         return []
     scores = []
     for word, count in mine.items():
-        alpha, other = prior[word], others[word]
+        alpha = prior[word]
+        other = alpha - count
         rest_mine, rest_others = n_mine + n_prior - count - alpha, n_others + n_prior - other - alpha
         if rest_mine <= 0 or rest_others <= 0:
             continue  # the only word anyone used: nothing to compare against
@@ -516,6 +731,39 @@ def day_streaks(dates):
                 silence = gap
             run_start = day
     return streak, silence
+
+
+# Lengths are written short ("1 sa 5 dk.") or in full ("1 saat 5 dakika").
+CALL_UNITS = {"sa": 3600, "saat": 3600, "dk": 60, "dakika": 60, "sn": 1, "saniye": 1}
+CALL_DURATION_REGEX = re.compile(r"(\d+)\s*(saniye|saat|sa|dakika|dk|sn)\b")
+CALL_PARTICIPANTS_REGEX = re.compile(r"(\d+)\s*kişi katıldı")
+
+
+def call_details(text):
+    """Kind, status, length and participants of one call record."""
+    plain = turkish_lower(text.replace("\u200e", ""))
+    seconds = sum(int(amount) * CALL_UNITS[unit]
+                  for amount, unit in CALL_DURATION_REGEX.findall(plain))
+    participants = CALL_PARTICIPANTS_REGEX.search(plain)
+    return {
+        "video": "görüntülü" in plain,
+        "missed": bool(re.search(r"cevapsız|cevaplanmadı", plain)),
+        "seconds": seconds,
+        "participants": int(participants[1]) if participants else None,
+    }
+
+
+def duration(seconds):
+    """Write a call length briefly in Turkish: 45 sn, 12 dk, 3 sa 25 dk."""
+    if not seconds:
+        return "–"  # missed calls have no length
+    if seconds < 60:
+        return f"{seconds} sn"
+    minutes = round(seconds / 60)
+    hours, minutes = divmod(minutes, 60)
+    if not hours:
+        return f"{minutes} dk"
+    return f"{hours} sa {minutes} dk" if minutes else f"{hours} sa"
 
 
 # Hours of silence that end one conversation; the next record opens a new one.
@@ -553,6 +801,9 @@ def compute_stats(
         if chat_type == "auto"
         else chat_type == "group"
     )
+    # Calls have their own table and are not messages: no message count includes them.
+    calls = df[df["kind"] == whatsapp_chat.CALL]
+    df = df[df["kind"] != whatsapp_chat.CALL]
 
     def user_messages(user):
         return df[df["user"] == user]
@@ -598,10 +849,8 @@ def compute_stats(
             {
                 "User": user,
                 "Messages": len(user_df),
-                # Average over messages with written text; media-only messages have none.
-                "AvgLetters": user_df["letter_count"].sum() / written if written else 0,
-                "Media": user_df["media"].sum(),
-                "Emojis": user_df["emoji_count"].sum(),
+                # Messages with an emoji: "😂😂😂" is one, like the emoji tables.
+                "Emojis": (user_df["emoji_count"] > 0).sum(),
                 "Links": user_df["links"].sum(),
                 "Polls": user_df["poll"].sum(),
                 "Deleted": user_df["deleted"].sum(),
@@ -615,26 +864,26 @@ def compute_stats(
 
     report.section("Kişiler")
     report.table(
-        ["Kişi", "Mesaj", "Pay", "Ort. harf", "Medya", "Emoji", "Link", "Anket", "Silinen"],
+        ["Kişi", "Mesaj", "Pay", "Aktif gün", "Katılım", "Aktif gün başına mesaj", "Silinen"],
         [
             [
                 s["User"], number(s["Messages"]), percent(100 * s["Messages"] / len(df)),
-                decimal(s["AvgLetters"]), number(s["Media"]), number(s["Emojis"]),
-                number(s["Links"]), number(s["Polls"]), number(s["Deleted"]),
+                f"{number(s['Days Active'])} / {number(total_chat_days)}",
+                percent(100 * s["Days Active"] / total_chat_days),
+                decimal(s["Messages"] / s["Days Active"]), number(s["Deleted"]),
             ]
             for s in user_stats
         ],
-        numeric=range(1, 9),
+        numeric=range(1, 7),
         bar_column=1,
         bar_values=[s["Messages"] for s in user_stats],
         total=[
-            "Toplam", number(len(df)), "", "", number(df["media"].sum()),
-            number(df["emoji_count"].sum()), number(df["links"].sum()),
-            number(df["poll"].sum()), number(df["deleted"].sum()),
+            "Toplam", number(len(df)), "", number(total_chat_days), "",
+            decimal(len(df) / total_chat_days), number(df["deleted"].sum()),
         ],
     )
     report.paragraph(
-        "Ort. harf: yazılı mesaj başına boşluksuz karakter; medya, belge adı, link, arama ve silinen mesajlar sayılmaz.",
+        "Aktif gün: kişinin en az bir mesajı olan gün; Katılım: aktif gün ÷ sohbet günü.",
         "note",
     )
     if excluded_senders:
@@ -644,74 +893,88 @@ def compute_stats(
             "note",
         )
 
-    # Media
-    media_stats = []
+    # Shares: media, location shares, polls and links, each kind counted per person.
+    shares = {}
     for user in sorted_users:
-        # Count different media types using standard case-insensitive matching
-        # (Avoids Turkish-specific I/ı issues for these fixed system placeholders)
+        # Fixed WhatsApp placeholders; standard case-insensitive matching avoids
+        # Turkish I/ı issues.
         msgs_clean = user_messages(user)["message"].str.replace("\u200e", "", regex=False)
-        counts = [count_contains(msgs_clean, pattern) for pattern in MEDIA_TYPE_PATTERNS.values()]
-        media_stats.append((user, counts))
-    if any(sum(counts) for _, counts in media_stats):
-        media_stats.sort(key=lambda item: sum(item[1]), reverse=True)
-        column_totals = [sum(column) for column in zip(*(counts for _, counts in media_stats))]
+        shares[user] = {
+            **{label: count_contains(msgs_clean, MEDIA_TYPE_PATTERNS[key]) for key, label in MEDIA_LABELS.items()},
+            "Anket": int(stats_by_user[user]["Polls"]),
+            "Link": int(stats_by_user[user]["Links"]),
+        }
+    kind_totals = Counter()
+    for counts in shares.values():
+        kind_totals.update(counts)
+    # Most shared kind first, from left to right; kinds nobody shared are left out.
+    kinds = sorted((kind for kind in shares[sorted_users[0]] if kind_totals[kind]), key=lambda kind: -kind_totals[kind])
+    if kinds:
+        sharers = sorted(sorted_users, key=lambda user: -sum(shares[user][kind] for kind in kinds))
+        # The total comes first, like the laughter table: how much, then of what.
         report.table(
-            ["Kişi", *MEDIA_LABELS.values(), "Toplam"],
-            [[user, *map(number, counts), number(sum(counts))] for user, counts in media_stats],
-            numeric=range(1, len(MEDIA_LABELS) + 2),
-            title="Medya",
-            total=["Toplam", *map(number, column_totals), number(sum(column_totals))],
+            ["Kişi", "Toplam", *kinds],
+            [[user, number(sum(shares[user][kind] for kind in kinds)), *(number(shares[user][kind]) for kind in kinds)]
+             for user in sharers],
+            numeric=range(1, len(kinds) + 2),
+            title="Paylaşımlar",
+            bar_column=1,
+            bar_values=[sum(shares[user][kind] for kind in kinds) for user in sharers],
+            total=["Toplam", number(sum(kind_totals.values())), *(number(kind_totals[kind]) for kind in kinds)],
         )
+        if "Konum" in kinds:
+            report.paragraph(
+                "Konum: WhatsApp'ın konum paylaşma özelliğiyle gönderilen konumlar; bunların harita linki Link sayılmaz.",
+                "note",
+            )
 
-    by_days = sorted(user_stats, key=lambda x: x["Days Active"], reverse=True)
-    report.table(
-        ["Kişi", "Aktif gün", "Katılım", "Aktif gün başına mesaj"],
-        [
-            [
-                s["User"], f"{number(s['Days Active'])} / {number(total_chat_days)}",
-                percent(100 * s["Days Active"] / total_chat_days),
-                decimal(s["Messages"] / s["Days Active"]),
-            ]
-            for s in by_days
-        ],
-        numeric=range(1, 4),
-        title="Etkinlik",
-    )
+    # Calls, by the person who started them ("Siz" is the exporting phone).
+    if not calls.empty:
+        details = [call_details(text) for text in calls["message"]]
+        per_caller = {}
+        for caller, detail in zip(calls["user"], details):
+            per_caller.setdefault(caller, []).append(detail)
 
-    written_df = df[df["has_text"] == 1]
-    style = written_df.groupby("user")[["question", "only_question_mark", "laugh"]].sum()
-    styled_users = [user for user in sorted_users if user in style.index]
+        def call_row(items):
+            row = {
+                "total": len(items),
+                "voice": sum(not item["video"] for item in items),
+                "video": sum(item["video"] for item in items),
+                "missed": sum(item["missed"] for item in items),
+                "seconds": sum(item["seconds"] for item in items),
+            }
+            counted = [item["participants"] for item in items if item["participants"]]
+            row["participants"] = decimal(sum(counted) / len(counted)) if counted else "–"
+            return row
 
-    def count_and_share(count, written):
-        return [number(int(count)), percent(100 * count / written)]
-
-    if styled_users:
+        callers = sorted(per_caller, key=lambda caller: -len(per_caller[caller]))
+        rows = {caller: call_row(per_caller[caller]) for caller in callers}
+        total = call_row(details)
+        if is_group_chat:
+            # In a group "missed" only means the exporting phone did not join, so it is not shown.
+            headers = ["Kişi", "Toplam", "Sesli", "Görüntülü", "Süre", "Ort. katılımcı"]
+            cells = lambda row: [number(row["total"]), number(row["voice"]), number(row["video"]),
+                                 duration(row["seconds"]), row["participants"]]
+            note = ("Süre: aramaların toplam uzunluğu; Ort. katılımcı: kayıttaki katılımcı sayısının ortalaması. ")
+        else:
+            headers = ["Kişi", "Toplam", "Sesli", "Görüntülü", "Cevaplanan", "Cevapsız", "Süre"]
+            cells = lambda row: [number(row["total"]), number(row["voice"]), number(row["video"]),
+                                 number(row["total"] - row["missed"]), number(row["missed"]),
+                                 duration(row["seconds"])]
+            note = "Cevapsız: açılmayan aramalar; Süre: konuşmaların toplam uzunluğu. "
         report.table(
-            ["Kişi", "Yazılı mesaj", "Soru", "Soru oranı", "Yalnız ?", "Gülme", "Gülme oranı"],
-            [
-                [user, number(stats_by_user[user]["Written"]),
-                 *count_and_share(style.at[user, "question"], stats_by_user[user]["Written"]),
-                 number(int(style.at[user, "only_question_mark"])),
-                 *count_and_share(style.at[user, "laugh"], stats_by_user[user]["Written"])]
-                for user in styled_users
-            ],
-            numeric=range(1, 7),
-            title="Soru ve gülme",
-            total=["Toplam", number(len(written_df)),
-                   *count_and_share(written_df["question"].sum(), len(written_df)),
-                   number(int(written_df["only_question_mark"].sum())),
-                   *count_and_share(written_df["laugh"].sum(), len(written_df))],
+            headers,
+            [[caller, *cells(rows[caller])] for caller in callers],
+            numeric=range(1, len(headers)),
+            title="Aramalar",
+            bar_column=1,
+            bar_values=[rows[caller]["total"] for caller in callers],
+            total=["Toplam", *cells(total)],
         )
-        report.paragraph(
-            "Soru: soru işareti, mi/mı/mu/mü soru eki (gelcekmisin gibi bitişik de) ya da nasıl, neden, niye, "
-            "niçin, kaç, hangi, nerede, kim gibi bir soru kelimesi içeren ya da yalnızca \"ne\" olan yazılı mesaj; "
-            "\"???\" gibi birden çok işaret ya da ifade de bir soru sayılır. "
-            "Yalnız ?: yalnızca soru işaretinden oluşan mesaj (\"?\", \"???\"); bunlar Soru'ya da dahildir. "
-            "Gülme: haha, hehe, hohoho, jajaja, ksksks, sksksk, sjsj, zaaa, asdf, xd, :D, :), :P gibi bir ifade, "
-            "asjdkasjd gibi rastgele klavye yazımı ya da 😂 🤣 😆 içeren mesaj. "
-            "Oranlar yazılı mesajlara göredir.",
-            "note",
-        )
+        whose = "Aramalar, aramayı başlatan kişiye göre sayılır"
+        if "Siz" in per_caller:
+            whose += "; Siz: dışa aktaran telefonun başlattığı aramalar"
+        report.paragraph(f"{whose}. {note}Aramalar mesaj sayılarına dahil değildir.", "note")
 
     flow = conversation_stats(df, conversation_gap)
     flow_rows = sorted(
@@ -768,35 +1031,271 @@ def compute_stats(
             "note",
         )
 
-    call_stats = []
-    for user in [] if is_group_chat else sorted_users:
-        user_df = user_messages(user)
-
-        # Only call records count; a message that mentions "sesli arama" is not a call.
-        call_df = user_df[user_df["kind"] == whatsapp_chat.CALL]
-        msgs = call_df["message"].str.replace("\u200e", "", regex=False)
-
-        # Voice Calls (Initiated)
-        voice_calls = count_contains(msgs, "Sesli arama")
-
-        # Video Calls (Initiated)
-        video_calls = count_contains(msgs, "Görüntülü arama")
-
-        # Call status is recorded from the export owner's perspective.
-        missed_calls = count_contains(msgs, "Cevapsız|Cevaplanmadı", regex=True)
-
-        total_calls = voice_calls + video_calls
-        if total_calls > 0:
-            call_stats.append([user, voice_calls, video_calls, total_calls - missed_calls, missed_calls, total_calls])
-
-    if call_stats:
-        report.section("Aramalar")
-        call_stats.sort(key=lambda x: x[-1], reverse=True)
+    # Tags: who tags whom with @. Someone tagged twice in one message counts once; tagging
+    # oneself does not count.
+    tag_counts = {user: Counter() for user in sorted_users}
+    for user, tags in zip(df["user"], df["tags"]):
+        # Meta AI is a bot, not a person, like everywhere else in the report.
+        tag_counts[user].update(tag for tag in tags
+                                if tag != user and not whatsapp_chat.is_excluded_sender(tag))
+    all_tagged = sum(tag_counts.values(), Counter())
+    if all_tagged:
+        # As many rank columns as the longest list fills: four people tag at most three others.
+        tag_ranks = min(TOP_TAGGED, max(len(counts) for counts in tag_counts.values()))
+        tag_order = sorted((user for user in sorted_users if tag_counts[user] or all_tagged[user]),
+                           key=lambda user: (-tag_counts[user].total(), -all_tagged[user]))
         report.table(
-            ["Kişi", "Sesli", "Görüntülü", "Cevaplanan", "Cevapsız", "Toplam"],
-            [[row[0], *map(number, row[1:])] for row in call_stats],
-            numeric=range(1, 6),
+            ["Kişi", "Etiketleme", "Etiketlenme", *(f"{rank}." for rank in range(1, tag_ranks + 1))],
+            [[user, number(tag_counts[user].total()), number(all_tagged[user]),
+              *ranked_cells(tag_counts[user], tag_ranks)] for user in tag_order],
+            numeric=[1, 2],
+            title="Etiketleme",
+            bars={1: [tag_counts[user].total() for user in tag_order],
+                  2: [all_tagged[user] for user in tag_order]},
+            # Who is tagged most is the Etiketlenme column already, so the ranks stay empty here.
+            total=["Toplam", number(all_tagged.total()), number(sum(all_tagged[user] for user in tag_order)),
+                   *[""] * tag_ranks],
+            css_class="tags",
         )
+        report.paragraph(
+            "Etiketleme: kişinin @ ile yaptığı etiketler; Etiketlenme: başkalarının onu etiketlemesi. "
+            f"{rank_range(tag_ranks)}: en çok etiketlediği kişiler. Bir mesajda aynı kişi bir kez sayılır; "
+            "kendini etiketlemek ve Meta AI'ı etiketlemek sayılmaz.",
+            "note",
+        )
+
+    # How people write: questions, laughter and emojis.
+    report.section("Yazış tarzı")
+    written_df = df[df["has_text"] == 1].assign(has_emoji=lambda frame: frame["emoji_count"] > 0)
+    style = written_df.groupby("user")[["question", "only_question_mark", "laugh", "has_emoji"]].sum()
+    styled_users = [user for user in sorted_users if user in style.index]
+
+    def by_rate(column):
+        """People with written text, highest share of messages with ``column`` first."""
+        return sorted(styled_users, key=lambda user: -style.at[user, column] / stats_by_user[user]["Written"])
+
+    def share_and_count(count, written):
+        # The share comes first in these tables: they are sorted by it and it carries the bar.
+        return [percent(100 * count / written), number(int(count))]
+
+    def share_bars(column, users):
+        return [style.at[user, column] / stats_by_user[user]["Written"] for user in users]
+
+    if styled_users:
+        report.table(
+            ["Kişi", "Soru oranı", "Soru", "Yalnız ?"],
+            [
+                [user, *share_and_count(style.at[user, "question"], stats_by_user[user]["Written"]),
+                 number(int(style.at[user, "only_question_mark"]))]
+                for user in by_rate("question")
+            ],
+            numeric=range(1, 4),
+            title="Sorular",
+            bar_column=1,
+            bar_values=share_bars("question", by_rate("question")),
+            total=["Toplam", *share_and_count(written_df["question"].sum(), len(written_df)),
+                   number(int(written_df["only_question_mark"].sum()))],
+        )
+        report.paragraph(
+            "Soru: soru işareti, mi/mı/mu/mü soru eki (gelcekmisin gibi bitişik de) ya da nasıl, neden, niye, "
+            "niçin, kaç, hangi, nerede, kim gibi bir soru kelimesi içeren ya da yalnızca \"ne\" olan yazılı mesaj; "
+            "\"ne???\" gibi birden çok işaret ya da ifade de bir soru sayılır. "
+            "Yalnız ?: yalnızca soru işaretinden oluşan mesaj (\"?\", \"???\"); bunlar Soru'ya dahil değildir. "
+            "Oran yazılı mesajlara göredir.",
+            "note",
+        )
+
+    # Laughter: how much and in which style, each style once per message.
+    laugh_style_counts = {user: Counter() for user in sorted_users}
+    for user, styles in zip(written_df["user"], written_df["laugh_styles"]):
+        laugh_style_counts[user].update(styles)
+    style_totals = sum(laugh_style_counts.values(), Counter())
+    # Most used style first, from left to right; the person who laughs most first.
+    used_styles = sorted((name for name in LAUGH_STYLES if style_totals[name]), key=lambda name: -style_totals[name])
+    laughing_order = by_rate("laugh")
+    if used_styles:
+        report.table(
+            ["Kişi", "Gülme oranı", "Gülme", *used_styles],
+            [
+                [user, *share_and_count(style.at[user, "laugh"], stats_by_user[user]["Written"]),
+                 *(number(laugh_style_counts[user][name]) for name in used_styles)]
+                for user in laughing_order
+            ],
+            numeric=range(1, len(used_styles) + 3),
+            title="Gülme",
+            bar_column=1,
+            bar_values=share_bars("laugh", laughing_order),
+            total=["Toplam", *share_and_count(written_df["laugh"].sum(), len(written_df)),
+                   *(number(style_totals[name]) for name in used_styles)],
+        )
+        report.paragraph(
+            "Gülme: haha, hehe, hohoho, jajaja, ksksks, sjsj, zaaa, asdf, xd, lol, :D gibi bir ifade, "
+            f"asjdkasjd gibi rastgele klavye yazımı ya da {' '.join(LAUGHING_EMOJIS)} içeren yazılı mesaj; "
+            "oran yazılı mesajlara göredir. Tarzlar: her tarz bir mesajda bir kez sayılır, bir mesajda birden çok "
+            "tarz olabilir. haha: jajaja dahil; hoho: ohohoh, ohhohoh dahil; lol: lmao dahil; "
+            "Random: ksksks, sksksk, sjsjsj, jsjs, asdasd, hshs, kdkd ve asjdkasjd gibi rastgele yazımlar; "
+            ":D / :d: :DD dahil; :) ve :P gülümseme sayılır, gülme değil. Kimsenin kullanmadığı tarzlar gösterilmez.",
+            "note",
+        )
+
+    # Emojis: how often each person uses one, then which, most used first. An emoji
+    # repeated in one message ("😂😂😂") counts once for that message.
+    emoji_order = by_rate("has_emoji")
+    emoji_counts = {user: Counter() for user in sorted_users}
+    for user, emojis in zip(written_df["user"], written_df["emojis"]):
+        emoji_counts[user].update(set(emojis))
+    all_emojis = sum(emoji_counts.values(), Counter())
+    emoji_ranks = min(TOP_EMOJIS, len(all_emojis))  # no empty rank columns
+
+    def top_emojis(counter):
+        # One column per rank, so the emojis line up from row to row.
+        return ranked_cells(counter, emoji_ranks)
+
+    if written_df["has_emoji"].any():
+        report.table(
+            ["Kişi", "Emoji oranı", "Emoji", *(f"{rank}." for rank in range(1, emoji_ranks + 1))],
+            [[user, *share_and_count(style.at[user, "has_emoji"], stats_by_user[user]["Written"]),
+              *top_emojis(emoji_counts[user])]
+             for user in emoji_order],
+            numeric=[1, 2],
+            title="Emoji",
+            bar_column=1,
+            bar_values=share_bars("has_emoji", emoji_order),
+            total=["Toplam", *share_and_count(written_df["has_emoji"].sum(), len(written_df)), *top_emojis(all_emojis)],
+            css_class="emojis",
+        )
+        report.paragraph(
+            "Emoji: emoji içeren yazılı mesaj sayısı; bir mesajdaki emojiler kaç tane olursa olsun bir kez sayılır. "
+            f"{rank_range(emoji_ranks)}: en çok kullanılan emojiler ve geçtikleri mesaj sayısı. Oran yazılı mesajlara göredir.",
+            "note",
+        )
+
+    # Words and phrases were tokenized once per message in parse_chat. A word, like a
+    # phrase, counts once per message: "çok çok güzel" holds "güzel" once.
+    word_counts = {user: Counter() for user in sorted_users}
+    phrase_counts = {user: Counter() for user in sorted_users}
+    for user, words, found in zip(df["user"], df["words"], df["phrases"]):
+        word_counts[user].update(set(words))
+        phrase_counts[user].update(found)
+    all_words = sum(word_counts.values(), Counter())
+    # Only whole phrases are shown, chosen over the whole chat, so everyone's lists
+    # hold the same phrases and not their parts.
+    all_phrases = maximal_phrases(sum(phrase_counts.values(), Counter()))
+    phrase_counts = {user: Counter({phrase: count for phrase, count in counts.items() if phrase in all_phrases})
+                     for user, counts in phrase_counts.items()}
+
+    report.section("Kelimeler ve ifadeler")
+    report.term_list(
+        ["Kelime", "Mesaj"], _top(all_words, TOP_WORDS), title="En sık kelimeler (4+ harf)",
+        more=max(0, len(all_words) - TOP_WORDS),
+    )
+    report.term_list(
+        ["İfade", "Mesaj"], _top(all_phrases, TOP_PHRASES), title="En sık ifadeler", columns=2,
+        more=max(0, len(all_phrases) - TOP_PHRASES),
+    )
+    report.paragraph(
+        "Sayılar, kelimenin ya da ifadenin geçtiği mesaj sayısıdır; bir mesajdaki tekrarlar bir kez sayılır. "
+        f"İfadeler bir cümle içinde kalan, en az {MIN_PHRASE_MESSAGES} mesajda geçen 2–{MAX_PHRASE_WORDS} "
+        "kelimelik kalıplardır; daha uzun bir kalıbın parçası olarak geçenler yalnızca o kalıpla gösterilir "
+        "(\"kutlu olsun\" yerine \"doğum günün kutlu olsun\"). Yalnızca \"ben de\", \"o zaman\" gibi kelimelerden "
+        "ya da etiketlerden oluşanlar sayılmaz; gülmeler ifadeyi böler.",
+        "note",
+    )
+
+    report.section("Kişi bazında kelimeler")
+    for user in sorted_users:
+        stat = stats_by_user[user]
+        details = [
+            f"{number(stat['Messages'])} mesaj",
+            f"{percent(100 * stat['Messages'] / len(df))} pay",
+            f"{number(stat['Days Active'])} aktif gün",
+        ]
+        with report.person(user, details), report.grid(2):
+            report.table(["Kelime", "Mesaj"], _top(word_counts[user], TOP_PER_PERSON), numeric=[1])
+            report.table(["İfade", "Mesaj"], _top(phrase_counts[user], TOP_PER_PERSON), numeric=[1])
+
+    kinds = [("Kelime", word_counts, all_words), ("İfade", phrase_counts, all_phrases)]
+    distinctive = {user: [distinctive_words(counts, user, prior=total) for _, counts, total in kinds]
+                   for user in sorted_users}
+    if any(any(lists) for lists in distinctive.values()):
+        report.section("Kendine özgü kelimeler ve ifadeler")
+        report.paragraph(
+            "Kişinin sohbetin geri kalanından belirgin biçimde daha sık kullandığı kelime ve ifadeler "
+            "(ağırlıklı log-odds, z > 1,96); en belirgini üstte. Kendisi ve Diğerleri: geçtiği mesaj sayısı.",
+            "note",
+        )
+        for user, lists in distinctive.items():
+            if not any(lists):
+                continue
+            with report.person(user, []), report.grid(2):
+                for (header, counts, total), terms in zip(kinds, lists):
+                    if terms:
+                        report.table(
+                            [header, "Kendisi", "Diğerleri"],
+                            [[" ".join(term) if isinstance(term, tuple) else term,
+                              number(counts[user][term]), number(total[term] - counts[user][term])]
+                             for term in terms],
+                            numeric=[1, 2],
+                        )
+
+    # Links
+    site_counts = {user: Counter() for user in sorted_users}
+    for user, sites in zip(df["user"], df["link_sites"]):
+        site_counts[user].update(sites)
+    all_sites = sum(site_counts.values(), Counter())
+
+    def top_sites(counter):
+        return ranked_cells(counter, min(TOP_SITES, len(all_sites)))
+
+    if all_sites:
+        # The person who shares the most links first.
+        link_order = sorted((user for user in sorted_users if site_counts[user]),
+                            key=lambda user: -site_counts[user].total())
+        report.section("Linkler")
+        report.table(
+            ["Kişi", "Link", *(f"{rank}." for rank in range(1, min(TOP_SITES, len(all_sites)) + 1))],
+            [[user, number(site_counts[user].total()), *top_sites(site_counts[user])] for user in link_order],
+            numeric=[1],
+            bar_column=1,
+            bar_values=[site_counts[user].total() for user in link_order],
+            total=["Toplam", number(all_sites.total()), *top_sites(all_sites)],
+            css_class="sites",
+        )
+        report.paragraph(
+            f"Link: paylaşılan link sayısı; {rank_range(min(TOP_SITES, len(all_sites)))}: en çok paylaşılan siteler. Bilinen siteler adıyla, "
+            "diğerleri adresiyle gösterilir; bir sitenin tüm adresleri birlikte sayılır (youtu.be: YouTube, "
+            "t.co: X). bit.ly gibi kısaltıcılar Kısa link sayılır; Google linkleri hizmetine göre ayrılır "
+            "(Haritalar, Drive, Dokümanlar, Formlar).",
+            "note",
+        )
+
+        # Content kinds: what the links hold, where the address says it.
+        kind_counts = {user: Counter() for user in sorted_users}
+        for user, kinds in zip(df["user"], df["link_kinds"]):
+            kind_counts[user].update(kinds)
+        all_kinds = sum(kind_counts.values(), Counter())
+        if all_kinds:
+            # Columns by overall use; kinds nobody shared are left out.
+            kinds = sorted(all_kinds, key=lambda kind: (-all_kinds[kind], LINK_KINDS.index(kind)))
+            kind_order = sorted((user for user in sorted_users if kind_counts[user]),
+                                key=lambda user: -kind_counts[user].total())
+            report.table(
+                ["Kişi", "Toplam", *kinds],
+                [[user, number(kind_counts[user].total()), *(number(kind_counts[user][kind]) for kind in kinds)]
+                 for user in kind_order],
+                numeric=range(1, len(kinds) + 2),
+                title="İçerik türü",
+                bar_column=1,
+                bar_values=[kind_counts[user].total() for user in kind_order],
+                total=["Toplam", number(all_kinds.total()), *(number(all_kinds[kind]) for kind in kinds)],
+            )
+            report.paragraph(
+                "Linkin adresinden anlaşılan içerik: Video (YouTube videoları, Twitch…), Kısa video (Shorts, "
+                "Reels, TikTok), Gönderi (X, Instagram, Reddit, Threads, Facebook gönderileri), Müzik (Spotify, "
+                "YouTube Music, SoundCloud…), Harita (Google Haritalar…). Türü anlaşılmayan linkler (profiller, "
+                "haberler, mağazalar…) sayılmaz.",
+                "note",
+            )
 
     # Time
     report.section("Zaman")
@@ -828,74 +1327,6 @@ def compute_stats(
                 "Aylara göre mesaj payı",
                 share_chart(month_labels, monthly_shares(df, sorted_users)),
             )
-
-    # Words and phrases were tokenized once per message in parse_chat.
-    word_counts = {user: Counter() for user in sorted_users}
-    bigram_counts = {user: Counter() for user in sorted_users}
-    trigram_counts = {user: Counter() for user in sorted_users}
-    for user, words, bigrams, trigrams in zip(df["user"], df["words"], df["bigrams"], df["trigrams"]):
-        word_counts[user].update(words)
-        bigram_counts[user].update(bigrams)
-        trigram_counts[user].update(trigrams)
-    all_words = sum(word_counts.values(), Counter())
-
-    report.section("Kelimeler ve ifadeler")
-    report.term_list(
-        ["Kelime", "Sayı"], _top(all_words, TOP_WORDS), title="En sık kelimeler (4+ harf)",
-        more=max(0, len(all_words) - TOP_WORDS),
-    )
-    with report.grid(2):
-        report.table(["İfade", "Sayı"], _top(sum(bigram_counts.values(), Counter()), TOP_PHRASES),
-                     numeric=[1], title="İkili ifadeler")
-        report.table(["İfade", "Sayı"], _top(sum(trigram_counts.values(), Counter()), TOP_PHRASES),
-                     numeric=[1], title="Üçlü ifadeler")
-
-    report.section("Kişi bazında kelimeler")
-    for user in sorted_users:
-        stat = stats_by_user[user]
-        details = [
-            f"{number(stat['Messages'])} mesaj",
-            f"{percent(100 * stat['Messages'] / len(df))} pay",
-            f"{number(stat['Days Active'])} aktif gün",
-        ]
-        with report.person(user, details), report.grid(3):
-            report.table(["Kelime", "Sayı"], _top(word_counts[user], TOP_PER_PERSON), numeric=[1])
-            report.table(["İkili ifade", "Sayı"], _top(bigram_counts[user], TOP_PER_PERSON), numeric=[1])
-            report.table(["Üçlü ifade", "Sayı"], _top(trigram_counts[user], TOP_PER_PERSON), numeric=[1])
-
-    distinctive = {user: distinctive_words(word_counts, user) for user in sorted_users}
-    if any(distinctive.values()):
-        report.section("Kendine özgü kelimeler")
-        report.paragraph(
-            "Kişinin sohbetin geri kalanından belirgin biçimde daha sık kullandığı kelimeler "
-            "(ağırlıklı log-odds, z > 1,96); en belirgini üstte.",
-            "note",
-        )
-        with report.grid(3):
-            for user, words in distinctive.items():
-                if words:
-                    report.table(
-                        ["Kelime", "Kendisi", "Diğerleri"],
-                        [[word, number(word_counts[user][word]),
-                          number(all_words[word] - word_counts[user][word])] for word in words],
-                        numeric=[1, 2],
-                        title=user,
-                    )
-
-    # Emojis
-    emoji_data = {}
-    for user in sorted_users:
-        user_emojis = Counter()
-        for em_list in user_messages(user)["emojis"]:
-            user_emojis.update(em_list)
-        if user_emojis:
-            emoji_data[user] = user_emojis
-    if emoji_data:
-        report.section("Emojiler")
-        with report.grid(3):
-            for user, user_emojis in emoji_data.items():
-                report.table(["Emoji", "Sayı"], _top(user_emojis, TOP_EMOJIS), numeric=[1], title=user,
-                             css_class="emoji")
 
     full_html = report.html()
     markdown_text = report.markdown()
@@ -1055,13 +1486,14 @@ def main():
         return 1
 
     # The threshold applies after the date filter; the chat type was decided on the whole file.
-    counts = df["user"].value_counts()
+    # Calls are not messages; "Siz", who only ever appears on calls, keeps them.
+    counts = df.loc[df["kind"] != whatsapp_chat.CALL, "user"].value_counts()
     excluded_senders = sorted(counts[counts < args.min_messages].index)
     if excluded_senders:
         df = df[~df["user"].isin(excluded_senders)]
-        print(f"Left out {len(excluded_senders)} people with fewer than {args.min_messages} records.")
-    if df.empty:
-        print(f"Nobody has at least {args.min_messages} records in this period.", file=sys.stderr)
+        print(f"Left out {len(excluded_senders)} people with fewer than {args.min_messages} messages.")
+    if (df["kind"] != whatsapp_chat.CALL).sum() == 0:
+        print(f"Nobody has at least {args.min_messages} messages in this period.", file=sys.stderr)
         return 1
 
     return (

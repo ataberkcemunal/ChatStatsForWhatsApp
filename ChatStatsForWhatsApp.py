@@ -41,16 +41,20 @@ MEDIA_PATTERNS = [
     "belge dahil edilmedi",
     "Konum: https://maps.google.com",
     "GIF dahil edilmedi",
+    # A video note (the round video message) left out of the export.
+    "görüntülü not çıkarıldı",
+    "kişi kartı dahil edilmedi",
 ]
 MEDIA_PATTERNS_LOWER = [turkish_lower(pattern) for pattern in MEDIA_PATTERNS]
 MEDIA_TYPE_PATTERNS = {
-    "Stickers": "çıkartma dahil edilmedi",
-    "Images": "görüntü dahil edilmedi",
-    "Videos": "video dahil edilmedi",
-    "Audio": "ses dahil edilmedi",
-    "Documents": "belge dahil edilmedi",
-    "GIFs": "GIF dahil edilmedi",
-    "Locations": "konum: https://maps.google.com",
+    "Stickers": ("çıkartma dahil edilmedi",),
+    "Images": ("görüntü dahil edilmedi",),
+    "Videos": ("video dahil edilmedi", "görüntülü not çıkarıldı"),
+    "Audio": ("ses dahil edilmedi",),
+    "Documents": ("belge dahil edilmedi",),
+    "GIFs": ("GIF dahil edilmedi",),
+    "Locations": ("konum: https://maps.google.com",),
+    "Contacts": ("kişi kartı dahil edilmedi",),
 }
 # WhatsApp's own location share; its map link is part of the share, not a shared link.
 LOCATION_REGEX = re.compile(r"konum:\s*https://maps\.google\.com/\S*", re.IGNORECASE)
@@ -243,6 +247,8 @@ def clean_media_placeholders(text):
     # A document opens its message with "name.pdf • 5 sayfa belge dahil edilmedi"; the
     # file name and page count are not written text. A caption after it is kept.
     res = re.sub(r"^.*?belge dahil edilmedi", " ", res, flags=re.IGNORECASE | re.DOTALL)
+    # A shared contact opens with the contact's name the same way.
+    res = re.sub(r"^.*?kişi kartı dahil edilmedi", " ", res, flags=re.IGNORECASE | re.DOTALL)
 
     # A location share with its map link is not written text.
     res = LOCATION_REGEX.sub(" ", res)
@@ -321,9 +327,11 @@ QUESTION_REGEX = re.compile(
 # "ne" counts only as a whole message (ne, neee), since inside a sentence it is often not a question.
 ONLY_NE_REGEX = re.compile(r"n+e+[\s!.]*")
 # Phrases built on question words that are not questions: neredeyse (almost), neden olmak
-# (to cause), hangisi/kim/ne olursa olsun (whichever/whoever/whatever).
+# (to cause), and a question word before a verb said twice, "-se" then "-sin": "ne olursa
+# olsun", "kim gelirse gelsin", "ne derse desin", "nereye giderse gitsin" (whatever, whoever).
 NOT_QUESTION_REGEX = re.compile(
-    r"(?<!\w)(?:nere?deyse|neden\s+ol\w*|(?:hangi\w*|kim\w*|ne)(?:\s+\w+)?\s+olursa\s+olsun)(?!\w)"
+    r"(?<!\w)(?:nere?deyse|neden\s+ol\w*"
+    r"|(?:hangi|kim|ne|nere|nas[ıi]l)\w*(?:\s+\w+){0,2}?\s+(\w+?)[dt]?[aeıiuü]?r?s[ae]\s+\1[dt]?s[ıiuü]n(?:l[ae]r)?)(?!\w)"
 )
 
 
@@ -376,7 +384,8 @@ def get_message_stats(text, kind=whatsapp_chat.MESSAGE):
     # call status text are not letters someone typed.
     return {
         "has_text": int(bool(typed)),
-        "words": _get_tokens(typed, min_len=4, keep_apostrophes=True),
+        "words": [word for word in _get_tokens(typed, min_len=4, keep_apostrophes=True)
+                  if word not in FUNCTION_WORDS],
         **phrases(typed),
         "link_sites": [site_of(link) for link in links],
         "link_kinds": [kind for kind in map(link_kind, links) if kind],
@@ -397,7 +406,10 @@ def tagged_names(text):
 
 
 # Phrases stop at sentence punctuation and line ends: "tamam. ben de" holds no "tamam ben".
-SENTENCE_BREAK_REGEX = re.compile(r"[.,;:!?…\n()\[\]\"“”]+")
+# A comma does not end a thought in chat ("abi, bu iş olmaz"), so it does not stop one.
+SENTENCE_BREAK_REGEX = re.compile(r"[.;:!?…\n()\[\]\"“”]+")
+# A letter typed three or more times in a row is one letter in a phrase: "çoook iyi" is "çok iyi".
+STRETCHED_REGEX = re.compile(r"(.)\1{2,}")
 
 
 def is_laughter(word):
@@ -407,14 +419,51 @@ def is_laughter(word):
 # Words that carry no meaning of their own: a phrase made only of these ("ben de",
 # "o zaman") says nothing about a chat, so it is not counted.
 FUNCTION_WORDS = set("""
-a e o ben sen biz siz onlar bu şu bunlar şunlar bana sana ona bize size onlara beni seni onu bizi sizi
-onları benim senin onun bizim sizin onların bunu şunu bunun şunun buna şuna bende sende onda bizde
-sizde bundan ondan bir iki de da ki mi mı mu mü ne ve veya ya yada ama fakat ile için gibi kadar
-daha en çok az var yok değil diye ise her hep şey şeyi şeyler sonra önce şimdi zaten artık bile hala
-hâlâ yani işte bi nasıl neden niye nerede zaman olan olarak
+a e o ben sen biz siz onlar bu şu bunlar şunlar
+bana sana ona bize size onlara bunlara beni seni onu bizi sizi onları
+benim senin onun bizim sizin onların bunu şunu bunun şunun buna şuna
+bende sende onda bizde sizde bundan ondan
+bir iki bi de da ki ne ve veya ya yada ama fakat ancak ile için gibi kadar diye ise eğer çünkü yani işte
+mi mı mu mü misin mısın musun müsün misiniz mısınız musunuz müsünüz miyim mıyım muyum müyüm miydi mıydı
+nasıl neden niye nerede
+daha en çok az var yok değil her hep hiçbir şey şeyi şeyler bişey birşey
+sonra önce şimdi zaten artık bile hala hâlâ yine zaman öyle böyle şöyle olan olarak
+olur oldu olsun olacak olcak olucak olabilir olmuş olmuştu oluyor olsa olunca
 """.split())
+# The same words typed without Turkish letters ("degil", "icin", "simdi") are function words too.
+FUNCTION_WORDS |= {word.translate(str.maketrans("çğıöşü", "cgiosu")) for word in FUNCTION_WORDS}
 MAX_PHRASE_WORDS = 6
+
+
+def laughter_map(words):
+    """Laughs of one style written at different lengths, mapped to the style's most used
+    spelling: "ohohoh" and "hohoho" count as "ohohoho". Keyboard mashes are left as they
+    are; each is a different string."""
+    styles = {}
+    for word, count in words.items():
+        for name, pattern in _WORD_LAUGHS.items():
+            if name != "Random" and re.fullmatch(pattern, word):
+                styles.setdefault(name, Counter())[word] += count
+                break
+    return {word: forms.most_common(1)[0][0] for forms in styles.values() for word in forms}
+
+
 MIN_PHRASE_MESSAGES = 3  # fewer could be chance
+
+
+BOT_TAGS = {name.replace(" ", "") for name in whatsapp_chat.EXCLUDED_SENDERS}
+
+
+def _join_spelled_letters(words):
+    """A word typed letter by letter ("a t a b e r k") is one word, not a run of phrases."""
+    joined = []
+    for word in words:
+        if len(word) == 1 and joined and len(joined[-1][-1]) == 1:
+            joined[-1].append(word)
+        else:
+            joined.append([word])
+    # Three letters or more in a row make one word; "o a" stays two words.
+    return [part for group in joined for part in (["".join(group)] if len(group) >= 3 else group)]
 
 
 def phrases(typed):
@@ -429,11 +478,12 @@ def phrases(typed):
     for sentence in SENTENCE_BREAK_REGEX.split(typed):
         # Laughter also breaks a phrase: "geliyorum haha ben" holds no "geliyorum ben".
         runs = [[]]
-        for word in _get_tokens(sentence, min_len=1, keep_apostrophes=True):
-            if is_laughter(word):
+        for word in _join_spelled_letters(_get_tokens(sentence, min_len=1, keep_apostrophes=True)):
+            # Meta AI is a bot: a tag of it breaks a phrase, like laughter.
+            if is_laughter(word) or (word.startswith("@") and turkish_lower(word[1:]).replace("ı", "i") in BOT_TAGS):
                 runs.append([])
             else:
-                runs[-1].append(word)
+                runs[-1].append(word if word.startswith("@") else STRETCHED_REGEX.sub(r"\1", word))
         for words in runs:
             for size in range(2, MAX_PHRASE_WORDS + 1):
                 for gram in zip(*(words[i:] for i in range(size))):
@@ -444,7 +494,7 @@ def phrases(typed):
 
 def maximal_phrases(counts, min_count=MIN_PHRASE_MESSAGES, cover=0.8):
     """The phrases worth showing: used in at least ``min_count`` messages and not just
-    a part of a longer phrase. "kutlu olsun" is left out when "doğum günün kutlu olsun"
+    a part of a longer phrase or the next window of a longer text. "kutlu olsun" is left out when "doğum günün kutlu olsun"
     holds at least ``cover`` of its uses; used often on its own as well, both stay.
     """
     frequent = {phrase: count for phrase, count in counts.items() if count >= min_count}
@@ -453,8 +503,15 @@ def maximal_phrases(counts, min_count=MIN_PHRASE_MESSAGES, cover=0.8):
         for size in range(2, len(phrase)):
             for part in zip(*(phrase[i:] for i in range(size))):
                 longest_cover[part] = max(longest_cover[part], count)
-    return Counter({phrase: count for phrase, count in frequent.items()
-                    if longest_cover[phrase] < cover * count})
+    kept = {phrase: count for phrase, count in frequent.items() if longest_cover[phrase] < cover * count}
+    # Text longer than the longest phrase (a song line, a pasted quote) shows up as windows
+    # that slide one word at a time; only the first window of such a run is kept.
+    window_ends = Counter()
+    for phrase, count in kept.items():
+        if len(phrase) == MAX_PHRASE_WORDS:
+            window_ends[phrase[1:]] = max(window_ends[phrase[1:]], count)
+    return Counter({phrase: count for phrase, count in kept.items()
+                    if len(phrase) < MAX_PHRASE_WORDS or window_ends[phrase[:-1]] < cover * count})
 
 
 def update_message_stats(entry):
@@ -583,6 +640,7 @@ MEDIA_LABELS = {
     "Documents": "Belge",
     "GIFs": "GIF",
     "Locations": "Konum",
+    "Contacts": "Kişi kartı",
 }
 
 
@@ -656,7 +714,7 @@ def share_chart(labels, shares, size=(10.8, 3.2)):
 
 # How many entries each list shows; the same for every person.
 TOP_WORDS = 45  # three columns of 15
-TOP_PHRASES = 30  # two columns of 15
+TOP_PHRASES = 15  # per length: 2, 3 and 4+ words
 TOP_PER_PERSON = 15
 TOP_DISTINCTIVE = 10
 TOP_EMOJIS = 8  # one line per person in the Emoji table
@@ -832,11 +890,13 @@ def compute_stats(
         ],
     )
     def span(run):
-        return f"{run[1]:%d.%m.%Y} – {run[2]:%d.%m.%Y}"
+        # A single day is one date, not "08.08.2026 – 08.08.2026".
+        return f"{run[1]:%d.%m.%Y}" if run[1] == run[2] else f"{run[1]:%d.%m.%Y} – {run[2]:%d.%m.%Y}"
 
     report.paragraph(
         f"En uzun seri: her gün yazışılan {span(streak)}"
-        + (f" · En uzun sessizlik: hiç yazışılmayan {span(silence)}" if silence else ""),
+        + (f" · En uzun sessizlik: hiç yazışılmayan {'gün' if silence[0] == 1 else 'günler'} {span(silence)}"
+           if silence else ""),
         "note",
     )
 
@@ -900,7 +960,8 @@ def compute_stats(
         # Turkish I/ı issues.
         msgs_clean = user_messages(user)["message"].str.replace("\u200e", "", regex=False)
         shares[user] = {
-            **{label: count_contains(msgs_clean, MEDIA_TYPE_PATTERNS[key]) for key, label in MEDIA_LABELS.items()},
+            **{label: count_contains(msgs_clean, "|".join(map(re.escape, MEDIA_TYPE_PATTERNS[key])), regex=True)
+               for key, label in MEDIA_LABELS.items()},
             "Anket": int(stats_by_user[user]["Polls"]),
             "Link": int(stats_by_user[user]["Links"]),
         }
@@ -1174,9 +1235,13 @@ def compute_stats(
     # phrase, counts once per message: "çok çok güzel" holds "güzel" once.
     word_counts = {user: Counter() for user in sorted_users}
     phrase_counts = {user: Counter() for user in sorted_users}
+    # One word per laugh style: "ohohoh" and "ohohoho" are counted together.
+    vocabulary = Counter(word for found in df["phrases"] for phrase in found for word in phrase)
+    vocabulary.update(word for words in df["words"] for word in words)
+    spelled = laughter_map(vocabulary)
     for user, words, found in zip(df["user"], df["words"], df["phrases"]):
-        word_counts[user].update(set(words))
-        phrase_counts[user].update(found)
+        word_counts[user].update({spelled.get(word, word) for word in words})
+        phrase_counts[user].update({tuple(spelled.get(word, word) for word in phrase) for phrase in found})
     all_words = sum(word_counts.values(), Counter())
     # Only whole phrases are shown, chosen over the whole chat, so everyone's lists
     # hold the same phrases and not their parts.
@@ -1187,18 +1252,26 @@ def compute_stats(
     report.section("Kelimeler ve ifadeler")
     report.term_list(
         ["Kelime", "Mesaj"], _top(all_words, TOP_WORDS), title="En sık kelimeler (4+ harf)",
-        more=max(0, len(all_words) - TOP_WORDS),
+        more=max(0, len(all_words) - TOP_WORDS), more_label="kelime",
     )
-    report.term_list(
-        ["İfade", "Mesaj"], _top(all_phrases, TOP_PHRASES), title="En sık ifadeler", columns=2,
-        more=max(0, len(all_phrases) - TOP_PHRASES),
-    )
+    # Longer phrases are rarer, so each length has its own list; in one list the
+    # two-word phrases would take every place.
+    by_length = [(header, _top(Counter({p: c for p, c in all_phrases.items() if len(p) in sizes}), TOP_PHRASES))
+                 for header, sizes in (("2 kelime", {2}), ("3 kelime", {3}),
+                                       ("4+ kelime", range(4, MAX_PHRASE_WORDS + 1)))]
+    if all_phrases:
+        with report.grid(3, title="En sık ifadeler"):
+            for header, rows in by_length:
+                if rows:  # a length nobody repeated is left out
+                    report.table([header, "Mesaj"], rows, numeric=[1])
     report.paragraph(
         "Sayılar, kelimenin ya da ifadenin geçtiği mesaj sayısıdır; bir mesajdaki tekrarlar bir kez sayılır. "
         f"İfadeler bir cümle içinde kalan, en az {MIN_PHRASE_MESSAGES} mesajda geçen 2–{MAX_PHRASE_WORDS} "
         "kelimelik kalıplardır; daha uzun bir kalıbın parçası olarak geçenler yalnızca o kalıpla gösterilir "
         "(\"kutlu olsun\" yerine \"doğum günün kutlu olsun\"). Yalnızca \"ben de\", \"o zaman\" gibi kelimelerden "
-        "ya da etiketlerden oluşanlar sayılmaz; gülmeler ifadeyi böler.",
+        "ya da etiketlerden oluşanlar sayılmaz; gülmeler ifadeyi böler, virgül bölmez. Uzatılmış harfler "
+        "sadeleştirilir (\"çoook iyi\": \"çok iyi\"); aynı tarzdaki gülmeler uzunluğu ne olursa olsun tek kelime sayılır "
+        "(\"ohohoh\", \"ohohoho\").",
         "note",
     )
 
@@ -1214,28 +1287,63 @@ def compute_stats(
             report.table(["Kelime", "Mesaj"], _top(word_counts[user], TOP_PER_PERSON), numeric=[1])
             report.table(["İfade", "Mesaj"], _top(phrase_counts[user], TOP_PER_PERSON), numeric=[1])
 
-    kinds = [("Kelime", word_counts, all_words), ("İfade", phrase_counts, all_phrases)]
-    distinctive = {user: [distinctive_words(counts, user, prior=total) for _, counts, total in kinds]
+    # Signatures: what a person writes clearly more often than the others, as in the
+    # Profanity report. Shares are of written messages, so people who write a lot and
+    # people who write little compare fairly.
+    kinds = [("Kelime", "Kelimeler", word_counts, all_words), ("İfade", "İfadeler", phrase_counts, all_phrases)]
+    def without_parts(terms):
+        # "kuponum" phrases: a phrase inside a longer one on the same list adds nothing.
+        def inside(short, long):
+            return len(short) < len(long) and any(long[i:i + len(short)] == short
+                                                  for i in range(len(long) - len(short) + 1))
+        tuples = [term for term in terms if isinstance(term, tuple)]
+        return [term for term in terms
+                if not (isinstance(term, tuple) and any(inside(term, other) for other in tuples))]
+
+    distinctive = {user: [without_parts(distinctive_words(counts, user, limit=TOP_DISTINCTIVE + 5, prior=total))
+                          [:TOP_DISTINCTIVE] for _, _, counts, total in kinds]
                    for user in sorted_users}
+    written_total = sum(stats_by_user[user]["Written"] for user in sorted_users)
+
+    def small_percent(value):
+        # Words are in few messages: keep two decimals where one would read %0,0, and
+        # say "<%0,01" for a share too small even for that, rather than %0,00.
+        if 0 < value < 0.005:
+            return "<%0,01"
+        return percent(value, 2 if 0 < value < 0.1 else 1)
+
+    def times(ratio):
+        # Beyond 100 times the exact figure rests on a handful of messages.
+        return ">100×" if ratio > 100 else f"{decimal(ratio, 1)}×"
+
     if any(any(lists) for lists in distinctive.values()):
-        report.section("Kendine özgü kelimeler ve ifadeler")
+        report.section("İmzalar")
         report.paragraph(
             "Kişinin sohbetin geri kalanından belirgin biçimde daha sık kullandığı kelime ve ifadeler "
-            "(ağırlıklı log-odds, z > 1,96); en belirgini üstte. Kendisi ve Diğerleri: geçtiği mesaj sayısı.",
+            "(ağırlıklı log-odds, z > 1,96). Kendisi: kişinin yazılı mesajlarının yüzde kaçında geçtiği; "
+            "Diğerleri: aynı pay, geri kalan herkes için; Kat: Kendisi / Diğerleri, en büyüğü üstte.",
             "note",
         )
         for user, lists in distinctive.items():
             if not any(lists):
                 continue
+            mine_written = stats_by_user[user]["Written"]
+            others_written = written_total - mine_written
             with report.person(user, []), report.grid(2):
-                for (header, counts, total), terms in zip(kinds, lists):
-                    if terms:
+                for (header, title, counts, total), terms in zip(kinds, lists):
+                    rows = []
+                    for term in terms:
+                        mine = 100 * counts[user][term] / mine_written if mine_written else 0
+                        others = 100 * (total[term] - counts[user][term]) / others_written if others_written else 0
+                        rows.append((mine / others if others else math.inf, mine, others, term))
+                    if rows:
                         report.table(
-                            [header, "Kendisi", "Diğerleri"],
-                            [[" ".join(term) if isinstance(term, tuple) else term,
-                              number(counts[user][term]), number(total[term] - counts[user][term])]
-                             for term in terms],
-                            numeric=[1, 2],
+                            [header, "Kendisi", "Diğerleri", "Kat"],
+                            [[" ".join(term) if isinstance(term, tuple) else term, small_percent(mine),
+                              small_percent(others), times(ratio) if others else "yalnız o"]
+                             for ratio, mine, others, term in sorted(rows, key=lambda row: (-row[0], -row[1]))],
+                            numeric=[1, 2, 3],
+                            title=title,
                         )
 
     # Links

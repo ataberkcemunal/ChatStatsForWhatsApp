@@ -85,6 +85,12 @@ class ReadChatTests(unittest.TestCase):
         self.assertEqual(whatsapp_chat.clean_sender('Ayşe  Yılmaz'), 'Ayşe Yılmaz')
         self.assertEqual(whatsapp_chat.clean_sender('Ays\u0327e'), 'Ayşe')
 
+    def test_system_senders_are_whole_names(self):
+        self.assertEqual(classify('WhatsApp', 'Mesajlar uçtan uca şifrelenir'), SYSTEM)
+        self.assertEqual(classify('Grup Bildirimi', 'Ayarlar değişti'), SYSTEM)
+        # A person whose name holds such a word is still a person.
+        self.assertEqual(classify('Grup Lideri Ali', 'Yarın buluşuyoruz'), MESSAGE)
+
     def test_record_kinds(self):
         chat = self.read(
             '[1.10.2026 10:00:00] Ayşe: \u200eBu mesaj silindi.\n'

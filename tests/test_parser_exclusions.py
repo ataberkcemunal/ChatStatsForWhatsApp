@@ -12,7 +12,7 @@ from unittest.mock import patch
 
 from ChatStatsForWhatsApp import (
     compute_stats, conversation_stats, day_streaks, distinctive_words, get_message_stats, monthly_shares,
-    link_kind, link_sites, maximal_phrases, style_flags, main, parse_chat, parse_end_date,
+    laughter_map, link_kind, link_sites, maximal_phrases, style_flags, main, parse_chat, parse_end_date,
     positive_hours, call_details, duration,
 )
 from whatsapp_chat import CALL, MESSAGE
@@ -261,12 +261,33 @@ class SenderExclusionTests(unittest.TestCase):
             self.assertTrue(compute_stats(self.parse(lines), output_file=root / 'r.pdf',
                                           markdown_output=root / 'r.md'))
             text = (root / 'r.md').read_text(encoding='utf-8')
-        section = text[text.index('## Kendine özgü kelimeler ve ifadeler'):]
+        # The phrase list is split by length; the parts of a whole phrase are not shown.
+        self.assertIn('### En sık ifadeler\n\n'
+                      '| 3 kelime | Mesaj |\n|---|---:|\n| kanka naber tamam | 20 |\n| hocam selam tamam | 20 |\n\nSayılar', text)
+        section = text[text.index('## İmzalar'):]
         self.assertIn('### Ayşe\n', section)
-        self.assertIn('| Kelime | Kendisi | Diğerleri |\n|---|---:|---:|\n| kanka | 20 | 0 |\n| naber | 20 | 0 |\n', section)
+        # Shares of written messages; nobody else uses them, so the ratio reads "yalnız o".
+        self.assertIn('**Kelimeler**\n\n| Kelime | Kendisi | Diğerleri | Kat |\n|---|---:|---:|---:|\n'
+                      '| kanka | %100,0 | %0,0 | yalnız o |\n| naber | %100,0 | %0,0 | yalnız o |\n', section)
         # Only the whole phrase is shown, not its parts ("kanka naber").
-        self.assertIn('| İfade | Kendisi | Diğerleri |\n|---|---:|---:|\n| kanka naber tamam | 20 | 0 |\n\n', section)
-        self.assertIn('| hocam selam tamam | 20 | 0 |\n', section)
+        self.assertIn('**İfadeler**\n\n| İfade | Kendisi | Diğerleri | Kat |\n|---|---:|---:|---:|\n'
+                      '| kanka naber tamam | %100,0 | %0,0 | yalnız o |\n\n', section)
+        self.assertIn('| hocam selam tamam | %100,0 | %0,0 | yalnız o |\n', section)
+
+    def test_signature_shares_and_ratio(self):
+        lines = ''.join(
+            f'[1.10.2026 1{i // 60}:{i % 60:02d}:00] {name}: {text}\n'
+            for i, (name, text) in enumerate(
+                [('Ayşe', 'kanka selam')] * 20 + [('Bora', 'kanka merhaba')] * 2
+                + [('Bora', 'merhaba dostum')] * 18 + [('Can', 'merhaba dostum')] * 20
+            )
+        )
+        with tempfile.TemporaryDirectory() as directory, patch('ChatStatsForWhatsApp.HTML'):
+            root = Path(directory)
+            compute_stats(self.parse(lines), output_file=root / 'r.pdf', markdown_output=root / 'r.md')
+            text = (root / 'r.md').read_text(encoding='utf-8')
+        # Ayşe: kanka in all 20 of hers; the others: 2 of their 40 messages (%5,0), so 20 times.
+        self.assertIn('| kanka | %100,0 | %5,0 | 20,0× |', text)
 
     def test_day_streaks(self):
         days = [date(2026, 10, d) for d in (1, 2, 2, 3, 8, 9, 10, 11, 13)]
@@ -332,6 +353,9 @@ class SenderExclusionTests(unittest.TestCase):
             'hangisi olursa olsun': (0, 0),
             'hangi film olursa olsun': (0, 0),
             'kim olursa olsun': (0, 0),
+            # The same build with any verb: "-se" then "-sin" of one verb is not a question.
+            'kim gelirse gelsin': (0, 0), 'ne derse desin': (0, 0), 'nereye giderse gitsin': (0, 0),
+            'ne yaparsa yapsın bana ne': (0, 0), 'kim geliyor yarın': (1, 0),
             'x.com/?a=1': (0, 0),
             'neredeyse bitti mi': (1, 0),
             'sksksk': (0, 1),
@@ -407,12 +431,14 @@ class SenderExclusionTests(unittest.TestCase):
         cases = {
             # text: (letters, written, links, words)
             '\u200echat_stats.pdf • \u200e5 sayfa \u200ebelge dahil edilmedi': (0, 0, 0, []),
-            'Rapor 2026.pdf • 3 sayfa belge dahil edilmedi bunu oku': (7, 1, 0, ['bunu']),
+            'Rapor 2026.pdf • 3 sayfa belge dahil edilmedi hemen oku': (8, 1, 0, ['hemen']),
             'https://x.com/someone/status/1839283746537281?s=46&t=AbCd': (0, 0, 1, []),
             'bak https://youtu.be/abc123 çok komik': (11, 1, 1, ['komik']),
             'x.com/someone/status/123': (0, 0, 1, []),
             'www.google.com': (0, 0, 1, []),
             'google.com adresine bak': (11, 1, 1, ['adresine']),
+            # Function words are not counted as words, however long.
+            'gibi daha güzel olmuş': (18, 1, 0, ['güzel']),
             'puan 3.5/10 verdim': (16, 1, 0, ['puan', 'verdim']),
         }
         for text, expected in cases.items():
@@ -425,9 +451,19 @@ class SenderExclusionTests(unittest.TestCase):
             return [' '.join(p) for p in get_message_stats(text)['phrases']]
 
         # Phrases of 2 to 6 words stay in a sentence; "ben de" alone is only function words.
-        self.assertEqual(phrases('tamam. o zaman ben de geliyorum, sen de gel'),
+        self.assertEqual(phrases('tamam. o zaman ben de geliyorum! sen de gel'),
                          ['ben de geliyorum', 'de gel', 'de geliyorum', 'o zaman ben de geliyorum',
                           'sen de gel', 'zaman ben de geliyorum'])
+        # A comma does not end a phrase; stretched letters are one letter.
+        self.assertEqual(phrases('abi, bu iş olmaz'),
+                         ['abi bu', 'abi bu iş', 'abi bu iş olmaz', 'bu iş', 'bu iş olmaz', 'iş olmaz'])
+        self.assertEqual(phrases('çoook iyiii'), ['çok iyi'])
+        # Function words typed without Turkish letters are function words too.
+        self.assertEqual(phrases('bir sey yok'), [])
+        # Letters typed one by one are one word; a Meta AI tag breaks a phrase.
+        self.assertEqual(phrases('a t a b e r k geldi'), ['ataberk geldi'])
+        self.assertEqual(phrases('o a geldi'), ['a geldi', 'o a geldi'])
+        self.assertEqual(phrases('@\u2068Meta AI\u2069 ege aba'), ['ege aba'])
         # Laughter and keyboard mashes are not phrases and break one; a phrase written
         # twice in one message counts once; repeats such as "yavaş yavaş" count.
         self.assertEqual(phrases('evet evet haha ben geliyorum hahaha ben geliyorum'),
@@ -452,6 +488,45 @@ class SenderExclusionTests(unittest.TestCase):
         self.assertEqual(maximal_phrases(counts), Counter({
             ('doğum', 'günün', 'kutlu', 'olsun'): 45, ('bayramın', 'kutlu', 'olsun'): 40, ('kutlu', 'olsun'): 100,
         }))
+
+    def test_long_repeated_text_keeps_its_first_window(self):
+        line = 'kralım ben soğuğa alışıktım beni soğuk değil sizin'.split()
+        windows = [tuple(line[i:i + 6]) for i in range(len(line) - 5)]
+        counts = Counter({window: 8 for window in windows})
+        for size in range(2, 6):
+            counts.update({tuple(line[i:i + size]): 8 for i in range(len(line) - size + 1)})
+        self.assertEqual(list(maximal_phrases(counts)), [windows[0]])
+
+    def test_video_note_is_a_video_not_text(self):
+        stats = get_message_stats('\u200egörüntülü not çıkarıldı')
+        self.assertEqual((stats['has_text'], stats['media'], stats['phrases']), (0, 1, []))
+        # A shared contact: its name is not written text either.
+        stats = get_message_stats('Ali Veli.vcf \u2022 \u200ekişi kartı dahil edilmedi')
+        self.assertEqual((stats['has_text'], stats['media'], stats['words']), (0, 1, []))
+        df = self.parse('[1.10.2026 10:00:00] Ayşe: \u200egörüntülü not çıkarıldı\n'
+                        '[1.10.2026 10:01:00] Bora: selam\n')
+        with tempfile.TemporaryDirectory() as directory, patch('ChatStatsForWhatsApp.HTML'):
+            root = Path(directory)
+            compute_stats(df, output_file=root / 'r.pdf', markdown_output=root / 'r.md')
+            text = (root / 'r.md').read_text(encoding='utf-8')
+        self.assertIn('**Paylaşımlar**\n\n| Kişi | Toplam | Video |', text)
+
+    def test_spellings_are_only_lowercased(self):
+        # "oglum" and "oğlum" stay two words; only the case is made one.
+        df = self.parse(''.join(
+            f'[1.10.2026 10:{i:02d}:00] {name}: {text}\n'
+            for i, (name, text) in enumerate([('Ayşe', 'Oğlum gel')] * 3 + [('Bora', 'oglum gel')] * 3)))
+        with tempfile.TemporaryDirectory() as directory, patch('ChatStatsForWhatsApp.HTML'):
+            root = Path(directory)
+            compute_stats(df, output_file=root / 'r.pdf', markdown_output=root / 'r.md')
+            text = (root / 'r.md').read_text(encoding='utf-8')
+        self.assertIn('| oğlum | 3 |', text)
+        self.assertIn('| oglum | 3 |', text)
+
+    def test_laughs_of_one_style_are_one_word(self):
+        words = Counter({'ohohoho': 5, 'ohohoh': 4, 'hohoho': 2, 'hahaha': 3, 'hahahaha': 1, 'asjdkasjd': 2})
+        self.assertEqual(laughter_map(words), {'ohohoho': 'ohohoho', 'ohohoh': 'ohohoho', 'hohoho': 'ohohoho',
+                                               'hahaha': 'hahaha', 'hahahaha': 'hahaha'})
 
     def test_link_sites(self):
         cases = {

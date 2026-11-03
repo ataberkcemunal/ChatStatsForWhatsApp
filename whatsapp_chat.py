@@ -31,7 +31,9 @@ DELETED_TEXT = re.compile(
     r"^(?:bu mesaj silindi|bu mesajı sildiniz|this message was deleted)\.?$"
 )
 CALL_TEXT = re.compile(r"^(?:cevapsız\s+)?(?:sesli|görüntülü)\s+arama\s*(?:$|[,.•·])")
-GROUP_SENDER_WORDS = ("grup", "whatsapp", "sistem", "bildirim", "güncelleme")
+# Senders that are WhatsApp itself, matched as the whole name: "Grup Lideri Ali" is a person.
+SYSTEM_SENDERS = {"whatsapp", "sistem", "bildirim", "grup", "güncelleme", "sistem mesajı", "grup mesajı",
+                  "grup bildirimi", "grup güncellemesi"}
 
 # System notices that can appear without WhatsApp's invisible marker.
 UNMARKED_SYSTEM = [
@@ -124,7 +126,7 @@ def _plain_text(text: str) -> str:
 
 
 def _is_system(sender: str, text: str, plain: str, marked: bool) -> bool:
-    if any(word in turkish_lower(sender) for word in GROUP_SENDER_WORDS):
+    if turkish_lower(clean_sender(sender)) in SYSTEM_SENDERS:
         return True
     # Polls can look like notices; keep them.
     if re.search(r"(?:^|\s|\u200e)ANKET:", text, re.IGNORECASE):

@@ -103,58 +103,60 @@ Emoji: emoji içeren yazılı mesaj sayısı; bir mesajdaki emojiler kaç tane o
 
 | Kelime | Mesaj |
 |---|---:|
-| arkadaşlar | 3 |
 | merhaba | 3 |
-| buluşalım | 3 |
+| arkadaşlar | 3 |
 | yarın | 3 |
+| buluşalım | 3 |
 | akşam | 3 |
 | notlar | 2 |
-| olmuş | 2 |
 | faydalı | 2 |
 | harika | 2 |
 | görüşürüz | 2 |
-| haftaya | 2 |
 | yeniden | 2 |
+| haftaya | 2 |
 | okuyalım | 2 |
-| bütün | 1 |
-| kurgudur | 1 |
-| dosyadaki | 1 |
 | konuşmalar | 1 |
-| öykü | 1 |
+| kurgudur | 1 |
+| bütün | 1 |
+| dosyadaki | 1 |
 | roman | 1 |
+| öykü | 1 |
+| bence | 1 |
 | öyküler | 1 |
 | kısa | 1 |
-| bence | 1 |
 | bakalım | 1 |
 | adresine | 1 |
-| kitapları | 1 |
 | getirelim | 1 |
+| kitapları | 1 |
 | karakterleri | 1 |
-| öykünün | 1 |
-| tartışacağız | 1 |
-| ikinci | 1 |
-| sonunu | 1 |
-| konuşacağız | 1 |
-| paylaşıyorum | 1 |
-| notlarını | 1 |
-| toplantı | 1 |
-| birinci | 1 |
 | bölümde | 1 |
+| sonunu | 1 |
+| notlarını | 1 |
+| tartışacağız | 1 |
+| birinci | 1 |
+| ikinci | 1 |
+| konuşacağız | 1 |
+| toplantı | 1 |
+| öykünün | 1 |
+| paylaşıyorum | 1 |
 | akşamlar | 1 |
-| kitabı | 1 |
 | hangi | 1 |
+| kitabı | 1 |
 | uygunum | 1 |
 | teşekkürler | 1 |
 
 
-**En sık ifadeler**
+### En sık ifadeler
 
-| İfade | Mesaj |
+| 2 kelime | Mesaj |
 |---|---:|
 | merhaba arkadaşlar | 3 |
+
+| 3 kelime | Mesaj |
+|---|---:|
 | yarın akşam buluşalım | 3 |
 
-Sayılar, kelimenin ya da ifadenin geçtiği mesaj sayısıdır; bir mesajdaki tekrarlar bir kez sayılır. İfadeler bir cümle içinde kalan, en az 3 mesajda geçen 2–6 kelimelik kalıplardır; daha uzun bir kalıbın parçası olarak geçenler yalnızca o kalıpla gösterilir ("kutlu olsun" yerine "doğum günün kutlu olsun"). Yalnızca "ben de", "o zaman" gibi kelimelerden ya da etiketlerden oluşanlar sayılmaz; gülmeler ifadeyi böler.
+Sayılar, kelimenin ya da ifadenin geçtiği mesaj sayısıdır; bir mesajdaki tekrarlar bir kez sayılır. İfadeler bir cümle içinde kalan, en az 3 mesajda geçen 2–6 kelimelik kalıplardır; daha uzun bir kalıbın parçası olarak geçenler yalnızca o kalıpla gösterilir ("kutlu olsun" yerine "doğum günün kutlu olsun"). Yalnızca "ben de", "o zaman" gibi kelimelerden ya da etiketlerden oluşanlar sayılmaz; gülmeler ifadeyi böler, virgül bölmez. Uzatılmış harfler sadeleştirilir ("çoook iyi": "çok iyi"); aynı tarzdaki gülmeler uzunluğu ne olursa olsun tek kelime sayılır ("ohohoh", "ohohoho").
 
 
 ## Kişi bazında kelimeler
@@ -166,21 +168,21 @@ Sayılar, kelimenin ya da ifadenin geçtiği mesaj sayısıdır; bir mesajdaki t
 
 | Kelime | Mesaj |
 |---|---:|
-| bütün | 1 |
-| kurgudur | 1 |
-| arkadaşlar | 1 |
-| dosyadaki | 1 |
 | konuşmalar | 1 |
+| kurgudur | 1 |
+| bütün | 1 |
+| dosyadaki | 1 |
 | merhaba | 1 |
-| öykü | 1 |
+| arkadaşlar | 1 |
 | roman | 1 |
-| buluşalım | 1 |
+| öykü | 1 |
 | yarın | 1 |
+| buluşalım | 1 |
 | akşam | 1 |
 | notlar | 1 |
-| olmuş | 1 |
 | faydalı | 1 |
 | harika | 1 |
+| görüşürüz | 1 |
 
 | İfade | Mesaj |
 |---|---:|
@@ -194,21 +196,21 @@ Sayılar, kelimenin ya da ifadenin geçtiği mesaj sayısıdır; bir mesajdaki t
 
 | Kelime | Mesaj |
 |---|---:|
-| öyküler | 1 |
-| kısa | 1 |
 | bence | 1 |
 | okuyalım | 1 |
+| öyküler | 1 |
+| kısa | 1 |
 | bakalım | 1 |
 | adresine | 1 |
+| yarın | 1 |
+| getirelim | 1 |
 | kitapları | 1 |
 | buluşalım | 1 |
-| getirelim | 1 |
 | akşam | 1 |
-| yarın | 1 |
 | karakterleri | 1 |
-| öykünün | 1 |
-| arkadaşlar | 1 |
-| tartışacağız | 1 |
+| bölümde | 1 |
+| sonunu | 1 |
+| notlarını | 1 |
 
 | İfade | Mesaj |
 |---|---:|
@@ -222,18 +224,17 @@ Sayılar, kelimenin ya da ifadenin geçtiği mesaj sayısıdır; bir mesajdaki t
 
 | Kelime | Mesaj |
 |---|---:|
-| arkadaşlar | 1 |
-| kitabı | 1 |
 | hangi | 1 |
 | merhaba | 1 |
+| kitabı | 1 |
 | okuyalım | 1 |
-| buluşalım | 1 |
-| yarın | 1 |
+| arkadaşlar | 1 |
 | uygunum | 1 |
+| yarın | 1 |
+| buluşalım | 1 |
 | akşam | 1 |
 | notlar | 1 |
 | teşekkürler | 1 |
-| olmuş | 1 |
 | faydalı | 1 |
 | harika | 1 |
 

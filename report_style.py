@@ -28,7 +28,8 @@ h2 { font-size: 14pt; color: #10253f; margin: 22px 0 8px; padding-bottom: 4px;
      border-bottom: 2px solid #0f766e; break-after: avoid; }
 h3 { font-size: 10.5pt; color: #334155; margin: 12px 0 5px; break-after: avoid; }
 p { margin: 6px 0; }
-.note { color: #64748b; font-size: 8pt; break-after: avoid; }
+/* A note stays whole and with the table it explains. */
+.note { color: #64748b; font-size: 8pt; break-inside: avoid; break-before: avoid; }
 .kpis { width: 100%; border-collapse: separate; border-spacing: 5px 0; margin: 4px -5px 6px; table-layout: fixed; }
 .kpis td { background: #eff3f8; padding: 10px 10px; border: 0; vertical-align: top; }
 .kpis .value { display: block; font-size: 17pt; font-weight: bold; color: #0f766e; line-height: 1.2; }
@@ -67,11 +68,14 @@ table.data tr.total td { font-weight: bold; border-top: 1.5px solid #94a3b8; bac
                   border-bottom: 1px solid #e2e8f0; break-inside: avoid; }
 .termlist .item:nth-child(even) { background: #f8fafc; }
 .termlist .count { padding-left: 8px; white-space: nowrap; }
-.person { break-inside: avoid; margin: 14px 0 6px; }
-.person .band { display: flex; justify-content: space-between; align-items: baseline;
+/* A person's band stays with their first rows; the tables (kept whole when short) may
+   then move on, so two people can share a page. */
+.person { margin: 14px 0 6px; }
+.person .band { break-inside: avoid; break-after: avoid; display: block; overflow: hidden;
                 background: #e6f2f1; border-left: 4px solid #0f766e; padding: 6px 10px; margin-bottom: 6px; }
 .person .name { font-weight: bold; font-size: 11pt; color: #10253f; }
-.person .details { font-size: 8pt; color: #475569; }
+/* A block band, not flex: WeasyPrint splits a flex band at a page end. */
+.person .details { font-size: 8pt; color: #475569; float: right; margin-top: 3px; }
 .more { color: #64748b; font-size: 7.5pt; margin: -8px 0 10px; }
 .caption { break-after: avoid;  color: #64748b; font-size: 7.5pt; margin: 0 0 2px; }
 .chart { display: block; width: 100%; margin: 2px 0 10px; }
@@ -205,38 +209,44 @@ class Report:
                                               for v in row) + " |\n")
         self._md.append("\n")
 
-    def term_list(self, headers, rows, title=None, columns=3, more=0):
+    def term_list(self, headers, rows, title=None, columns=3, more=0, more_label="ifade"):
         """A long two-column list (word and count) that flows in newspaper-style
         columns. Unlike tables side by side, it splits cleanly across pages.
-        ``more`` is how many further entries were left out of ``rows``.
+        ``more`` is how many further entries were left out of ``rows``, named
+        ``more_label`` ("… ve 120 kelime daha").
         """
         heading = f"<h3>{escape(title)}</h3>" if title else ""
         items = "".join(
             f'<div class="item"><span>{escape(term)}</span><span class="count">{escape(count)}</span></div>'
             for term, count in rows
         )
+        # A list of a page or less stays in one piece with its heading.
+        keep = ' class="block"' if len(rows) <= 20 * columns else ""
         self._html.append(
-            f'{heading}<p class="caption">{escape(headers[0])} · {escape(headers[1])}</p>'
-            f'<div class="termlist cols-{columns}">{items}</div>'
+            f'<div{keep}>{heading}<p class="caption">{escape(headers[0])} · {escape(headers[1])}</p>'
+            f'<div class="termlist cols-{columns}">{items}</div></div>'
         )
         if more:
-            self._html.append(f'<p class="more">… ve {number(more)} ifade daha</p>')
+            self._html.append(f'<p class="more">… ve {number(more)} {escape(more_label)} daha</p>')
         if title:
             self._md.append(f"\n**{md_text(title)}**\n\n")
         self._md.append(f"| {md_text(headers[0])} | {md_text(headers[1])} |\n|---|---:|\n")
         self._md.append("".join(f"| {md_text(term)} | {md_text(count)} |\n" for term, count in rows))
-        self._md.append(f"\n*… ve {number(more)} ifade daha*\n\n" if more else "\n")
+        self._md.append(f"\n*… ve {number(more)} {md_text(more_label)} daha*\n\n" if more else "\n")
 
     def person(self, name, details):
-        """A highlighted band for one person; what follows inside the ``with``
-        block stays on the same page as the band.
+        """A highlighted band for one person; the band stays on the same page as
+        the start of what follows inside the ``with`` block.
         """
         report = self
 
         class _Person:
             def __enter__(self):
+                # A section heading right before the first person goes inside that
+                # person's box, so it cannot stay behind alone at the foot of a page.
+                heading = report._html.pop() if report._html and report._html[-1].startswith("<h2") else ""
                 report._html.append(
-                    f'<div class="person"><div class="band"><span class="name">{escape(name)}</span>'
+                    f'<div class="person">{heading}<div class="band"><span class="name">{escape(name)}</span>'
                     f'<span class="details">{escape(" · ".join(details))}</span></div>'
                 )
                 report._md.append(f"\n### {md_text(name)}\n\n{' · '.join(details)}\n\n")
@@ -245,6 +255,21 @@ class Report:
                 report._html.append("</div>")
 
         return _Person()
+
+    def together(self):
+        """Keep what is added inside ``with report.together():`` on one page in the PDF,
+        for a few short tables that read as one (a person's band does not, by itself).
+        """
+        report = self
+
+        class _Together:
+            def __enter__(self):
+                report._html.append('<div class="keep">')
+
+            def __exit__(self, *exc):
+                report._html.append("</div>")
+
+        return _Together()
 
     def grid(self, columns, title=None):
         """Lay the tables added inside ``with report.grid(n):`` side by side in the PDF.
